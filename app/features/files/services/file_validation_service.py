@@ -1,20 +1,14 @@
 from fastapi import HTTPException
 
 class FileValidationService:
-    """
-    Сервис для валидации файлов.
-    Проверяет расширение файлов на допустимые форматы.
-    """
-    @staticmethod
-    def validate_file_extension(filename: str):
+    valid_extensions = (".xlsx", ".xls")
+
+    def validate(self, filename: str):
         """
-        Проверяет расширение файла на допустимые форматы.
-        :param filename: Имя файла.
-        :raises HTTPException: В случае неподдерживаемого формата.
+        Проверка валидности расширения файла.
         """
-        valid_extensions = (".xlsx", ".xls", ".xlsm")
-        if not filename.endswith(valid_extensions):
+        if not filename.endswith(self.valid_extensions):
             raise HTTPException(
                 status_code=400,
-                detail=f"Неподдерживаемый формат файла: {filename}. Допустимые форматы: {', '.join(valid_extensions)}"
+                detail=f"Неподдерживаемый формат файла: {filename}. Допустимые форматы: {', '.join(self.valid_extensions)}"
             )

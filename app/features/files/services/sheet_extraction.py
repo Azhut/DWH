@@ -1,29 +1,29 @@
 import pandas as pd
-from io import BytesIO
+from fastapi import UploadFile
+from typing import List
+from io import BytesIO  # Необходимо для оборачивания байтов в BytesIO
 
 class SheetExtractionService:
-    """
-    Парсер Excel-файлов для разделения данных по листам.
-    """
     @staticmethod
-    def parse_stream(file_stream: bytes):
+    async def extract_sheets(file: UploadFile) -> List[dict]:
         """
-        Разделяет файл на несколько секций по листам из потока данных.
-        :param file_stream: Поток данных Excel-файла (в байтах).
-        :return: Словарь с данными по листам.
-        """
-        excel_data = pd.ExcelFile(BytesIO(file_stream))
-        return SheetExtractionService._extract_sheets(excel_data)
+        Извлекает листы и данные из Excel-файла.
 
-    @staticmethod
-    def _extract_sheets(excel_data: pd.ExcelFile):
+        :param file: Excel-файл
+        :return: Список листов с их названиями и содержимым
         """
-        Вспомогательный метод для извлечения секций из объекта ExcelFile.
-        :param excel_data: Объект ExcelFile.
-        :return: Словарь с данными по листам.
-        """
-        sections = {}
-        for sheet_name in excel_data.sheet_names:
-            df = pd.read_excel(excel_data, sheet_name=sheet_name, header=None)
-            sections[sheet_name] = df
-        return sections
+        try:
+            file_content = await file.read()  # Получаем байты файла
+            file_stream = BytesIO(file_content)  # Оборачиваем байты в BytesIO для использования с pandas
+
+            # Теперь можно передавать в pd.ExcelFile объект BytesIO
+            excel_data = pd.ExcelFile(file_stream)
+
+            sheets = []
+            for sheet_name in excel_data.sheet_names:
+                sheet_data = excel_data.parse(sheet_name).to_dict(orient="records")
+                sheets.append({"sheet_name": sheet_name, "data": sheet_data})
+
+            return sheets
+        except Exception as e:
+            raise Exception(f"Ошибка извлечения данных из файла: {str(e)}")

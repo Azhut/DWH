@@ -1,9 +1,15 @@
 from abc import ABC, abstractmethod
+from typing import Dict
 
-class BaseParser(ABC):
+
+class BaseSheetParser(ABC):
+    """
+    Абстрактный класс для парсинга листов.
+    """
+
     @abstractmethod
-    def parse(self, sheet):
+    async def parse(self, sheet_data: Dict) -> Dict:
         """
-        Абстрактный метод для парсинга данных с листа.
+        Метод парсинга данных с листа.
         """
-        pass
+        return {'Раздел0':'data'}

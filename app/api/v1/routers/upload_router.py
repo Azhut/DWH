@@ -1,11 +1,9 @@
-# app/api/v1/routers/files.py
 from fastapi import APIRouter, HTTPException, UploadFile
 from typing import List
 from app.features.files.services.ingestion_service import IngestionService
 from app.api.v1.schemas.files import UploadResponse
 
 router = APIRouter()
-
 ingestion_service = IngestionService()
 
 @router.post("/api/upload", response_model=UploadResponse)
