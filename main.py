@@ -1,13 +1,16 @@
 import uvicorn
 from fastapi import FastAPI
-from app.api.v1.routers.upload_router import router as upload_router
+from app.api.v1.endpoints.upload import router as upload_router
 
 def create_app() -> FastAPI:
     """
     Создает и настраивает экземпляр FastAPI-приложения.
     """
+
     app = FastAPI()
-    app.include_router(upload_router)
+
+    app.include_router(upload_router, prefix="/api/v1/files", tags=["files"])
+
     return app
 
 app = create_app()

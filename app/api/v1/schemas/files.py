@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import List, Optional
 
 class FileResponse(BaseModel):
     filename: str
@@ -8,4 +8,4 @@ class FileResponse(BaseModel):
 
 class UploadResponse(BaseModel):
     message: str
-    details: list[FileResponse]
+    details: List[FileResponse]
