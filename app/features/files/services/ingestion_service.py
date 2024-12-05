@@ -11,7 +11,6 @@ from app.features.sheet_parsers.parsers import get_sheet_parser
 from app.data_storage.data_management_service import DataManagementService
 from app.models.sheet_model import SheetModel
 
-
 class IngestionService:
     def __init__(self):
         self.file_validator = FileValidationService()
@@ -21,17 +20,22 @@ class IngestionService:
 
     async def process_files(self, files: List[UploadFile]) -> UploadResponse:
         file_responses = []
-        all_sheets_data = []
+        sheet_models = []
 
         for file in files:
             try:
+                # Проверка файла
                 self.file_validator.validate(file.filename)
                 city, year = self.city_year_extractor.extract(file.filename)
 
+                # Извлечение листов
                 sheets = await self.sheet_extractor.extract(file)
 
-                file_model, sheet_data = await self._process_sheets(file, sheets, city, year)
-                all_sheets_data.extend(sheet_data)
+                # Обработка листов
+                processed_sheets = await self._process_sheets(file.filename, sheets, city, year)
+                sheet_models.extend(processed_sheets)
+
+                # Успешная обработка файла
                 file_responses.append(FileResponse(filename=file.filename, status="Success", error=""))
             except HTTPException as e:
                 file_responses.append(FileResponse(filename=file.filename, status="Error", error=str(e)))
@@ -40,45 +44,42 @@ class IngestionService:
                 file_responses.append(
                     FileResponse(filename=file.filename, status="Error", error=f"Unexpected error: {str(e)}"))
 
-        # Преобразование all_sheets_data в SheetModel
-        sheet_models = [SheetModel(**data) for data in all_sheets_data]
-
+        # Сохранение всех обработанных данных
         if sheet_models:
-            await self.data_service.save_sheets(sheet_models, 'fdfs')
+            self.data_service.process_and_save_all(sheet_models, "unique_file_id")
 
+        # Формирование ответа
         success_count = sum(1 for resp in file_responses if resp.status == "Success")
         failure_count = len(file_responses) - success_count
         message = f"{success_count} files processed successfully, {failure_count} failed."
 
         return UploadResponse(message=message, details=file_responses)
 
-    async def _process_sheets(self, file, sheets, city, year) -> Tuple[FileModel, List[dict]]:
-        sheet_data_list = []
+    async def _process_sheets(self, file_id, sheets, city, year) -> List[SheetModel]:
+        sheet_models = []
 
         for sheet in sheets:
             try:
+                # Получение подходящего парсера
                 parser = get_sheet_parser(sheet["sheet_name"])
-                data = parser.parse(sheet["data"])
-                sheet_data_list.append(self._prepare_data_for_db(data, sheet["sheet_name"], city, year))
+                parsed_data = await parser.parse(sheet["data"])
+
+                # Формирование модели листа
+                sheet_model = SheetModel(
+                    file_id=file_id,
+                    sheet_name=sheet["sheet_name"],
+                    data={
+                        year: {
+                            city: {
+                                "headers": parsed_data.get("headers"),
+                                "rows": parsed_data.get("rows")
+                            }
+                        }
+                    }
+                )
+                sheet_models.append(sheet_model)
             except Exception as e:
-                raise HTTPException(status_code=400, detail=f"Error processing sheet {sheet['sheet_name']}: {str(e)}")
+                logger.error(f"Error parsing sheet {sheet['sheet_name']}: {str(e)}")
+                raise HTTPException(status_code=400, detail=f"Error processing sheet {sheet['sheet_name']}")
 
-        file_model = FileModel(
-            file_id=file.filename,
-            filename=file.filename,
-            status="Processed",
-            year=year,
-            city=city,
-            upload_timestamp=datetime.now(),
-        )
-        return file_model, sheet_data_list
-
-    @staticmethod
-    def _prepare_data_for_db(data, sheet_name, city, year):
-        # Вместо словаря возвращаем SheetModel
-        return SheetModel(
-            sheet_name=sheet_name,
-            city=city,
-            year=year,
-            data=data
-        )
+        return sheet_models

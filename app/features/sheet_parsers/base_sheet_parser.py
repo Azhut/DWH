@@ -9,7 +9,10 @@ class BaseSheetParser(ABC):
 
     @abstractmethod
     async def parse(self, sheet_data: Dict) -> Dict:
-        """
-        Метод парсинга данных с листа.
-        """
-        return {'Раздел0':'data'}
+        headers = sheet_data["headers"]
+        rows = sheet_data["rows"]
+
+        return {
+            "headers": headers,
+            "rows": rows
+        }
