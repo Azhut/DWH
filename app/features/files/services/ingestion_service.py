@@ -38,6 +38,10 @@ class IngestionService:
                 processed_sheets = await self._process_sheets(file.filename, sheets, city, year)
                 sheet_models.extend(processed_sheets)
 
+                # Сохранение всех обработанных данных
+                if sheet_models:
+                    self.data_service.process_and_save_all(sheet_models,file.filename)
+
                 # Успешная обработка файла
                 file_responses.append(FileResponse(filename=file.filename, status="Success", error=""))
             except HTTPException as e:
@@ -47,9 +51,7 @@ class IngestionService:
                 file_responses.append(
                     FileResponse(filename=file.filename, status="Error", error=f"Unexpected error: {str(e)}"))
 
-        # Сохранение всех обработанных данных
-        # if sheet_models:
-        #     self.data_service.process_and_save_all(sheet_models)
+
 
         # Формирование ответа
         success_count = sum(1 for resp in file_responses if resp.status == "Success")

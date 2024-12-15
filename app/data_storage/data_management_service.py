@@ -10,10 +10,8 @@ class DataManagementService:
         self.client = AsyncIOMotorClient(settings.DATABASE_URI)
         self.db = self.client[settings.DATABASE_NAME]
 
-
         self.sheets_collection = self.db.get_collection("Sheets")
-        self.data_tables_collection = self.db.get_collection("DataTables")
-        self.cities_and_years_collection = self.db.get_collection("CitiesAndYears")
+
         self.logs_collection = self.db.get_collection("Logs")
 
     def save_sheets(self, sheet_models: List[SheetModel], file_id: str):
@@ -28,47 +26,17 @@ class DataManagementService:
                 "_id": str(ObjectId()),
                 "file_id": file_id,
                 "sheet_name": sheet.sheet_name,
-                "upload_timestamp": datetime.utcnow(),
+                "sheet_fullname": sheet.sheet_fullname,
+                "upload_timestamp": datetime.now(),
                 "status": "processed",
+                "year": sheet.year,
+                "city": sheet.city,
+                "headers": sheet.headers,
+                "data": sheet.data,  # Сохраняем данные как есть, с учетом преобразований
             }
             self.sheets_collection.insert_one(sheet_doc)
 
-    def save_data_tables(self, sheet_models: List[SheetModel]):
-        """
-        Сохраняет сырые данные таблиц в коллекцию `DataTables`.
 
-        :param sheet_models: Список моделей листов
-        """
-        for sheet in sheet_models:
-            for year, city_data in sheet.data.items():
-                for city, table in city_data.items():
-                    table_doc = {
-                        "_id": str(ObjectId()),
-                        "sheet_name": sheet.sheet_name,
-                        "year": year,
-                        "city": city,
-                        "headers": table["headers"],
-                        "rows": [{"value": row} for row in table["rows"]],
-                    }
-                    self.data_tables_collection.insert_one(table_doc)
-
-    def save_cities_and_years(self, sheet_models: List[SheetModel]):
-        """
-        Сохраняет данные на уровне города и года в коллекцию `CitiesAndYears`.
-
-        :param sheet_models: Список моделей листов
-        """
-        for sheet in sheet_models:
-            for year, city_data in sheet.data.items():
-                for city in city_data.keys():
-                    city_year_doc = {
-                        "_id": str(ObjectId()),
-                        "sheet_name": sheet.sheet_name,
-                        "year": year,
-                        "city": city,
-                        "timestamp": datetime.utcnow(),
-                    }
-                    self.cities_and_years_collection.insert_one(city_year_doc)
 
     def save_logs(self, message: str, level: str = "info"):
         """
@@ -79,7 +47,7 @@ class DataManagementService:
         """
         log_doc = {
             "_id": str(ObjectId()),
-            "timestamp": datetime.utcnow(),
+            "timestamp": datetime.now(),
             "level": level,
             "message": message,
         }
@@ -91,8 +59,7 @@ class DataManagementService:
         """
         try:
             self.save_sheets(sheet_models, file_id)
-            self.save_data_tables(sheet_models)
-            self.save_cities_and_years(sheet_models)
+
             self.save_logs(f"Successfully processed and saved data for file_id: {file_id}")
         except Exception as e:
             self.save_logs(f"Error processing data for file_id: {file_id}. Error: {str(e)}", level="error")
