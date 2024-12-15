@@ -11,6 +11,7 @@ from app.features.sheet_parsers.parsers import get_sheet_parser
 from app.data_storage.data_management_service import DataManagementService
 from app.models.sheet_model import SheetModel
 
+
 class IngestionService:
     def __init__(self):
         self.file_validator = FileValidationService()
@@ -26,6 +27,8 @@ class IngestionService:
             try:
                 # Проверка файла
                 self.file_validator.validate(file.filename)
+
+                # Извлечение города и года
                 city, year = self.city_year_extractor.extract(file.filename)
 
                 # Извлечение листов
@@ -46,7 +49,7 @@ class IngestionService:
 
         # Сохранение всех обработанных данных
         if sheet_models:
-            self.data_service.process_and_save_all(sheet_models, "unique_file_id")
+            self.data_service.process_and_save_all(sheet_models)
 
         # Формирование ответа
         success_count = sum(1 for resp in file_responses if resp.status == "Success")
@@ -59,27 +62,41 @@ class IngestionService:
         sheet_models = []
 
         for sheet in sheets:
-            try:
-                # Получение подходящего парсера
-                parser = get_sheet_parser(sheet["sheet_name"])
-                parsed_data = await parser.parse(sheet["data"])
+            if (sheet["sheet_name"] == 'Раздел1'):
+                try:
+                    # Получение подходящего парсера
+                    parser = get_sheet_parser(sheet["sheet_name"])
+                    parsed_data = await parser.parse(sheet["data"])
 
-                # Формирование модели листа
-                sheet_model = SheetModel(
-                    file_id=file_id,
-                    sheet_name=sheet["sheet_name"],
-                    data={
-                        year: {
-                            city: {
-                                "headers": parsed_data.get("headers"),
-                                "rows": parsed_data.get("rows")
+                    # Формирование модели листа
+                    headers = parsed_data.get("headers", {})
+                    data = parsed_data.get("data", [])
+
+                    sheet_model = SheetModel(
+                        file_id=file_id,
+                        sheet_name=sheet["sheet_name"],
+                        sheet_fullname=sheet.get("sheet_fullname", sheet["sheet_name"]),
+                        year=year,
+                        city=city,
+                        headers={
+                            "vertical": headers.get("vertical", []),
+                            "horizontal": headers.get("horizontal", [])
+                        },
+                        data=[
+                            {
+                                "column_header": col_data["column_header"],
+                                "values": [
+                                    {"row_header": row["row_header"], "value": row["value"]}
+                                    for row in col_data["values"]
+                                ]
                             }
-                        }
-                    }
-                )
-                sheet_models.append(sheet_model)
-            except Exception as e:
-                logger.error(f"Error parsing sheet {sheet['sheet_name']}: {str(e)}")
-                raise HTTPException(status_code=400, detail=f"Error processing sheet {sheet['sheet_name']}")
+                            for col_data in data
+                        ]
+                    )
+                    sheet_models.append(sheet_model)
+
+                except Exception as e:
+                    logger.error(f"Error parsing sheet {sheet['sheet_name']}: {str(e)}")
+                    raise HTTPException(status_code=400, detail=f"Error processing sheet {sheet['sheet_name']}")
 
         return sheet_models

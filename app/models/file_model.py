@@ -1,13 +1,13 @@
-from typing import Optional
-
+from typing import Optional, List
 from pydantic import BaseModel
 from datetime import datetime
 
 class FileModel(BaseModel):
-    file_id: str
-    filename: str
-    year: int
-    city: str
-    status: str
-    error: Optional[str] = None  # Добавлено поле error
-    upload_timestamp: datetime
+    file_id: str                      # Уникальный идентификатор файла
+    filename: str                     # Имя загруженного файла
+    year: int                         # Год, если доступно
+    city: str                         # Город, если доступно
+    status: str                       # Статус обработки файла (e.g., "processed", "error")
+    error: Optional[str] = None       # Сообщение об ошибке, если есть
+    upload_timestamp: datetime        # Время загрузки файла
+    sheets: List[str] = []            # Список имен листов в файле
