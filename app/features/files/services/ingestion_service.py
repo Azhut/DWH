@@ -48,8 +48,8 @@ class IngestionService:
                     FileResponse(filename=file.filename, status="Error", error=f"Unexpected error: {str(e)}"))
 
         # Сохранение всех обработанных данных
-        if sheet_models:
-            self.data_service.process_and_save_all(sheet_models)
+        # if sheet_models:
+        #     self.data_service.process_and_save_all(sheet_models)
 
         # Формирование ответа
         success_count = sum(1 for resp in file_responses if resp.status == "Success")
@@ -62,16 +62,19 @@ class IngestionService:
         sheet_models = []
 
         for sheet in sheets:
-            if (sheet["sheet_name"] == 'Раздел1'):
+            if sheet["sheet_name"] == 'Раздел1':
                 try:
-                    # Получение подходящего парсера
+                    # Получаем подходящий парсер для листа
                     parser = get_sheet_parser(sheet["sheet_name"])
-                    parsed_data = await parser.parse(sheet["data"])
 
-                    # Формирование модели листа
+                    # Парсим данные с листа
+                    parsed_data = parser.parse(sheet["data"])
+
+                    # Получаем заголовки и данные из парсера
                     headers = parsed_data.get("headers", {})
                     data = parsed_data.get("data", [])
 
+                    # Формирование модели для листа
                     sheet_model = SheetModel(
                         file_id=file_id,
                         sheet_name=sheet["sheet_name"],
@@ -93,9 +96,12 @@ class IngestionService:
                             for col_data in data
                         ]
                     )
+
+                    # Добавляем модель в список
                     sheet_models.append(sheet_model)
 
                 except Exception as e:
+                    # Логируем ошибку и выбрасываем исключение
                     logger.error(f"Error parsing sheet {sheet['sheet_name']}: {str(e)}")
                     raise HTTPException(status_code=400, detail=f"Error processing sheet {sheet['sheet_name']}")
 

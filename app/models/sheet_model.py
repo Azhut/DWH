@@ -1,33 +1,38 @@
-from typing import List, Dict
-from pydantic import BaseModel
+from pydantic import BaseModel, root_validator
+from typing import List, Dict, Optional, Union
+
 
 class SheetModel(BaseModel):
-    sheet_name: str                   # Имя листа
-    sheet_fullname: str               # Полное имя листа (возможно, с детализацией)
-    year: str
+    file_id: str
+    sheet_name: str
+    sheet_fullname: str
+    year: int
     city: str
-    file_id: str                      # Ссылка на идентификатор файла, которому принадлежит лист
-    headers: Dict[str, List[str]]     # Заголовки: "vertical" и "horizontal"
-    data: List[Dict[str, List[Dict]]] # Данные, организованные по верхним заголовкам
+    headers: Dict[str, List[str]]
+    data: List[Dict[str, Union[str, List[Dict[str, Optional[Union[str, float]]]]]]]
 
-    # Пример структуры:
-    # headers = {
-    #   "vertical": ["RowHeader1", "RowHeader2", "..."],
-    #   "horizontal": ["Header1.SubHeaderA", "Header2.SubHeaderB", "..."]
-    # }
-    # data = [
-    #   {
-    #     "column_header": "Header1.SubHeaderA",
-    #     "values": [
-    #       {"row_header": "RowHeader1", "value": 123.45},
-    #       {"row_header": "RowHeader2", "value": 67.89}
-    #     ]
-    #   },
-    #   {
-    #     "column_header": "Header2.SubHeaderB",
-    #     "values": [
-    #       {"row_header": "RowHeader1", "value": 45.67},
-    #       {"row_header": "RowHeader2", "value": 0}
-    #     ]
-    #   }
-    # ]
+    @root_validator(pre=True)
+    def convert_column_header_to_list(cls, values):
+        # Преобразуем column_header в строку, если это список
+        if 'data' in values:
+            for column in values['data']:
+                # Преобразуем column_header в строку, если это список
+                if isinstance(column.get('column_header'), list):
+                    column['column_header'] = " ".join(column['column_header'])
+
+                # Убедимся, что values остаются списком словарей
+                if isinstance(column.get('values'), list):
+                    for row in column['values']:
+                        # Преобразуем row_header и value в строку, если они не None
+                        row['row_header'] = str(row.get('row_header', ''))
+                        row['value'] = str(row.get('value', '')) if row['value'] is not None else None
+
+        # Преобразуем вертикальные и горизонтальные заголовки в строку
+        if 'headers' in values:
+            headers = values['headers']
+            if 'vertical' in headers:
+                headers['vertical'] = [str(item) for item in headers['vertical']]
+            if 'horizontal' in headers:
+                headers['horizontal'] = [str(item) for item in headers['horizontal']]
+
+        return values
