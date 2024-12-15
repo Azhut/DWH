@@ -64,47 +64,48 @@ class IngestionService:
         sheet_models = []
 
         for sheet in sheets:
-            if sheet["sheet_name"] == 'Раздел1':
-                try:
-                    # Получаем подходящий парсер для листа
-                    parser = get_sheet_parser(sheet["sheet_name"])
+            if sheet["sheet_name"] == 'Раздел0':
+                continue
+            try:
+                # Получаем подходящий парсер для листа
+                parser = get_sheet_parser(sheet["sheet_name"])
 
-                    # Парсим данные с листа
-                    parsed_data = parser.parse(sheet["data"])
+                # Парсим данные с листа
+                parsed_data = parser.parse(sheet["data"])
 
-                    # Получаем заголовки и данные из парсера
-                    headers = parsed_data.get("headers", {})
-                    data = parsed_data.get("data", [])
+                # Получаем заголовки и данные из парсера
+                headers = parsed_data.get("headers", {})
+                data = parsed_data.get("data", [])
 
-                    # Формирование модели для листа
-                    sheet_model = SheetModel(
-                        file_id=file_id,
-                        sheet_name=sheet["sheet_name"],
-                        sheet_fullname=sheet.get("sheet_fullname", sheet["sheet_name"]),
-                        year=year,
-                        city=city,
-                        headers={
-                            "vertical": headers.get("vertical", []),
-                            "horizontal": headers.get("horizontal", [])
-                        },
-                        data=[
-                            {
-                                "column_header": col_data["column_header"],
-                                "values": [
-                                    {"row_header": row["row_header"], "value": row["value"]}
-                                    for row in col_data["values"]
-                                ]
-                            }
-                            for col_data in data
-                        ]
-                    )
+                # Формирование модели для листа
+                sheet_model = SheetModel(
+                    file_id=file_id,
+                    sheet_name=sheet["sheet_name"],
+                    sheet_fullname=sheet.get("sheet_fullname", sheet["sheet_name"]),
+                    year=year,
+                    city=city,
+                    headers={
+                        "vertical": headers.get("vertical", []),
+                        "horizontal": headers.get("horizontal", [])
+                    },
+                    data=[
+                        {
+                            "column_header": col_data["column_header"],
+                            "values": [
+                                {"row_header": row["row_header"], "value": row["value"]}
+                                for row in col_data["values"]
+                            ]
+                        }
+                        for col_data in data
+                    ]
+                )
 
-                    # Добавляем модель в список
-                    sheet_models.append(sheet_model)
+                # Добавляем модель в список
+                sheet_models.append(sheet_model)
 
-                except Exception as e:
-                    # Логируем ошибку и выбрасываем исключение
-                    logger.error(f"Error parsing sheet {sheet['sheet_name']}: {str(e)}")
-                    raise HTTPException(status_code=400, detail=f"Error processing sheet {sheet['sheet_name']}")
+            except Exception as e:
+                # Логируем ошибку и выбрасываем исключение
+                logger.error(f"Error parsing sheet {sheet['sheet_name']}: {str(e)}")
+                raise HTTPException(status_code=400, detail=f"Error processing sheet {sheet['sheet_name']}")
 
         return sheet_models

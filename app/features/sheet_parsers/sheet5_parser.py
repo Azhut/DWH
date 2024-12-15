@@ -1,9 +1,18 @@
-# from app.features.sheet_parsers.base_sheet_parser import BaseSheetParser
-#
-# class Sheet5Parser(BaseSheetParser):
-#     def parse(self, sheet):
-#         """
-#         Парсит данные с листа 1.
-#         """
-#         # Логика для парсинга листа 1
-#         return {'Раздел5':'data'}
+import pandas as pd
+
+from app.features.sheet_parsers.base_sheet_parser import BaseSheetParser
+
+
+class Sheet5Parser(BaseSheetParser):
+    def __init__(self):
+        # Указываем конкретные параметры для этого парсера
+        super().__init__(header_row_range=(1, 5), vertical_header_col=0, start_data_row=6)
+
+    def parse_data(self, sheet: pd.DataFrame, horizontal_headers: list, vertical_headers: list):
+        """
+        Парсит данные из таблицы.
+        В данном случае, метод может быть пустым или добавлять дополнительную логику,
+        если требуется специфическая обработка данных.
+        """
+        # В этом случае просто используем универсальный метод `create_data`
+        return self.create_data(sheet, horizontal_headers, vertical_headers)
