@@ -40,10 +40,11 @@ class SheetProcessor:
         headers = parsed_data.get("headers", {})
         data = parsed_data.get("data", [])
 
+        sheet_fullname = sheet['data'].columns[0],
         return SheetModel(
             file_id=file_id,
             sheet_name=sheet["sheet_name"],
-            sheet_fullname=sheet.get("sheet_fullname", sheet["sheet_name"]),
+            sheet_fullname=sheet['data'].columns[0],
             year=year,
             city=city,
             headers={
