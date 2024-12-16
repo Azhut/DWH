@@ -2,7 +2,7 @@
 import requests
 
 
-url = "http://192.168.0.200:2700/api/v1/files/upload"
+url = "http://192.168.0.200:8080/api/v1/files/upload"
 
 
 def test_file_upload():

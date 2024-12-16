@@ -1,6 +1,6 @@
 import os
 
-import httpx
+
 import uvicorn
 from fastapi import FastAPI
 from app.api.v1.endpoints.upload import router as upload_router
@@ -22,5 +22,4 @@ def create_app() -> FastAPI:
 app = create_app()
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))  # Читаем порт из переменной окружения
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload= True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload= True)
