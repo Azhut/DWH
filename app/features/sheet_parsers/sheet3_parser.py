@@ -10,9 +10,7 @@ class Sheet3Parser(BaseSheetParser):
 
     def parse_data(self, sheet: pd.DataFrame, horizontal_headers: list, vertical_headers: list):
         """
-        Парсит данные из таблицы.
-        В данном случае, метод может быть пустым или добавлять дополнительную логику,
-        если требуется специфическая обработка данных.
+        Парсит данные с 3 листа.
         """
-        # В этом случае просто используем универсальный метод `create_data`
+
         return self.create_data(sheet, horizontal_headers, vertical_headers)

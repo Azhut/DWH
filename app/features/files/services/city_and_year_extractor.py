@@ -12,7 +12,7 @@ class CityAndYearExtractor:
         Извлекает год и город из имени файла.
         Пример: 'ИРБИТ 2023.xls' -> ('ИРБИТ', 2023)
         """
-        match = re.match(r"([А-Яа-я]+) (\d{4})\.(xls|xlsx|xlsm)", filename)
+        match = re.match(r"([А-Яа-я]+) (\d{4})\.(xls|xlsx)", filename)
         if match:
             city = match.group(1)
             year = int(match.group(2))
