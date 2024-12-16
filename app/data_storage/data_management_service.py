@@ -32,7 +32,7 @@ class DataManagementService:
                 "year": sheet.year,
                 "city": sheet.city,
                 "headers": sheet.headers,
-                "data": sheet.data,  # Сохраняем данные как есть, с учетом преобразований
+                "data": sheet.data,
             }
             self.sheets_collection.insert_one(sheet_doc)
 

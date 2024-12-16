@@ -1,8 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Dict, Optional
-from app.models.sheet_model import SheetModel
-from app.data_storage.data_management_service import DataManagementService
-from app.data_storage.model_managment_service import DataRetrievalService
+from fastapi import APIRouter, HTTPException
+from typing import List, Dict
+from app.data_storage.data_retrieval_service import DataRetrievalService
 from app.core.config import settings
 
 router = APIRouter()

@@ -1,6 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorClient
-from bson import ObjectId
-from typing import List, Dict, Optional, Union
+from typing import List, Dict
 
 class DataRetrievalService:
     def __init__(self, db_uri: str, db_name: str):

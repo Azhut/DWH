@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Dict, Optional, Union
+from typing import List, Optional
 
 class DocumentsRequest(BaseModel):
     section: str
