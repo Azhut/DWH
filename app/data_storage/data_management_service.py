@@ -1,18 +1,20 @@
 from datetime import datetime
 from typing import List
 from bson import ObjectId
+from pymongo import MongoClient
+
 from app.models.sheet_model import SheetModel
-from motor.motor_asyncio import AsyncIOMotorClient
 from app.core.config import settings
 
 class DataManagementService:
     def __init__(self):
-        self.client = AsyncIOMotorClient(settings.DATABASE_URI)
+        self.client = MongoClient(settings.DATABASE_URI)
         self.db = self.client[settings.DATABASE_NAME]
 
         self.sheets_collection = self.db.get_collection("Sheets")
 
         self.logs_collection = self.db.get_collection("Logs")
+        self.isUnique = True
 
     def save_sheets(self, sheet_models: List[SheetModel], file_id: str):
         """
@@ -22,27 +24,31 @@ class DataManagementService:
         :param file_id: Идентификатор файла
         """
         for sheet in sheet_models:
-
+            self.isUnique = True
             existing_doc = self.sheets_collection.find_one({
                 "file_id": file_id,
                 "sheet_name": sheet.sheet_name
             })
-            if existing_doc:
-                continue
 
-            sheet_doc = {
-                "_id": str(ObjectId()),
-                "file_id": file_id,
-                "sheet_name": sheet.sheet_name,
-                "sheet_fullname": sheet.sheet_fullname,
-                "upload_timestamp": datetime.now(),
-                "status": "processed",
-                "year": sheet.year,
-                "city": sheet.city,
-                "headers": sheet.headers,
-                "data": sheet.data,
-            }
-            self.sheets_collection.insert_one(sheet_doc)
+            # Выводим результат для отладки
+            if existing_doc:
+                self.isUnique=False
+                continue
+            else:
+
+                sheet_doc = {
+                    "_id": str(ObjectId()),
+                    "file_id": file_id,
+                    "sheet_name": sheet.sheet_name,
+                    "sheet_fullname": sheet.sheet_fullname,
+                    "upload_timestamp": datetime.now(),
+                    "status": "processed",
+                    "year": sheet.year,
+                    "city": sheet.city,
+                    "headers": sheet.headers,
+                    "data": sheet.data,
+                }
+                self.sheets_collection.insert_one(sheet_doc)
 
 
 
@@ -68,7 +74,10 @@ class DataManagementService:
         try:
             self.save_sheets(sheet_models, file_id)
 
-            self.save_logs(f"Successfully processed and saved data for file_id: {file_id}")
+            if self.isUnique:
+                self.save_logs(f"Successfully processed and saved data for file_id: {file_id}")
+            else:
+                self.save_logs(f"Document with file_id: {file_id}  already exists.")
         except Exception as e:
             self.save_logs(f"Error processing data for file_id: {file_id}. Error: {str(e)}", level="error")
             raise
