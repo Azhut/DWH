@@ -22,6 +22,14 @@ class DataManagementService:
         :param file_id: Идентификатор файла
         """
         for sheet in sheet_models:
+
+            existing_doc = self.sheets_collection.find_one({
+                "file_id": file_id,
+                "sheet_name": sheet.sheet_name
+            })
+            if existing_doc:
+                continue
+
             sheet_doc = {
                 "_id": str(ObjectId()),
                 "file_id": file_id,
