@@ -112,4 +112,4 @@ class BaseSheetParser:
         """
         Удаляет символы новой строки из списка заголовков.
         """
-        return [header.replace("\n", "") for header in headers]
+        return [header.replace("\n", " ") for header in headers]
