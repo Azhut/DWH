@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 
 class FileValidationService:
-    VALID_EXTENSIONS = [".xlsx", ".xls"]
+    VALID_EXTENSIONS = [".xlsx", ".xls", ".xlsm"]
 
     def validate(self, filename: str):
         if not any(filename.endswith(ext) for ext in self.VALID_EXTENSIONS):
