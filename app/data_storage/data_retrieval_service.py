@@ -1,98 +1,67 @@
+from typing import List, Dict, Tuple
+
 from motor.motor_asyncio import AsyncIOMotorClient
-from typing import List, Dict
+
 
 class DataRetrievalService:
     def __init__(self, db_uri: str, db_name: str):
         self.client = AsyncIOMotorClient(db_uri)
         self.db = self.client[db_name]
         self.sheets_collection = self.db.get_collection("Sheets")
+        self.flat_data_collection = self.db.get_collection("FlatData")  # Новая коллекция
 
-    async def get_all_sections(self) -> List[str]:
-        """
-        Возвращает список всех уникальных значений sheet_name (разделов).
-        """
-        sections = await self.sheets_collection.distinct("sheet_name")
-        return sections
+    async def get_filter_values(self, filter_name: str, applied_filters: List[Dict], pattern: str = "") -> List:
+        # Создаем базовый запрос
+        query = self._build_query(applied_filters)
 
-    async def get_document_info(self, cities: List[str], years: List[int]) -> (List[str], List[int], List[str]):
-        """
-        Возвращает уникальные города, годы и секции, соответствующие фильтрам.
-        """
-        query = {}
-        if cities:
-            query["city"] = {"$in": cities}
-        if years:
-            query["year"] = {"$in": years}
+        # Добавляем поиск по паттерну
+        if pattern:
+            query[self._map_filter_name(filter_name)] = {"$regex": pattern, "$options": "i"}
 
-        cursor = self.sheets_collection.find(query, {"city": 1, "year": 1, "sheet_name": 1})
-        results = await cursor.to_list(length=None)
+        # Для полей из основной коллекции
+        if filter_name in ["год", "город", "раздел"]:
+            return await self._get_main_collection_values(filter_name, query)
 
-        unique_cities = list({doc["city"] for doc in results})
-        unique_years = list({doc["year"] for doc in results})
-        unique_sections = list({doc["sheet_name"] for doc in results})
+        # Для полей из плоской коллекции
+        return await self._get_flat_collection_values(filter_name, query)
 
-        return unique_cities, unique_years, unique_sections
+    def _map_filter_name(self, filter_name: str) -> str:
+        mapping = {
+            "год": "year",
+            "город": "city",
+            "раздел": "section",
+            "строка": "row",
+            "колонка": "column"
+        }
+        return mapping[filter_name]
 
-    async def get_document_fields(self, section: str, cities: List[str], years: List[int]) -> (List[str], List[str]):
-        """
-        Возвращает уникальные строки (rows) и столбцы (columns) для указанной секции и фильтров.
-        """
-        query = {"sheet_name": section}
-        if cities:
-            query["city"] = {"$in": cities}
-        if years:
-            query["year"] = {"$in": years}
+    async def _get_main_collection_values(self, filter_name: str, query: dict) -> List:
+        field = self._map_filter_name(filter_name)
+        return await self.sheets_collection.distinct(field, query)
 
-        cursor = self.sheets_collection.find(query, {"headers": 1})
-        results = await cursor.to_list(length=None)
+    async def _get_flat_collection_values(self, filter_name: str, query: dict) -> List:
+        field = self._map_filter_name(filter_name)
+        pipeline = [
+            {"$match": query},
+            {"$group": {"_id": f"${field}"}},
+            {"$project": {"_id": 0, "value": "$_id"}}
+        ]
+        cursor = self.flat_data_collection.aggregate(pipeline)
+        return [doc["value"] async for doc in cursor]
 
-        rows = set()
-        columns = set()
-        for doc in results:
-            rows.update(doc.get("headers", {}).get("vertical", []))
-            columns.update(doc.get("headers", {}).get("horizontal", []))
+    async def get_filtered_data(self, filters: List[Dict], limit: int, offset: int) -> Tuple[List, int]:
+        query = self._build_query(filters)
+        total = await self.flat_data_collection.count_documents(query)
+        cursor = self.flat_data_collection.find(query).skip(offset).limit(limit)
+        data = await cursor.to_list(length=None)
+        return [
+            [item["year"], item["city"], item["section"],
+             item["row"], item["column"], item["value"]
+             ] for item in data], total
 
-        return list(rows), list(columns)
-
-    async def get_documents(
-        self, section: str, cities: List[str], years: List[int], rows: List[str], columns: List[str]
-    ) -> List[Dict]:
-        """
-        Возвращает документы с данными, соответствующими фильтрам.
-        """
-        query = {"sheet_name": section}
-        if cities:
-            query["city"] = {"$in": cities}
-        if years:
-            query["year"] = {"$in": years}
-
-        cursor = self.sheets_collection.find(query)
-        results = await cursor.to_list(length=None)
-
-        documents = []
-        for doc in results:
-            filtered_data = []
-
-            for col in doc.get("data", []):
-                if columns and col["column_header"] not in columns:
-                    continue
-
-                filtered_values = []
-                for value in col.get("values", []):
-                    if rows and value["row_header"] not in rows:
-                        continue
-                    filtered_values.append(value)
-
-                if filtered_values:
-                    filtered_data.append({
-                        "column_header": col["column_header"],
-                        "values": filtered_values
-                    })
-
-            documents.append({
-                "year": doc["year"],
-                "city": doc["city"],
-                "data": filtered_data
-            })
-
-        return documents
+    def _build_query(self, filters: List[Dict]) -> dict:
+        query = {"$and": []}
+        for f in filters:
+            field = self._map_filter_name(f["filter-name"])
+            query["$and"].append({field: {"$in": f["values"]}})
+        return query

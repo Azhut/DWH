@@ -15,6 +15,9 @@ class DataManagementService:
 
         self.logs_collection = self.db.get_collection("Logs")
         self.isUnique = True
+        self.flat_data_collection = self.db.get_collection("FlatData")
+
+
 
     def save_sheets(self, sheet_models: List[SheetModel], file_id: str):
         """
@@ -81,3 +84,10 @@ class DataManagementService:
         except Exception as e:
             self.save_logs(f"Error processing data for file_id: {file_id}. Error: {str(e)}", level="error")
             raise
+
+    def save_flat_data(self, records: List[dict]):
+        if records:
+            print(f"[DEBUG] Saving {len(records)} flat records")  # Логируем
+            self.flat_data_collection.insert_many(records)
+        else:
+            print("[WARNING] No flat data to save")  # Логируем
