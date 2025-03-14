@@ -1,7 +1,7 @@
 from fastapi import UploadFile
 
-from app.features.files.services.city_and_year_extractor import CityAndYearExtractor
 from app.features.files.services.file_validation_service import FileValidationService
+from features.files.services.city_and_year_extractor import CityAndYearExtractor
 
 
 class FileProcessor:
