@@ -1,7 +1,8 @@
 from io import BytesIO
 
-from fastapi import UploadFile, HTTPException
 import pandas as pd
+from fastapi import UploadFile, HTTPException
+
 
 class SheetExtractionService:
     async def extract(self, file: UploadFile) -> list:

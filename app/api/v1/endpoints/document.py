@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException
 from typing import List, Dict
-from app.data_storage.data_retrieval_service import DataRetrievalService
+
+from fastapi import APIRouter, HTTPException
+
 from app.core.config import settings
+from app.data_storage.data_retrieval_service import DataRetrievalService
 
 router = APIRouter()
 

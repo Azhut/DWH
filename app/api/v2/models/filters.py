@@ -1,5 +1,7 @@
-from pydantic import BaseModel, Field
 from typing import List, Union, Optional
+
+from pydantic import BaseModel, Field
+
 
 class FilterItem(BaseModel):
     filter_name: str = Field(..., alias="filter-name")

@@ -1,7 +1,10 @@
 import math
 from typing import List, Dict, Tuple
+
 from motor.motor_asyncio import AsyncIOMotorClient
-from core.logger import logger
+
+from app.core.logger import logger
+
 
 class DataRetrievalService:
     def __init__(self, db_uri: str, db_name: str):

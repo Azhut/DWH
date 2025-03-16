@@ -1,6 +1,8 @@
-from typing import Optional, List
-from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional, List
+
+from pydantic import BaseModel
+
 
 class FileModel(BaseModel):
     file_id: str                      # Уникальный идентификатор файла
