@@ -4,13 +4,13 @@ from app.core.logger import logger
 from app.features.files.services.sheet_extraction_service import SheetExtractionService
 from app.features.sheet_parsers.parsers import get_sheet_parser
 from app.models.sheet_model import SheetModel
-from app.data_storage.data_management_service import DataManagementService
+from app.data_storage.data_save_service import DataSaveService
 
 
 class SheetProcessor:
     def __init__(self):
         self.sheet_extractor = SheetExtractionService()
-        self.data_service = DataManagementService()
+        self.data_service = DataSaveService()
 
     async def extract_and_process_sheets(self, file: UploadFile, city: str, year: int) -> List[SheetModel]:
         sheets = await self.sheet_extractor.extract(file)

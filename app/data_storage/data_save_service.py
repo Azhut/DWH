@@ -6,7 +6,7 @@ from pymongo import MongoClient
 from app.models.sheet_model import SheetModel
 from app.core.config import settings
 
-class DataManagementService:
+class DataSaveService:
     def __init__(self):
         self.client = MongoClient(settings.DATABASE_URI)
         self.db = self.client[settings.DATABASE_NAME]

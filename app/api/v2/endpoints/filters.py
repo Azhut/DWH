@@ -1,5 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
-from typing import List
+from fastapi import APIRouter, HTTPException
 from app.data_storage.data_retrieval_service import DataRetrievalService
 from app.core.config import settings
 

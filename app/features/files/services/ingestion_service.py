@@ -4,7 +4,7 @@ from app.api.v1.schemas.files import UploadResponse, FileResponse
 from app.core.logger import logger
 from app.features.files.services.FileProcessor import FileProcessor
 from app.features.files.services.SheetProcessor import SheetProcessor
-from app.data_storage.data_management_service import DataManagementService
+from app.data_storage.data_save_service import DataSaveService
 
 
 
@@ -12,7 +12,7 @@ class IngestionService:
     def __init__(self):
         self.file_processor = FileProcessor()
         self.sheet_processor = SheetProcessor()
-        self.data_service = DataManagementService()
+        self.data_service = DataSaveService()
 
     async def process_files(self, files: List[UploadFile]) -> UploadResponse:
         file_responses = []
