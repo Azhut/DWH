@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from api.v2.Models.filters import (
+from api.v2.models.filters import (
     FilterValuesRequest,
     FilterValuesResponse,
     FiltersNamesResponse,
