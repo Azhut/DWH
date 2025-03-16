@@ -1,29 +1,29 @@
+import math
 from typing import List, Dict, Tuple
-
 from motor.motor_asyncio import AsyncIOMotorClient
-
+from core.logger import logger
 
 class DataRetrievalService:
     def __init__(self, db_uri: str, db_name: str):
         self.client = AsyncIOMotorClient(db_uri)
         self.db = self.client[db_name]
         self.sheets_collection = self.db.get_collection("Sheets")
-        self.flat_data_collection = self.db.get_collection("FlatData")  # Новая коллекция
+        self.flat_data_collection = self.db.get_collection("FlatData")
 
     async def get_filter_values(self, filter_name: str, applied_filters: List[Dict], pattern: str = "") -> List:
-        # Создаем базовый запрос
-        query = self._build_query(applied_filters)
-
-        # Добавляем поиск по паттерну
-        if pattern:
-            query[self._map_filter_name(filter_name)] = {"$regex": pattern, "$options": "i"}
-
-        # Для полей из основной коллекции
-        if filter_name in ["год", "город", "раздел"]:
-            return await self._get_main_collection_values(filter_name, query)
-
-        # Для полей из плоской коллекции
-        return await self._get_flat_collection_values(filter_name, query)
+        logger.debug(f"Filter: {filter_name}")
+        logger.debug(f"Applied filters: {applied_filters}")
+        logger.debug(f"Pattern: {pattern}")
+        try:
+            query = self._build_query(applied_filters)
+            if pattern:
+                query[self._map_filter_name(filter_name)] = {"$regex": pattern, "$options": "i"}
+            if filter_name in ["год", "город"]:
+                return await self._get_main_collection_values(filter_name, query)
+            return await self._get_flat_collection_values(filter_name, query)
+        except Exception as e:
+            logger.error(f"Filter values error: {str(e)}")
+            raise
 
     def _map_filter_name(self, filter_name: str) -> str:
         mapping = {
@@ -54,14 +54,23 @@ class DataRetrievalService:
         total = await self.flat_data_collection.count_documents(query)
         cursor = self.flat_data_collection.find(query).skip(offset).limit(limit)
         data = await cursor.to_list(length=None)
-        return [
-            [item["year"], item["city"], item["section"],
-             item["row"], item["column"], item["value"]
-             ] for item in data], total
+        processed_data = []
+        for item in data:
+            row = []
+            for key in ["year", "city", "section", "row", "column", "value"]:
+                value = item.get(key)
+                if isinstance(value, float) and math.isnan(value):
+                    value = None
+                row.append(value)
+            processed_data.append(row)
+        return processed_data, total
 
     def _build_query(self, filters: List[Dict]) -> dict:
         query = {"$and": []}
         for f in filters:
             field = self._map_filter_name(f["filter-name"])
-            query["$and"].append({field: {"$in": f["values"]}})
+            values = f["values"]
+            if field == "city":
+                values = [v.upper() for v in values]
+            query["$and"].append({field: {"$in": values}})
         return query

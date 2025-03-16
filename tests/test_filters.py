@@ -1,0 +1,75 @@
+import requests
+
+BASE_URL = "http://localhost:2700/api/v2"
+
+def test_get_filters_names():
+    url = f"{BASE_URL}/filters-names"
+    response = requests.get(url)
+    assert response.status_code == 200
+    data = response.json()
+    print(data)
+    assert "filters" in data
+    assert isinstance(data["filters"], list)
+    assert "год" in data["filters"]
+
+def test_post_filter_values():
+    url = f"{BASE_URL}/filter-values"
+    payload = {
+        "filter-name": "раздел",
+        "filters": [
+            {
+                "filter-name": "год",
+                "values": [2020]
+            },
+            {
+                "filter-name": "город",
+                "values": ["АЛАПАЕВСК"]
+            }
+        ],
+    }
+    response = requests.post(url, json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    print(data)
+    assert data.get("filter-name") == "раздел"
+    assert "values" in data
+    assert isinstance(data["values"], list)
+
+def test_post_filtered_data():
+    url = f"{BASE_URL}/filtered-data"
+    payload = {
+        "filters": [
+            {
+                "filter-name": "год",
+                "values": [2020]
+            },
+            {
+                "filter-name": "город",
+                "values": ["АЛАПАЕВСК"]
+            }
+        ],
+        "limit": 4,
+        "offset": 0
+    }
+    response = requests.post(url, json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    print(data)
+    assert "headers" in data
+    assert "data" in data
+    assert "size" in data
+    assert "max_size" in data
+    assert isinstance(data["headers"], list)
+    assert isinstance(data["data"], list)
+
+# def test_download_filtered_data_formats():
+#     url = f"{BASE_URL}/download-filtered-data"
+#     response = requests.get(url)
+#     # Если endpoint не реализован, может возвращаться 404
+#     assert response.status_code in (200, 404)
+#
+# def test_download_filtered_data_csv():
+#     url = f"{BASE_URL}/download-filtered-data/csv"
+#     response = requests.get(url)
+#     # Если endpoint не реализован, может возвращаться 404
+#     assert response.status_code in (200, 404)

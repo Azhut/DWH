@@ -1,12 +1,15 @@
-from typing import List, Union, Optional
 from pydantic import BaseModel, Field
+from typing import List, Union, Optional
 
 class FilterItem(BaseModel):
     filter_name: str = Field(..., alias="filter-name")
     values: List[Union[str, int]]
 
-class FiltersNamesResponse(BaseModel):
-    filters: List[str]
+    def to_query_dict(self):
+        return {
+            "filter-name": self.filter_name,
+            "values": self.values
+        }
 
 class FilterValuesRequest(BaseModel):
     filter_name: str = Field(..., alias="filter-name")
@@ -14,14 +17,18 @@ class FilterValuesRequest(BaseModel):
     pattern: Optional[str] = None
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
 class FilterValuesResponse(BaseModel):
     filter_name: str = Field(..., alias="filter-name")
     values: List[Union[str, int]]
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
+
+class FiltersNamesResponse(BaseModel):
+    filters: List[str]
+
 
 class FilteredDataRequest(BaseModel):
     filters: List[FilterItem]
@@ -30,6 +37,6 @@ class FilteredDataRequest(BaseModel):
 
 class FilteredDataResponse(BaseModel):
     headers: List[str]
-    data: List[List[Union[str, int]]]
+    data: List[List[Optional[Union[str, int]]]]
     size: int
     max_size: int
