@@ -29,6 +29,7 @@ class DataRetrievalService:
             raise
 
     def _map_filter_name(self, filter_name: str) -> str:
+        filter_name.lower()
         mapping = {
             "год": "year",
             "город": "city",

@@ -1,6 +1,7 @@
 import requests
 
-BASE_URL = "http://localhost:2700/api/v2"
+# BASE_URL = "http://localhost:2700/api/v2"
+BASE_URL = "http://5.165.236.240:2700/api/v2"
 
 def test_get_filters_names():
     url = f"{BASE_URL}/filters-names"
@@ -15,7 +16,7 @@ def test_get_filters_names():
 def test_post_filter_values():
     url = f"{BASE_URL}/filter-values"
     payload = {
-        "filter-name": "раздел",
+        "filter-name": "строка",
         "filters": [
             {
                 "filter-name": "год",
@@ -31,7 +32,7 @@ def test_post_filter_values():
     assert response.status_code == 200
     data = response.json()
     print(data)
-    assert data.get("filter-name") == "раздел"
+    assert data.get("filter-name") == "строка"
     assert "values" in data
     assert isinstance(data["values"], list)
 

@@ -3,6 +3,8 @@ from typing import List, Dict, Union
 import pandas as pd
 
 
+
+
 class BaseSheetParser:
     """
     Базовый класс для парсинга данных с листов Excel.
@@ -19,7 +21,8 @@ class BaseSheetParser:
         self.header_row_range = header_row_range
         self.vertical_header_col = vertical_header_col
         self.start_data_row = start_data_row
-        self.data = None  # Для хранения распарсенных данных
+
+        self.data = None
 
     def parse_headers(self, sheet: pd.DataFrame):
         """Парсит заголовки с листа."""
@@ -39,7 +42,6 @@ class BaseSheetParser:
 
     def _fill_empty_cells_in_headers(self, header_rows: pd.DataFrame):
         """Заполняет пустые ячейки в заголовках."""
-        # Реализация метода остается без изменений
         for row_idx in range(len(header_rows) - 1, 0, -1):
             for col_idx in range(header_rows.shape[1]):
                 if header_rows.iloc[row_idx, col_idx] == "":
@@ -111,7 +113,7 @@ class BaseSheetParser:
         flat_data = []
 
         if not self.data:
-            raise ValueError("Данные не были распарсены. Сначала вызовите parse()")
+            raise ValueError("Данные не были распаршены. Сначала вызовите parse()")
 
         for column in self.data:
             column_header = column.get("column_header", "")

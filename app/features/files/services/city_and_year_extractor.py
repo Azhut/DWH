@@ -15,7 +15,7 @@ class CityAndYearExtractor:
         """
         match = re.match(r"([А-Яа-я]+) (\d{4})\.(xls|xlsx)", filename)
         if match:
-            city = match.group(1)
+            city = match.group(1).upper()
             year = int(match.group(2))
             return city, year
         else:
