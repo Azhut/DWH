@@ -14,22 +14,27 @@ class DataRetrievalService:
         self.flat_data_collection = self.db.get_collection("FlatData")
 
     async def get_filter_values(self, filter_name: str, applied_filters: List[Dict], pattern: str = "") -> List:
-        logger.debug(f"Filter: {filter_name}")
-        logger.debug(f"Applied filters: {applied_filters}")
-        logger.debug(f"Pattern: {pattern}")
         try:
-            query = self._build_query(applied_filters)
+
+            query = self._build_query(applied_filters) if applied_filters else {}
+
             if pattern:
-                query[self._map_filter_name(filter_name)] = {"$regex": pattern, "$options": "i"}
+                query[self._map_filter_name(filter_name)] = {
+                    "$regex": pattern,
+                    "$options": "i"
+                }
+
+
             if filter_name in ["год", "город"]:
                 return await self._get_main_collection_values(filter_name, query)
             return await self._get_flat_collection_values(filter_name, query)
+
         except Exception as e:
             logger.error(f"Filter values error: {str(e)}")
             raise
 
     def _map_filter_name(self, filter_name: str) -> str:
-        filter_name.lower()
+        filter_name = filter_name.lower()
         mapping = {
             "год": "year",
             "город": "city",
@@ -70,11 +75,19 @@ class DataRetrievalService:
         return processed_data, total
 
     def _build_query(self, filters: List[Dict]) -> dict:
-        query = {"$and": []}
+
+        if not filters:
+            return {}
+
+        query_conditions = []
         for f in filters:
             field = self._map_filter_name(f["filter-name"])
             values = f["values"]
+
+
             if field == "city":
                 values = [v.upper() for v in values]
-            query["$and"].append({field: {"$in": values}})
-        return query
+
+            query_conditions.append({field: {"$in": values}})
+
+        return {"$and": query_conditions} if query_conditions else {}

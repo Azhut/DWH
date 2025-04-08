@@ -63,6 +63,48 @@ def test_post_filtered_data():
     assert isinstance(data["headers"], list)
     assert isinstance(data["data"], list)
 
+
+def test_get_all_years():
+    """Тест для получения списка всех возможных годов без применения дополнительных фильтров"""
+    url = f"{BASE_URL}/filter-values"
+    payload = {
+        "filter-name": "год",
+        "filters": [],
+        "pattern": ""
+    }
+
+    response = requests.post(url, json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    print("Все года:", data)
+
+    assert data.get("filter-name") == "год"
+    assert "values" in data
+    assert isinstance(data["values"], list)
+    assert len(data["values"]) > 0
+    assert all(isinstance(year, int) for year in data["values"])
+
+
+def test_get_all_cities():
+    """Тест для получения списка всех возможных городов без применения дополнительных фильтров"""
+    url = f"{BASE_URL}/filter-values"
+    payload = {
+        "filter-name": "город",
+        "filters": [],
+        "pattern": ""
+    }
+
+    response = requests.post(url, json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    print("Все города:", data)
+
+    assert data.get("filter-name") == "город"
+    assert "values" in data
+    assert isinstance(data["values"], list)
+    assert len(data["values"]) > 0
+    assert all(isinstance(city, str) for city in data["values"])
+
 # def test_download_filtered_data_formats():
 #     url = f"{BASE_URL}/download-filtered-data"
 #     response = requests.get(url)
