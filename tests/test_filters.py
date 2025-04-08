@@ -50,7 +50,7 @@ def test_post_filtered_data():
             }
         ],
         "limit": 4,
-        "offset": 0
+        "offset": 4
     }
     response = requests.post(url, json=payload)
     assert response.status_code == 200

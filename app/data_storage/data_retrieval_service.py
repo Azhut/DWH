@@ -60,8 +60,19 @@ class DataRetrievalService:
 
     async def get_filtered_data(self, filters: List[Dict], limit: int, offset: int) -> Tuple[List, int]:
         query = self._build_query(filters)
+
+        sort_order = [("year", 1), ("city", 1), ("section", 1), ("row", 1), ("column", 1),("value", 1) ]
+
+
+        cursor = (
+            self.flat_data_collection
+            .find(query)
+            .sort(sort_order)
+            .skip(offset)
+            .limit(limit)
+        )
+
         total = await self.flat_data_collection.count_documents(query)
-        cursor = self.flat_data_collection.find(query).skip(offset).limit(limit)
         data = await cursor.to_list(length=None)
         processed_data = []
         for item in data:
@@ -72,6 +83,7 @@ class DataRetrievalService:
                     value = None
                 row.append(value)
             processed_data.append(row)
+
         return processed_data, total
 
     def _build_query(self, filters: List[Dict]) -> dict:
