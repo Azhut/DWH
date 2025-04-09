@@ -39,19 +39,31 @@ def test_post_filter_values():
 def test_post_filtered_data():
     url = f"{BASE_URL}/filtered-data"
     payload = {
-        "filters": [
-            {
-                "filter-name": "год",
-                "values": [2020]
-            },
-            {
-                "filter-name": "город",
-                "values": ["АЛАПАЕВСК"]
-            }
-        ],
-        "limit": 4,
-        "offset": 4
-    }
+    "filters": [
+        {
+            "filter-name": "год",
+            "values": [2020]
+        },
+        {
+            "filter-name": "город",
+            "values": ["АЛАПАЕВСК"]
+        },
+        {
+            "filter-name": "раздел",
+            "values": []
+        },
+        {
+            "filter-name": "строка",
+            "values": []
+        },
+        {
+            "filter-name": "колонка",
+            "values": []
+        }
+    ],
+    "limit": 20,
+    "offset": 0
+}
     response = requests.post(url, json=payload)
     assert response.status_code == 200
     data = response.json()

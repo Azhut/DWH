@@ -87,19 +87,21 @@ class DataRetrievalService:
         return processed_data, total
 
     def _build_query(self, filters: List[Dict]) -> dict:
-
-        if not filters:
-            return {}
-
         query_conditions = []
+
         for f in filters:
             field = self._map_filter_name(f["filter-name"])
             values = f["values"]
+
+
+            if not values:
+                continue
 
 
             if field == "city":
                 values = [v.upper() for v in values]
 
             query_conditions.append({field: {"$in": values}})
+
 
         return {"$and": query_conditions} if query_conditions else {}
