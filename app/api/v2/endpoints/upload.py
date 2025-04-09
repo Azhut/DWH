@@ -2,7 +2,7 @@ from typing import List
 
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 
-from app.api.v1.schemas.files import UploadResponse
+from app.api.v2.schemas.files import UploadResponse
 from app.features.files.services.ingestion_service import IngestionService
 
 router = APIRouter()

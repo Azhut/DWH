@@ -79,8 +79,22 @@ class DataRetrievalService:
             row = []
             for key in ["year", "city", "section", "row", "column", "value"]:
                 value = item.get(key)
-                if isinstance(value, float) and math.isnan(value):
+
+                # Улучшенная обработка числовых значений
+                if isinstance(value, float):
+                    if key == "value":
+                        # Для значений приводим float к int если возможно
+                        if value.is_integer():
+                            value = int(value)
+                        else:
+                            value = f"{value:.2f}"  # Форматируем в строку с 2 знаками
+                    else:
+                        # Для других полей (year) преобразуем в int
+                        value = int(value) if value.is_integer() else value
+
+                elif isinstance(value, float) and math.isnan(value):
                     value = None
+
                 row.append(value)
             processed_data.append(row)
 

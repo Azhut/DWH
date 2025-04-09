@@ -23,7 +23,7 @@ class FilterValuesRequest(BaseModel):
 
 class FilterValuesResponse(BaseModel):
     filter_name: str = Field(..., alias="filter-name")
-    values: List[Union[str, int]]
+    values: List[Union[str, int, float]]
 
     class Config:
         populate_by_name = True
@@ -39,6 +39,6 @@ class FilteredDataRequest(BaseModel):
 
 class FilteredDataResponse(BaseModel):
     headers: List[str]
-    data: List[List[Optional[Union[str, int]]]]
+    data: List[List[Optional[Union[str, int, float]]]]
     size: int
     max_size: int
