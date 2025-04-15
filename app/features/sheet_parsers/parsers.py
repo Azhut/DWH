@@ -8,7 +8,7 @@ from app.features.sheet_parsers.sheet6_parser import Sheet6Parser
 from app.features.sheet_parsers.sheet7_parser import Sheet7Parser
 
 
-# Регистрация парсеров
+
 PARSERS = {
     "Раздел0": Sheet0Parser,
     "Раздел1": Sheet1Parser,

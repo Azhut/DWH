@@ -14,21 +14,18 @@ class SheetModel(BaseModel):
 
     @root_validator(pre=True)
     def convert_column_header_to_list(cls, values):
-        # Преобразуем column_header в строку, если это список
+
         if 'data' in values:
             for column in values['data']:
-                # Преобразуем column_header в строку, если это список
+
                 if isinstance(column.get('column_header'), list):
                     column['column_header'] = " ".join(column['column_header'])
 
-                # Убедимся, что values остаются списком словарей
                 if isinstance(column.get('values'), list):
                     for row in column['values']:
-                        # Преобразуем row_header и value в строку, если они не None
                         row['row_header'] = str(row.get('row_header', ''))
                         row['value'] = str(row.get('value', '')) if row['value'] is not None else None
 
-        # Преобразуем вертикальные и горизонтальные заголовки в строку
         if 'headers' in values:
             headers = values['headers']
             if 'vertical' in headers:

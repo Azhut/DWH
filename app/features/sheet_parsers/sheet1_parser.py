@@ -15,10 +15,10 @@ class Sheet1Parser(BaseSheetParser):
         """
         Основной метод парсинга с дополнительной обработкой специфичной для Раздела1
         """
-        # Вызываем базовую реализацию парсинга
+
         parsed_data = super().parse(sheet)
 
-        # Дополнительная обработка для конкретного листа
+
         parsed_data["headers"]["horizontal"] = self._clean_specific_headers(
             parsed_data["headers"]["horizontal"]
         )

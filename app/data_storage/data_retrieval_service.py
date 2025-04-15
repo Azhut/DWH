@@ -24,7 +24,6 @@ class DataRetrievalService:
                     "$options": "i"
                 }
 
-
             if filter_name in ["год", "город"]:
                 return await self._get_main_collection_values(filter_name, query)
             return await self._get_flat_collection_values(filter_name, query)
@@ -61,8 +60,7 @@ class DataRetrievalService:
     async def get_filtered_data(self, filters: List[Dict], limit: int, offset: int) -> Tuple[List, int]:
         query = self._build_query(filters)
 
-        sort_order = [("year", 1), ("city", 1), ("section", 1), ("row", 1), ("column", 1),("value", 1) ]
-
+        sort_order = [("year", 1), ("city", 1), ("section", 1), ("row", 1), ("column", 1), ("value", 1)]
 
         cursor = (
             self.flat_data_collection
@@ -80,16 +78,15 @@ class DataRetrievalService:
             for key in ["year", "city", "section", "row", "column", "value"]:
                 value = item.get(key)
 
-                # Улучшенная обработка числовых значений
                 if isinstance(value, float):
                     if key == "value":
-                        # Для значений приводим float к int если возможно
+
                         if value.is_integer():
                             value = int(value)
                         else:
-                            value = f"{value:.2f}"  # Форматируем в строку с 2 знаками
+                            value = f"{value:.2f}"
                     else:
-                        # Для других полей (year) преобразуем в int
+
                         value = int(value) if value.is_integer() else value
 
                 elif isinstance(value, float) and math.isnan(value):
@@ -107,15 +104,12 @@ class DataRetrievalService:
             field = self._map_filter_name(f["filter-name"])
             values = f["values"]
 
-
             if not values:
                 continue
-
 
             if field == "city":
                 values = [v.upper() for v in values]
 
             query_conditions.append({field: {"$in": values}})
-
 
         return {"$and": query_conditions} if query_conditions else {}
