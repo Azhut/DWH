@@ -15,12 +15,8 @@ class MongoIndexManager:
             ("column", 1)
         ], unique=True)
 
-    async def create_sheets_index(self):
-        await self.db["Sheets"].create_index([("sheet_name", 1)])
-
     async def create_all_indexes(self):
         await self.create_flat_data_index()
-        await self.create_sheets_index()
 
 async def create_indexes():
     """
@@ -28,4 +24,4 @@ async def create_indexes():
     """
     db = mongo_connection.get_database()
     index_manager = MongoIndexManager(db)
-    await index_manager.create_all_indexes()
+    await index_manager.create_flat_data_index()

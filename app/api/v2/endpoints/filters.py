@@ -73,7 +73,7 @@ async def get_filter_values(request: FilterValuesRequest):
         )
         return FilterValuesResponse(filter_name=request.filter_name, values=values)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Произошла ошибка при обработке фильтров.")
 
 @router.post("/filtered-data", response_model=FilteredDataResponse)
 async def get_filtered_data(payload: FilteredDataRequest):

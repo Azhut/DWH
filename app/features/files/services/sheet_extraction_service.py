@@ -13,4 +13,4 @@ class SheetExtractionService:
             sheets = [{"sheet_name": sheet_name, "data": df} for sheet_name, df in df_dict.items()]
             return sheets
         except Exception as e:
-            raise HTTPException(status_code=400, detail=f"Failed to extract sheets: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Не удалось извлечь листы из файла: {str(e)}")

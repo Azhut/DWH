@@ -1,15 +1,13 @@
-from app.data_storage.repositories.sheets_repository import SheetsRepository
 from app.data_storage.repositories.flat_data_repository import FlatDataRepository
 from typing import List, Dict
 
 class FilterService:
-    def __init__(self, sheets_repo: SheetsRepository, flat_data_repo: FlatDataRepository):
-        self.sheets_repo = sheets_repo
+    def __init__(self, flat_data_repo: FlatDataRepository):
         self.flat_data_repo = flat_data_repo
 
     async def get_filter_values(self, filter_name: str, applied_filters: List[Dict], pattern: str = "") -> List:
         """
-        Получить значения фильтра из соответствующей коллекции
+        Получить значения фильтра из коллекции FlatData
 
         :param filter_name: Имя фильтра
         :param applied_filters: Примененные фильтры
@@ -24,8 +22,6 @@ class FilterService:
                 "$options": "i"
             }
 
-        if filter_name in ["год", "город"]:
-            return await self.sheets_repo.collection.distinct(self._map_filter_name(filter_name), query)
         return await self._get_flat_collection_values(filter_name, query)
 
     def _map_filter_name(self, filter_name: str) -> str:

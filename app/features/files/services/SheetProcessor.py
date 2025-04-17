@@ -7,6 +7,9 @@ from app.data_storage.services.data_save_service import create_data_save_service
 from app.features.files.services.sheet_extraction_service import SheetExtractionService
 from app.features.sheet_parsers.parsers import get_sheet_parser
 from app.models.sheet_model import SheetModel
+from app.data_storage.services.file_service import FileService
+from app.data_storage.repositories.file_repository import FileRepository
+from app.core.config import mongo_connection
 
 
 class SheetProcessor:
@@ -14,7 +17,18 @@ class SheetProcessor:
         self.sheet_extractor = SheetExtractionService()
         self.data_service = create_data_save_service()
 
+    async def is_file_unique(self, file_id: str) -> bool:
+        """
+        Проверяет, существует ли файл с данным идентификатором в коллекции Files.
+        """
+        file_service = FileService(FileRepository(mongo_connection.get_database().get_collection("Files")))
+        existing_file = await file_service.get_file_by_id(file_id)
+        return existing_file is None
+
     async def extract_and_process_sheets(self, file: UploadFile, city: str, year: int) -> List[SheetModel]:
+        if not await self.is_file_unique(file.filename):
+            raise HTTPException(status_code=400, detail=f"Файл '{file.filename}' уже был загружен.")
+
         sheets = await self.sheet_extractor.extract(file)
         return await self._process_sheets(file.filename, sheets, city, year)
 
@@ -58,7 +72,6 @@ class SheetProcessor:
 
         sheet_model = self._build_sheet_model(file_id, sheet, parsed_data, city, year)
         sheet_models.append(sheet_model)
-        await self.data_service.save_sheets(sheet_models, file_id)
 
     def _build_sheet_model(self, file_id: str, sheet: dict, parsed_data: dict, city: str, year: int) -> SheetModel:
         return SheetModel(

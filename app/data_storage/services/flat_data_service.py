@@ -2,6 +2,7 @@ from app.data_storage.repositories.flat_data_repository import FlatDataRepositor
 from pymongo import UpdateOne
 from typing import List
 from app.core.logger import logger
+from fastapi import HTTPException
 
 class FlatDataService:
     def __init__(self, flat_data_repo: FlatDataRepository):
@@ -34,5 +35,5 @@ class FlatDataService:
                 inserted_count = result.upserted_count
                 logger.info(f"Inserted {inserted_count} unique flat records out of {len(records)}")
         except Exception as e:
-            logger.error(f"Failed to save flat data: {str(e)}")
-            raise
+            logger.error(f"Ошибка при сохранении плоских данных: {str(e)}", exc_info=True)
+            raise HTTPException(status_code=500, detail="Произошла ошибка при сохранении плоских данных.")

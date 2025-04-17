@@ -1,6 +1,9 @@
 import math
 from typing import List, Dict, Tuple
 
+from motor.motor_asyncio import AsyncIOMotorClient
+
+from app.core.logger import logger
 from app.core.config import mongo_connection
 from app.data_storage.repositories.flat_data_repository import FlatDataRepository
 from app.data_storage.services.filter_service import FilterService
