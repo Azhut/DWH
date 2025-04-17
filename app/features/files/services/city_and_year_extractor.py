@@ -6,7 +6,7 @@ class CityAndYearExtractor:
     """
     Сервис для извлечения города и года из имени файла.
     Поддерживает составные названия городов (с пробелами и дефисами)
-    и форматы: .xls, .xlsx, .xlsm
+    и форматы: .xls, .xlsx, .xlsm.
     """
 
     def extract(self, filename: str) -> tuple[str, int]:
@@ -18,38 +18,28 @@ class CityAndYearExtractor:
         - Если город пустой: "Название города не может быть пустым"
         - Если формат не соответствует шаблону: "Некорректный формат имени файла"
         """
-
         if not re.search(r"\.(xls|xlsx|xlsm)$", filename, re.IGNORECASE):
             raise HTTPException(
                 status_code=400,
                 detail="Некорректное расширение файла. Допустимые форматы: .xls, .xlsx, .xlsm"
             )
 
+        cleaned_filename = re.sub(r"\b\d+[A-Za-zА-Яа-я]+\b", "", filename).strip()
+
         pattern = r"""
             ^               # Начало строки
-            (.+?)           # Название города (нежадный захват)
+            (.+?)           # Город (нежадный захват)
             \s+             # Разделитель (один или больше пробелов)
             (\d{4})         # Год (4 цифры)
+            [^\d]*          # Все символы после года и до расширения (нежадный захват)
             \.              # Точка перед расширением
             (xls|xlsx|xlsm) # Расширение файла
             $               # Конец строки
         """
 
-        match = re.match(pattern, filename, re.VERBOSE | re.IGNORECASE)
+        match = re.match(pattern, cleaned_filename, re.VERBOSE | re.IGNORECASE)
 
         if not match:
-            if not re.search(r"\d{4}\.(xls|xlsx|xlsm)$", filename, re.IGNORECASE):
-                raise HTTPException(
-                    status_code=400,
-                    detail="Не удалось извлечь год из имени файла"
-                )
-
-            if not re.search(r"^[^\d]+\d{4}\.", filename, re.IGNORECASE):
-                raise HTTPException(
-                    status_code=400,
-                    detail="Название города не может быть пустым или содержать только цифры"
-                )
-
             raise HTTPException(
                 status_code=400,
                 detail="Некорректный формат имени файла. Ожидается: 'ГОРОД ГГГГ.расширение'"
