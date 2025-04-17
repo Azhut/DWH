@@ -1,0 +1,23 @@
+# Ignore Python cache files
+**/__pycache__/
+# Ignore data files
+data/
+
+# Ignore Docker-related files
+*.log
+*.pid
+*.sock
+
+# Ignore environment files
+.env
+
+# Ignore temporary files
+*.tmp
+*.swp
+*.bak
+*.orig
+*.rej
+
+# Ignore IDE-specific files
+.vscode/
+.idea/

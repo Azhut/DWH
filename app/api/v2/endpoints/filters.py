@@ -14,10 +14,56 @@ router = APIRouter()
 
 @router.get("/filters-names", response_model=FiltersNamesResponse)
 async def get_filters_names():
+    """
+    Возвращает список доступных фильтров.
+
+    **Пример ответа:**
+    ```json
+    {
+        "filters": ["год", "город", "раздел", "строка", "колонка"]
+    }
+    ```
+
+    **Коды ответа:**
+    - `200 OK`: Успешный запрос.
+    """
     return {"filters": ["год", "город", "раздел", "строка", "колонка"]}
 
 @router.post("/filter-values", response_model=FilterValuesResponse)
 async def get_filter_values(request: FilterValuesRequest):
+    """
+    Возвращает доступные значения для указанного фильтра с учётом других фильтров и шаблона поиска.
+
+    **Пример запроса:**
+    ```json
+    {
+        "filter-name": "раздел",
+        "filters": [
+            {
+                "filter-name": "год",
+                "values": [2022, 2023, 2024]
+            },
+            {
+                "filter-name": "город",
+                "values": ["Алапаевск"]
+            }
+        ],
+        "pattern": ""
+    }
+    ```
+
+    **Пример ответа:**
+    ```json
+    {
+        "filter-name": "раздел",
+        "values": ["Раздел 1", "Раздел 2", "Раздел 3"]
+    }
+    ```
+
+    **Коды ответа:**
+    - `200 OK`: Успешный запрос.
+    - `500 Internal Server Error`: Ошибка сервера.
+    """
     service = DataRetrievalService(settings.DATABASE_URI, settings.DATABASE_NAME)
     try:
         filters_list = [item.model_dump(by_alias=True) for item in request.filters]
@@ -32,6 +78,46 @@ async def get_filter_values(request: FilterValuesRequest):
 
 @router.post("/filtered-data", response_model=FilteredDataResponse)
 async def get_filtered_data(payload: FilteredDataRequest):
+    """
+    Возвращает данные, отфильтрованные по указанным параметрам.
+
+    **Пример запроса:**
+    ```json
+    {
+        "filters": [
+            {
+                "filter-name": "год",
+                "values": [2022, 2023, 2024]
+            },
+            {
+                "filter-name": "город",
+                "values": ["Алапаевск"]
+            }
+        ],
+        "limit": 4,
+        "offset": 0
+    }
+    ```
+
+    **Пример ответа:**
+    ```json
+    {
+        "headers": ["год", "город", "раздел", "строка", "колонка", "значение"],
+        "data": [
+            [2022, "Алапаевск", "Раздел1", "строка1", "колонка1", 10],
+            [2022, "Алапаевск", "Раздел1", "строка2", "колонка1", 11],
+            [2023, "Алапаевск", "Раздел1", "строка1", "колонка1", 13],
+            [2023, "Алапаевск", "Раздел1", "строка2", "колонка1", 18]
+        ],
+        "size": 4,
+        "max_size": 100
+    }
+    ```
+
+    **Коды ответа:**
+    - `200 OK`: Успешный запрос.
+    - `500 Internal Server Error`: Ошибка сервера.
+    """
     service = DataRetrievalService(settings.DATABASE_URI, settings.DATABASE_NAME)
     try:
         filters_list = [item.model_dump(by_alias=True) for item in payload.filters]
