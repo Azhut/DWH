@@ -8,14 +8,14 @@ class FileService:
 
     async def save_file(self, file_model: FileModel):
         """
-        Save a file document to the database.
+        Сохранить модель файла в базе данных.
         """
         file_doc = file_model.dict()
         await self.file_repo.insert_one(file_doc)
 
     async def get_file_by_id(self, file_id: str) -> FileModel:
         """
-        Retrieve a file document by its ID.
+        Получить файл из базы данных по его ID.
         """
         file_doc = await self.file_repo.find_by_file_id(file_id)
         return FileModel(**file_doc) if file_doc else None

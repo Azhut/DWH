@@ -1,12 +1,38 @@
 import math
 from typing import List, Dict, Tuple
 
-from motor.motor_asyncio import AsyncIOMotorClient
-
-from app.core.logger import logger
 from app.core.config import mongo_connection
 from app.data_storage.repositories.flat_data_repository import FlatDataRepository
 from app.data_storage.services.filter_service import FilterService
+
+
+def _map_filter_name(filter_name: str) -> str:
+    mapping = {
+        "год": "year",
+        "город": "city",
+        "раздел": "section",
+        "строка": "row",
+        "колонка": "column"
+    }
+    return mapping[filter_name]
+
+
+def _build_query(filters: List[Dict]) -> dict:
+    query_conditions = []
+
+    for f in filters:
+        field = _map_filter_name(f["filter-name"])
+        values = f["values"]
+
+        if not values:
+            continue
+
+        if field == "city":
+            values = [v.upper() for v in values]
+
+        query_conditions.append({field: {"$in": values}})
+
+    return {"$and": query_conditions} if query_conditions else {}
 
 
 class DataRetrievalService:
@@ -22,7 +48,7 @@ class DataRetrievalService:
         return await self.filter_service.get_filter_values(filter_name, applied_filters, pattern)
 
     async def get_filtered_data(self, filters: List[Dict], limit: int, offset: int) -> Tuple[List, int]:
-        query = self._build_query(filters)
+        query = _build_query(filters)
 
         sort_order = [
             ("year", 1),
@@ -68,33 +94,6 @@ class DataRetrievalService:
 
         return processed_data, total
 
-    def _build_query(self, filters: List[Dict]) -> dict:
-        query_conditions = []
-
-        for f in filters:
-            field = self._map_filter_name(f["filter-name"])
-            values = f["values"]
-
-            if not values:
-                continue
-
-            if field == "city":
-                values = [v.upper() for v in values]
-
-            query_conditions.append({field: {"$in": values}})
-
-        return {"$and": query_conditions} if query_conditions else {}
-
-    def _map_filter_name(self, filter_name: str) -> str:
-        mapping = {
-            "год": "year",
-            "город": "city",
-            "раздел": "section",
-            "строка": "row",
-            "колонка": "column"
-        }
-        return mapping[filter_name]
-
 def create_data_retrieval_service():
     """
     Фабричный метод для создания экземпляра DataRetrievalService с инициализированным FilterService
@@ -102,5 +101,6 @@ def create_data_retrieval_service():
     db = mongo_connection.get_database()
     flat_data_repo = FlatDataRepository(db.get_collection("FlatData"))
     filter_service = FilterService(flat_data_repo)
+
 
     return DataRetrievalService(filter_service)

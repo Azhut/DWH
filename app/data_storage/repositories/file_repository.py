@@ -6,6 +6,6 @@ class FileRepository(BaseRepository):
 
     async def find_by_file_id(self, file_id: str):
         """
-        Find a file by its unique identifier.
+        Найти файл по айди
         """
         return await self.find_one({"file_id": file_id})

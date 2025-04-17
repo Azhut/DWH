@@ -7,7 +7,7 @@ from app.api.v2.models.filters import (
     FilteredDataRequest,
     FilteredDataResponse
 )
-from app.data_storage.services.data_retrieval_service import create_data_retrieval_service
+from app.data_storage.data_retrieval_service import create_data_retrieval_service
 
 router = APIRouter()
 
