@@ -1,11 +1,10 @@
 # Moved index creation logic to a separate module
-from motor.motor_asyncio import AsyncIOMotorClient
 from app.core.config import settings
+from app.core.config import mongo_connection
 
 class MongoIndexManager:
-    def __init__(self):
-        self.client = AsyncIOMotorClient(settings.DATABASE_URI)
-        self.db = self.client[settings.DATABASE_NAME]
+    def __init__(self, db):
+        self.db = db
 
     async def create_flat_data_index(self):
         await self.db.FlatData.create_index([
@@ -18,3 +17,15 @@ class MongoIndexManager:
 
     async def create_sheets_index(self):
         await self.db["Sheets"].create_index([("sheet_name", 1)])
+
+    async def create_all_indexes(self):
+        await self.create_flat_data_index()
+        await self.create_sheets_index()
+
+async def create_indexes():
+    """
+    Фабричный метод для создания всех индексов через MongoIndexManager.
+    """
+    db = mongo_connection.get_database()
+    index_manager = MongoIndexManager(db)
+    await index_manager.create_all_indexes()

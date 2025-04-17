@@ -7,8 +7,7 @@ from app.api.v2.models.filters import (
     FilteredDataRequest,
     FilteredDataResponse
 )
-from app.core.config import settings
-from app.data_storage.data_retrieval_service import DataRetrievalService
+from app.data_storage.services.data_retrieval_service import create_data_retrieval_service
 
 router = APIRouter()
 
@@ -64,7 +63,7 @@ async def get_filter_values(request: FilterValuesRequest):
     - `200 OK`: Успешный запрос.
     - `500 Internal Server Error`: Ошибка сервера.
     """
-    service = DataRetrievalService(settings.DATABASE_URI, settings.DATABASE_NAME)
+    service = create_data_retrieval_service()
     try:
         filters_list = [item.model_dump(by_alias=True) for item in request.filters]
         values = await service.get_filter_values(
@@ -118,7 +117,7 @@ async def get_filtered_data(payload: FilteredDataRequest):
     - `200 OK`: Успешный запрос.
     - `500 Internal Server Error`: Ошибка сервера.
     """
-    service = DataRetrievalService(settings.DATABASE_URI, settings.DATABASE_NAME)
+    service = create_data_retrieval_service()
     try:
         filters_list = [item.model_dump(by_alias=True) for item in payload.filters]
         data, total = await service.get_filtered_data(

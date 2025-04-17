@@ -2,9 +2,9 @@ from typing import List
 
 from fastapi import HTTPException, UploadFile
 
-from app.api.v1.schemas.files import UploadResponse, FileResponse
+from app.api.v2.schemas.files import UploadResponse, FileResponse
 from app.core.logger import logger
-from app.data_storage.data_save_service import DataSaveService
+from app.data_storage.services.data_save_service import create_data_save_service
 from app.features.files.services.FileProcessor import FileProcessor
 from app.features.files.services.SheetProcessor import SheetProcessor
 
@@ -13,7 +13,7 @@ class IngestionService:
     def __init__(self):
         self.file_processor = FileProcessor()
         self.sheet_processor = SheetProcessor()
-        self.data_service = DataSaveService()
+        self.data_service = create_data_save_service()
 
     async def process_files(self, files: List[UploadFile]) -> UploadResponse:
         file_responses = []
@@ -25,7 +25,8 @@ class IngestionService:
                 sheet_models = await self.sheet_processor.extract_and_process_sheets(file, city, year)
 
                 if sheet_models:
-                    self.data_service.process_and_save_all(sheet_models, file.filename)
+                    flat_data = []  # Assuming flat_data is defined or obtained here
+                    await self.data_service.process_and_save_all(sheet_models, file.filename, flat_data)
 
                 all_sheet_models.extend(sheet_models)
 

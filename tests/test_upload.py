@@ -1,7 +1,7 @@
 import requests
 
-# url = "http://localhost:2700/api/v2/upload"
-url = "http://5.165.236.240:2700/api/v2/upload"
+url = "http://localhost:2700/api/v2/upload"
+# url = "http://5.165.236.240:2700/api/v2/upload"
 
 def test_file_upload():
 

@@ -3,7 +3,7 @@ from typing import List
 from fastapi import UploadFile, HTTPException
 
 from app.core.logger import logger
-from app.data_storage.data_save_service import DataSaveService
+from app.data_storage.services.data_save_service import create_data_save_service
 from app.features.files.services.sheet_extraction_service import SheetExtractionService
 from app.features.sheet_parsers.parsers import get_sheet_parser
 from app.models.sheet_model import SheetModel
@@ -12,7 +12,7 @@ from app.models.sheet_model import SheetModel
 class SheetProcessor:
     def __init__(self):
         self.sheet_extractor = SheetExtractionService()
-        self.data_service = DataSaveService()
+        self.data_service = create_data_save_service()
 
     async def extract_and_process_sheets(self, file: UploadFile, city: str, year: int) -> List[SheetModel]:
         sheets = await self.sheet_extractor.extract(file)
@@ -43,22 +43,22 @@ class SheetProcessor:
                 logger.debug(f"Generated {len(flat_data)} flat records")
 
                 # Сохраняем данные
-                self._save_data(flat_data, sheet_models, file_id, sheet, parsed_data, city, year)
+                await self._save_data(flat_data, sheet_models, file_id, sheet, parsed_data, city, year)
 
             except Exception as e:
-                self._handle_processing_error(sheet, e)
+                await self._handle_processing_error(sheet, e)
 
         return sheet_models
 
-    def _save_data(self, flat_data, sheet_models, file_id, sheet, parsed_data, city, year):
+    async def _save_data(self, flat_data, sheet_models, file_id, sheet, parsed_data, city, year):
         if flat_data:
-            self.data_service.save_flat_data(flat_data)
+            await self.data_service.save_flat_data(flat_data)
         else:
             logger.warning(f"No flat data for sheet {sheet['sheet_name']}")
 
         sheet_model = self._build_sheet_model(file_id, sheet, parsed_data, city, year)
         sheet_models.append(sheet_model)
-        self.data_service.save_sheets(sheet_models, file_id)
+        await self.data_service.save_sheets(sheet_models, file_id)
 
     def _build_sheet_model(self, file_id: str, sheet: dict, parsed_data: dict, city: str, year: int) -> SheetModel:
         return SheetModel(
@@ -84,10 +84,10 @@ class SheetProcessor:
         else:
             logger.debug(f"{' ' * indent}Value type: {type(data).__name__}")
 
-    def _handle_processing_error(self, sheet, error):
+    async def _handle_processing_error(self, sheet, error):
         error_msg = f"Error processing sheet {sheet['sheet_name']}: {str(error)}"
         logger.error(error_msg, exc_info=True)
-        self.data_service.save_logs(error_msg, level="error")
+        await self.data_service.save_logs(error_msg, level="error")
         raise HTTPException(
             status_code=400,
             detail=error_msg
