@@ -3,6 +3,18 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from app.api.v2.endpoints.upload import router as upload_router
 from app.api.v2.endpoints.filters import router as filters_router
+# main.py
+from fastapi import Depends
+from app.core.dependencies import get_sheet_repository, get_flat_data_repository
+from app.data_storage.data_retrieval_service import DataRetrievalService
+from app.data_storage.repositories.base import BaseRepository
+
+
+def get_data_retrieval_service(
+    sheet_repo: BaseRepository = Depends(get_sheet_repository),
+    flat_repo: BaseRepository = Depends(get_flat_data_repository)
+) -> DataRetrievalService:
+    return DataRetrievalService(sheet_repo, flat_repo)
 
 def create_app() -> FastAPI:
     app = FastAPI(

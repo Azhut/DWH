@@ -8,7 +8,7 @@ def test_send_files_to_server():
     Отправляет все файлы из указанной директории (включая вложенные папки)
     с отображением прогресса выполнения
     """
-    directory = r"C:\Users\Egor\Desktop\to_server"
+    directory = r"C:\Users\Egor\Desktop\to_server\BAD\BAD"
     url = "http://5.165.236.240:2700/api/v2/upload"
     recursive=False
 

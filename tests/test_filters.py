@@ -1,7 +1,7 @@
 import requests
 
-# BASE_URL = "http://localhost:2700/api/v2"
-BASE_URL = "http://5.165.236.240:2700/api/v2"
+BASE_URL = "http://localhost:2700/api/v2"
+# BASE_URL = "http://5.165.236.240:2700/api/v2"
 
 def test_get_filters_names():
     url = f"{BASE_URL}/filters-names"
