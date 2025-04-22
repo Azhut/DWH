@@ -2,7 +2,7 @@ from typing import List, Dict, Union
 
 import pandas as pd
 
-
+from app.features.sheet_parsers.notes_processor import NotesProcessor
 
 
 class BaseSheetParser:
@@ -56,7 +56,7 @@ class BaseSheetParser:
                     header_rows.iloc[row_idx, col_idx] = header_rows.iloc[row_idx, col_idx - 1]
 
     def _get_horizontal_headers(self, header_rows: pd.DataFrame):
-        """Формирует горизонтальные заголовки."""
+        """Формирует горизонтальные заголовки.(колонки)"""
         horizontal_headers = []
         for col_idx in range(1, header_rows.shape[1]):
             current_path = []
@@ -73,7 +73,7 @@ class BaseSheetParser:
         return horizontal_headers
 
     def _get_vertical_headers(self, sheet: pd.DataFrame):
-        """Получает вертикальные заголовки."""
+        """Получает вертикальные заголовки.(строки)"""
         return sheet.iloc[self.start_data_row:, self.vertical_header_col].dropna().tolist()
 
     def create_data(self, sheet: pd.DataFrame, horizontal_headers: list, vertical_headers: list):
@@ -89,6 +89,8 @@ class BaseSheetParser:
 
     def parse(self, sheet: pd.DataFrame) -> Dict:
         """Основной метод парсинга."""
+
+        sheet = NotesProcessor.process_notes(sheet)
         horizontal_headers, vertical_headers = self.parse_headers(sheet)
         self.data = self.create_data(sheet, horizontal_headers, vertical_headers)
         return {
