@@ -90,7 +90,7 @@ class BaseSheetParser:
     def parse(self, sheet: pd.DataFrame) -> Dict:
         """Основной метод парсинга."""
 
-        sheet = NotesProcessor.process_notes(sheet)
+        sheet = NotesProcessor.process_notes(sheet, raw_quantity=self.header_row_range[1])
         horizontal_headers, vertical_headers = self.parse_headers(sheet)
         self.data = self.create_data(sheet, horizontal_headers, vertical_headers)
         return {

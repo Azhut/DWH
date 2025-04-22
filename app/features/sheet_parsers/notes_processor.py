@@ -2,20 +2,27 @@ import pandas as pd
 
 # служебное значение для пустых ячеек
 _SERVICE_EMPTY = '__EMPTY__'
+ROWS_QUANTITY= 0
 
 class NotesProcessor:
     @staticmethod
-    def process_notes(sheet: pd.DataFrame) -> pd.DataFrame:
+    def process_notes(sheet: pd.DataFrame, raw_quantity: int) -> pd.DataFrame:
         # Проверка типа
         if not isinstance(sheet, pd.DataFrame):
             return sheet
 
         # Если меньше 7 строк - ничего не трогаем
-        if sheet.shape[0] <= 7:
+        if sheet.shape[0] <= raw_quantity:
             return sheet
 
         # Разделяем первые 7 строк (заголовки) и тело
-        header_df = sheet.iloc[:7].copy()
+        header_df = sheet.iloc[:raw_quantity].copy()
+        # Заполняем в заголовках столбец 'Справочно' значением 'Справочно'
+        if 'Справочно' not in header_df.columns:
+            header_df['Справочно'] = 'Справочно'
+        else:
+            header_df['Справочно'] = 'Справочно'
+
         body_df = sheet.iloc[7:].copy().reset_index(drop=True)
 
         # Инициализация столбца 'Справочно' служебным значением в теле
