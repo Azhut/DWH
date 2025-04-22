@@ -16,21 +16,9 @@ class SheetProcessor:
         self.sheet_extractor = SheetExtractionService()
         self.data_service = create_data_save_service()
 
-    async def is_file_unique(self, file_id: str) -> bool:
-        """
-        Проверяет, существует ли успешно обработанный файл с данным идентификатором.
-        Возвращает True, если файл:
-        - Не существует в базе
-        - Существует, но имеет статус != "success"
-        """
-        file_service = FileService(FileRepository(mongo_connection.get_database().get_collection("Files")))
-        existing_file = await file_service.get_file_by_id(file_id)
-
-        return not existing_file or existing_file.status != FileStatus.SUCCESS
-
     async def extract_and_process_sheets(self, file: UploadFile, city: str, year: int) -> Tuple[List[SheetModel], List[dict]]:
 
-        if not await self.is_file_unique(file.filename):
+        if not await is_file_unique(file.filename):
             raise HTTPException(
                 status_code=400,
                 detail=f"Файл '{file.filename}' уже был загружен.",
@@ -97,3 +85,16 @@ class SheetProcessor:
             status_code=400,
             detail=error_msg
         )
+
+
+async def is_file_unique(file_id: str) -> bool:
+    """
+    Проверяет, существует ли успешно обработанный файл с данным идентификатором.
+    Возвращает True, если файл:
+    - Не существует в базе
+    - Существует, но имеет статус != "success"
+    """
+    file_service = FileService(FileRepository(mongo_connection.get_database().get_collection("Files")))
+    existing_file = await file_service.get_file_by_id(file_id)
+
+    return not existing_file or existing_file.status != FileStatus.SUCCESS
