@@ -2,7 +2,7 @@ from typing import List, Dict, Union
 
 import pandas as pd
 
-from app.features.sheet_parsers.notes_processor import NotesProcessor
+from app.features.sheet_parsers.notes_processor import NotesProcessor, _SERVICE_EMPTY
 
 
 class BaseSheetParser:
@@ -122,6 +122,9 @@ class BaseSheetParser:
             values = column.get("values", [])
 
             for row in values:
+                if row.get("value") == _SERVICE_EMPTY:
+                    continue
+
                 flat_record = {
                     "year": year,
                     "city": city,
