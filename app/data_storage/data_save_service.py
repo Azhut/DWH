@@ -10,6 +10,8 @@ from app.data_storage.repositories.flat_data_repository import FlatDataRepositor
 from fastapi import HTTPException
 import logging
 
+from app.models.file_status import FileStatus
+
 logger = logging.getLogger(__name__)
 
 
@@ -24,11 +26,15 @@ class DataSaveService:
         Обрабатывает и сохраняет данные во все коллекции
         """
         try:
-
-            await self.save_file(file_model)
-            await self.flat_data_service.save_flat_data(flat_data)
-            await self.log_service.save_log(f"Successfully processed and saved data for file_id: {file_id}")
+            client = self.flat_data_service.flat_data_repo.collection.database.client
+            async with await client.start_session() as session:
+                async with session.start_transaction():
+                    await self.save_flat_data(flat_data)
+                    file_model.status = FileStatus.SUCCESS
+                    await self.save_file(file_model)
+                    await self.log_service.save_log(f"Successfully processed and saved data for file_id: {file_id}")
         except Exception as e:
+            await session.abort_transaction()
             logger.error(f"Ошибка при сохранении данных: {str(e)}", exc_info=True)
             raise HTTPException(status_code=500, detail="Произошла ошибка при сохранении данных.")
 
@@ -49,7 +55,7 @@ class DataSaveService:
         Сохраняет информацию о файле в коллекцию FileModel
         """
 
-        await self.file_service.save_file(file_model)
+        await self.file_service.update_or_create(file_model)
 
 
 def create_data_save_service():

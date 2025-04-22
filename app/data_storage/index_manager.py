@@ -15,6 +15,10 @@ class MongoIndexManager:
             ("column", 1)
         ], unique=True)
 
+    async def create_file_indexes(self):
+        await self.db.Files.create_index("file_id", unique=True)
+        await self.db.Files.create_index("status")
+
     async def create_all_indexes(self):
         await self.create_flat_data_index()
 

@@ -1,11 +1,10 @@
 from typing import List, Tuple
-
 from fastapi import UploadFile, HTTPException
-
 from app.core.logger import logger
 from app.data_storage.data_save_service import create_data_save_service
 from app.features.files.services.sheet_extraction_service import SheetExtractionService
 from app.features.sheet_parsers.parsers import get_sheet_parser
+from app.models.file_status import FileStatus
 from app.models.sheet_model import SheetModel
 from app.data_storage.services.file_service import FileService
 from app.data_storage.repositories.file_repository import FileRepository
@@ -27,12 +26,16 @@ class SheetProcessor:
         file_service = FileService(FileRepository(mongo_connection.get_database().get_collection("Files")))
         existing_file = await file_service.get_file_by_id(file_id)
 
-        return not existing_file or existing_file.status != "success"
+        return not existing_file or existing_file.status != FileStatus.SUCCESS
 
     async def extract_and_process_sheets(self, file: UploadFile, city: str, year: int) -> Tuple[List[SheetModel], List[dict]]:
 
         if not await self.is_file_unique(file.filename):
-            raise HTTPException(status_code=400, detail=f"Файл '{file.filename}' уже был загружен.")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Файл '{file.filename}' уже был загружен.",
+                headers={"File-Status": "duplicate"}
+            )
 
         sheets = await self.sheet_extractor.extract(file)
         return await self._process_sheets(file.filename, sheets, city, year)

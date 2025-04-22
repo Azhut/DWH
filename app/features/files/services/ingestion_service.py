@@ -8,6 +8,7 @@ from app.data_storage.data_save_service import create_data_save_service
 from app.features.files.services.FileProcessor import FileProcessor
 from app.features.files.services.SheetProcessor import SheetProcessor
 from app.models.file_model import FileModel
+from app.models.file_status import FileStatus
 
 
 class IngestionService:
@@ -32,7 +33,6 @@ class IngestionService:
                     filename=file.filename,
                     year=metadata.year,
                     city=metadata.city,
-                    status="success",
                     error=None,
                     upload_timestamp=datetime.now(),
                     size=len(sheet_models) if sheet_models else 0
@@ -40,7 +40,7 @@ class IngestionService:
 
                 try:
                     await self.data_service.process_and_save_all(file.filename, flat_data, file_model)
-                    file_responses.append(FileResponse(filename=file.filename, status="Success", error=""))
+                    file_responses.append(FileResponse(filename=file.filename, status=FileStatus.SUCCESS, error=""))
                 except Exception:
                     # await self.data_service.rollback(file_id) TODO # Реализуйте метод отката
                     raise
@@ -48,11 +48,12 @@ class IngestionService:
             except HTTPException as e:
                 logger.error(f"HTTP error processing {file.filename}: {e.detail}")
                 if "уже был загружен" in str(e):
-                    file_responses.append(FileResponse(filename=file.filename, status="Error", error=str(e)))
+                    file_responses.append(FileResponse(filename=file.filename, status=FileStatus.DUPLICATE, error=str(e)))
                 else:
                     file_model = FileModel.create_stub(file.filename, file.filename, str(e))
+                    file_model.status = FileModel.STATUS_FAILED
                     await self.data_service.save_file(file_model)
-                    file_responses.append(FileResponse(filename=file.filename, status="Error", error=str(e)))
+                    file_responses.append(FileResponse(filename=file.filename, status=FileStatus.FAILED, error=str(e)))
 
             except Exception as e:
                 logger.error(f"Error processing file {file.filename}: {str(e)}")
@@ -67,6 +68,6 @@ class IngestionService:
 
     @staticmethod
     def _generate_summary(file_responses: List[FileResponse]) -> str:
-        success_count = sum(1 for resp in file_responses if resp.status == "Success")
+        success_count = sum(1 for resp in file_responses if resp.status == FileStatus.SUCCESS)
         failure_count = len(file_responses) - success_count
         return f"{success_count} files processed successfully, {failure_count} failed."

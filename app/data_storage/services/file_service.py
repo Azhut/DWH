@@ -6,12 +6,16 @@ class FileService:
     def __init__(self, file_repo: FileRepository):
         self.file_repo = file_repo
 
-    async def save_file(self, file_model: FileModel):
-        """
-        Сохранить модель файла в базе данных.
-        """
-        file_doc = file_model.dict()
-        await self.file_repo.insert_one(file_doc)
+
+    async def update_or_create(self, file_model: FileModel):
+        existing = await self.get_file_by_id(file_model.file_id)
+        if existing:
+            await self.file_repo.update_one(
+                {"file_id": file_model.file_id},
+                {"$set": file_model.dict()}
+            )
+        else:
+            await self.file_repo.insert_one(file_model.dict())
 
     async def get_file_by_id(self, file_id: str) -> FileModel:
         """
