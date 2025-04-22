@@ -21,10 +21,12 @@ class IngestionService:
 
         for file in files:
             try:
+                await file.seek(0)
                 metadata = self.file_processor.validate_and_extract_metadata(file)
-                sheet_models = await self.sheet_processor.extract_and_process_sheets(file, metadata.city, metadata.year)
 
-                flat_data = []
+                await file.seek(0)
+                sheet_models, flat_data = await self.sheet_processor.extract_and_process_sheets(file, metadata.city, metadata.year)
+
                 file_model = FileModel(
                     file_id=file.filename,
                     filename=file.filename,
@@ -36,11 +38,15 @@ class IngestionService:
                     size=len(sheet_models) if sheet_models else 0
                 )
 
-                await self.data_service.process_and_save_all(file.filename, flat_data, file_model)
-
-                file_responses.append(FileResponse(filename=file.filename, status="Success", error=""))
+                try:
+                    await self.data_service.process_and_save_all(file.filename, flat_data, file_model)
+                    file_responses.append(FileResponse(filename=file.filename, status="Success", error=""))
+                except Exception:
+                    # await self.data_service.rollback(file_id) TODO # Реализуйте метод отката
+                    raise
 
             except HTTPException as e:
+                logger.error(f"HTTP error processing {file.filename}: {e.detail}")
                 if "уже был загружен" in str(e):
                     file_responses.append(FileResponse(filename=file.filename, status="Error", error=str(e)))
                 else:

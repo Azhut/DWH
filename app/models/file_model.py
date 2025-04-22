@@ -1,17 +1,20 @@
+from dataclasses import Field
 from datetime import datetime
+from uuid import uuid4
+
 from pydantic import BaseModel
 from typing import Optional, List
 
 class FileModel(BaseModel):
-    file_id: str                      # Уникальный идентификатор файла
-    filename: str                     # Имя загруженного файла
-    year: Optional[int] = None        # Год, если доступно
-    city: Optional[str] = None        # Город, если доступно
-    status: str                       # Статус обработки файла (e.g., "processed", "error")
-    error: Optional[str] = None       # Сообщение об ошибке, если есть
-    upload_timestamp: datetime        # Время загрузки файла
-    sheets: List[str] = []            # Список имен листов в файле
-    size: int = 0                     # Размер данных
+    file_id: str                              # Уникальный идентификатор файла
+    filename: str                             # Имя загруженного файла
+    year: Optional[int] = None                # Год, если доступно
+    city: Optional[str] = None                # Город, если доступно
+    status: str                               # Статус обработки файла (e.g., "processed", "error")
+    error: Optional[str] = None               # Сообщение об ошибке, если есть
+    upload_timestamp: datetime                # Время загрузки файла
+    sheets: List[str] = []                    # Список имен листов в файле
+    size: int = 0                             # Размер данных
 
     @classmethod
     def create_stub(cls, file_id: str, filename: str, error_message: str = "Unknown error") -> "FileModel":
