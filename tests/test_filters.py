@@ -24,7 +24,7 @@ def test_post_filter_values():
             },
             {
                 "filter-name": "город",
-                "values": ["Березовский"]
+                "values": ["Алапаевск"]
             }
         ],
     }

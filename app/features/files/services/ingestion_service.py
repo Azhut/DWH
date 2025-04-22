@@ -21,15 +21,15 @@ class IngestionService:
 
         for file in files:
             try:
-                city, year = self.file_processor.validate_and_extract_metadata(file)
-                sheet_models = await self.sheet_processor.extract_and_process_sheets(file, city, year)
+                metadata = self.file_processor.validate_and_extract_metadata(file)
+                sheet_models = await self.sheet_processor.extract_and_process_sheets(file, metadata.city, metadata.year)
 
                 flat_data = []
                 file_model = FileModel(
                     file_id=file.filename,
                     filename=file.filename,
-                    year=year,
-                    city=city,
+                    year=metadata.year,
+                    city=metadata.city,
                     status="success",
                     error=None,
                     upload_timestamp=datetime.now(),

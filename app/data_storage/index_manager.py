@@ -1,4 +1,4 @@
-# Moved index creation logic to a separate module
+
 from app.core.config import settings
 from app.core.config import mongo_connection
 
