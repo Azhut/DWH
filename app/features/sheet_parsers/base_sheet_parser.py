@@ -1,3 +1,4 @@
+import math
 from typing import List, Dict, Union
 
 import pandas as pd
@@ -125,13 +126,17 @@ class BaseSheetParser:
                 if row.get("value") == _SERVICE_EMPTY:
                     continue
 
+                value = row.get("value", 0)
+                if isinstance(value, float) and math.isnan(value):
+                    value = 0
+
                 flat_record = {
                     "year": year,
                     "city": city,
                     "section": sheet_name,
                     "row": row.get("row_header", ""),
                     "column": column_header,
-                    "value": row.get("value", 0)
+                    "value": value
                 }
                 flat_data.append(flat_record)
 
