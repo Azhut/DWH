@@ -11,6 +11,9 @@ app/features/sheet_parsers/tester.py
 
 # Ignore environment files
 .env
+venv/
+.DS_Store
+Thumbs.db
 
 # Ignore temporary files
 *.tmp
@@ -22,3 +25,9 @@ app/features/sheet_parsers/tester.py
 # Ignore IDE-specific files
 .vscode/
 .idea/
+
+
+# Другие артефакты сборки
+build/
+dist/
+*.egg-info/
