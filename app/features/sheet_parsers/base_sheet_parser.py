@@ -3,7 +3,7 @@ from typing import List, Dict, Union
 
 import pandas as pd
 
-from app.features.sheet_parsers.fix_header import fix_header
+from app.features.sheet_parsers.fix_header import fix_header, finalize_header_fixing
 from app.features.sheet_parsers.notes_processor import NotesProcessor, _SERVICE_EMPTY
 
 
@@ -23,18 +23,20 @@ class BaseSheetParser:
         self.header_row_range = header_row_range
         self.vertical_header_col = vertical_header_col
         self.start_data_row = start_data_row
-
         self.data = None
 
     def parse_headers(self, sheet: pd.DataFrame):
         """Парсит заголовки с листа."""
         header_rows = self._get_header_rows(sheet)
         self._fill_empty_cells_in_headers(header_rows)
+
         horizontal_headers = self._get_horizontal_headers(header_rows)
         vertical_headers = self._get_vertical_headers(sheet)
 
         horizontal_headers = self.  _remove_newlines_from_headers(horizontal_headers)
         vertical_headers = self._remove_newlines_from_headers(vertical_headers)
+
+        finalize_header_fixing()
 
         return horizontal_headers, vertical_headers
 
@@ -105,7 +107,7 @@ class BaseSheetParser:
 
     def _remove_newlines_from_headers(self, headers: list):
         """Удаляет переносы строк в заголовках."""
-        return [fix_header(header) for header in headers]
+        return [fix_header(h) for h in headers]
 
     def generate_flat_data(
             self,
