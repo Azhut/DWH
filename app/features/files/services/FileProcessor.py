@@ -3,6 +3,8 @@ from pydantic import BaseModel
 from typing import Tuple
 import re
 
+from app.core.exception_handler import logger, log_and_raise_http
+
 
 class FileMetadata(BaseModel):
     city: str
@@ -15,14 +17,20 @@ class FileProcessor:
     VALID_EXTENSIONS = [".xlsx", ".xls", ".xlsm"]
 
     def validate_and_extract_metadata(self, file: UploadFile) -> FileMetadata:
-        self._validate_file_extension(file.filename)
-        city, year = self._extract_city_year(file.filename)
-        return FileMetadata(
-            city=city,
-            year=year,
-            filename=file.filename,
-            extension=file.filename.split(".")[-1].lower()
-        )
+        logger.debug(f"Валидация файла {file.filename}")
+        try:
+            self._validate_file_extension(file.filename)
+            city, year = self._extract_city_year(file.filename)
+            return FileMetadata(
+                city=city,
+                year=year,
+                filename=file.filename,
+                extension=file.filename.split(".")[-1].lower()
+            )
+        except HTTPException:
+            raise
+        except Exception as e:
+            log_and_raise_http(400, "Ошибка извлечения метаданных файла", e)
 
     def _validate_file_extension(self, filename: str):
         if not any(filename.endswith(ext) for ext in self.VALID_EXTENSIONS):

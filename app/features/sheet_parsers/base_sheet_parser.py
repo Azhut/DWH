@@ -119,7 +119,7 @@ class BaseSheetParser:
         flat_data = []
 
         if not self.data:
-            raise ValueError("Данные не были распаршены. Сначала вызовите parse()")
+            raise ValueError("Данные не были распаршены")
 
         for column in self.data:
             column_header = column.get("column_header", "")
@@ -143,5 +143,10 @@ class BaseSheetParser:
                 }
                 flat_data.append(flat_record)
 
-        print(f"[DEBUG] Сгенерировано {len(flat_data)} записей")
         return flat_data
+
+    def _clean_specific_headers(self, headers: list) -> list:
+        """
+        Базовая очистка заголовков: убирает артефакты Excel (_x000D_) и обрезает пробелы
+        """
+        return [h.replace("_x000D_", "").strip() for h in headers]

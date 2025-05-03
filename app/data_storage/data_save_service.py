@@ -1,4 +1,6 @@
 from typing import List
+
+from app.core.exception_handler import log_and_raise_http
 from app.data_storage.repositories import FileRepository
 from app.data_storage.services import FileService
 from app.models.file_model import FileModel
@@ -32,11 +34,11 @@ class DataSaveService:
                     await self.save_flat_data(flat_data)
                     file_model.status = FileStatus.SUCCESS
                     await self.save_file(file_model)
-                    await self.log_service.save_log(f"Successfully processed and saved data for file_id: {file_id}")
+                    await self.log_service.save_log(f"Успешно сохранены данные для {file_id}")
+                    logger.info(f"Транзакция сохранения данных для {file_id} завершена")
         except Exception as e:
             await session.abort_transaction()
-            logger.error(f"Ошибка при сохранении данных: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=500, detail="Произошла ошибка при сохранении данных.")
+            log_and_raise_http(500, "Произошла ошибка при сохранении данных", e)
 
     async def save_flat_data(self, records: List[dict]):
         """

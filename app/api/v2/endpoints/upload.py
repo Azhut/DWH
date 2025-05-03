@@ -3,6 +3,7 @@ from typing import List
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 
 from app.api.v2.schemas.files import UploadResponse
+from app.core.exception_handler import log_and_raise_http
 from app.features.files.services.ingestion_service import IngestionService
 
 router = APIRouter()
@@ -46,4 +47,4 @@ async def upload_files(
         result = await ingestion_service.process_files(files)
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка загрузки файлов: {str(e)}")
+        log_and_raise_http(500, "Ошибка при обработке файла", e)

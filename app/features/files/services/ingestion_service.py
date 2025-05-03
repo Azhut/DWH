@@ -18,9 +18,11 @@ class IngestionService:
         self.data_service = create_data_save_service()
 
     async def process_files(self, files: List[UploadFile]) -> UploadResponse:
+        logger.info(f"Начало загрузки {len(files)} файла(ов)")
         file_responses = []
 
         for file in files:
+            logger.info(f"Обработка файла {file.filename}")
             try:
                 await file.seek(0)
                 metadata = self.file_processor.validate_and_extract_metadata(file)

@@ -1,5 +1,7 @@
 from typing import List, Tuple
 from fastapi import UploadFile, HTTPException
+
+from app.core.exception_handler import log_and_raise_http
 from app.core.logger import logger
 from app.data_storage.data_save_service import create_data_save_service
 from app.features.files.services.sheet_extraction_service import SheetExtractionService
@@ -17,16 +19,20 @@ class SheetProcessor:
         self.data_service = create_data_save_service()
 
     async def extract_and_process_sheets(self, file: UploadFile, city: str, year: int) -> Tuple[List[SheetModel], List[dict]]:
+        logger.info(f"Начало обработки листов файла {file.filename}")
+        try:
+            if not await is_file_unique(file.filename):
+                msg = f"Файл '{file.filename}' уже был загружен."
+                log_and_raise_http(400, msg)
 
-        if not await is_file_unique(file.filename):
-            raise HTTPException(
-                status_code=400,
-                detail=f"Файл '{file.filename}' уже был загружен.",
-                headers={"File-Status": "duplicate"}
-            )
-
-        sheets = await self.sheet_extractor.extract(file)
-        return await self._process_sheets(file.filename, sheets, city, year)
+            sheets = await self.sheet_extractor.extract(file)
+            result = await self._process_sheets(file.filename, sheets, city, year)
+            logger.info(f"Успешно обработано {len(sheets)} листов файла {file.filename}")
+            return result
+        except HTTPException:
+            raise
+        except Exception as e:
+            log_and_raise_http(500, "Ошибка при обработке листов", e)
 
     async def _process_sheets(self, file_id: str, sheets: List[dict], city: str, year: int) -> Tuple[List[SheetModel], List[dict]]:
         sheet_models = []
@@ -78,13 +84,11 @@ class SheetProcessor:
             logger.debug(f"{' ' * indent}Value type: {type(data).__name__}")
 
     async def _handle_processing_error(self, sheet, error):
-        error_msg = f"Error processing sheet {sheet['sheet_name']}: {str(error)}"
-        logger.error(error_msg, exc_info=True)
-        await self.data_service.save_logs(error_msg, level="error")
-        raise HTTPException(
-            status_code=400,
-            detail=error_msg
-        )
+        msg = f"Ошибка обработки раздела {sheet['sheet_name']} в файле: {error}"
+        logger.error(msg, exc_info=True)
+        await self.data_service.save_logs(msg, level="error")
+        log_and_raise_http(400, msg)
+
 
 
 async def is_file_unique(file_id: str) -> bool:

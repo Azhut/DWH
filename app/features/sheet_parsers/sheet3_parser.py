@@ -24,7 +24,3 @@ class Sheet3Parser(BaseSheetParser):
         )
 
         return parsed_data
-
-    def _clean_specific_headers(self, headers: list) -> list:
-        """Специфичная очистка заголовков для Раздела1"""
-        return [h.replace("_x000D_", "").strip() for h in headers]

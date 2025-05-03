@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from app.api.v2.models.filters import (
     FilterValuesRequest,
@@ -7,6 +7,7 @@ from app.api.v2.models.filters import (
     FilteredDataRequest,
     FilteredDataResponse
 )
+from app.core.exception_handler import log_and_raise_http
 from app.data_storage.data_retrieval_service import create_data_retrieval_service
 
 router = APIRouter()
@@ -73,7 +74,7 @@ async def get_filter_values(request: FilterValuesRequest):
         )
         return FilterValuesResponse(filter_name=request.filter_name, values=values)
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Произошла ошибка при обработке фильтров.")
+        log_and_raise_http(500, "Ошибка при получении значений фильтра", e)
 
 @router.post("/filtered-data", response_model=FilteredDataResponse)
 async def get_filtered_data(payload: FilteredDataRequest):
@@ -132,4 +133,4 @@ async def get_filtered_data(payload: FilteredDataRequest):
             max_size=total
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        log_and_raise_http(500, "Ошибка при получении отфильтрованной таблицы", e)

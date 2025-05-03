@@ -1,3 +1,4 @@
+from app.core.exception_handler import log_and_raise_http
 from app.data_storage.repositories.flat_data_repository import FlatDataRepository
 from pymongo import UpdateOne
 from typing import List
@@ -15,6 +16,7 @@ class FlatDataService:
         :param records: Список записей
         """
         if not records:
+            logger.warning("Нет данных для сохранения в FlatData")
             return
         try:
             operations = []
@@ -33,7 +35,7 @@ class FlatDataService:
             if operations:
                 result = await self.flat_data_repo.collection.bulk_write(operations, ordered=False)
                 inserted_count = result.upserted_count
-                logger.info(f"Inserted {inserted_count} unique flat records out of {len(records)}")
+                logger.info(f"Вставлено {inserted_count} уникальных записей из  {len(records)}")
         except Exception as e:
             logger.error(f"Ошибка при сохранении плоских данных: {str(e)}", exc_info=True)
-            raise HTTPException(status_code=500, detail="Произошла ошибка при сохранении плоских данных.")
+            log_and_raise_http(500, "Ошибка при сохранении плоских данных", e)
