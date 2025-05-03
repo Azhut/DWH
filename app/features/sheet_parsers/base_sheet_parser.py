@@ -3,7 +3,7 @@ from typing import List, Dict, Union
 
 import pandas as pd
 
-from app.features.sheet_parsers.fix_header import fix_header, finalize_header_fixing
+from app.features.sheet_parsers.HeaderFixer import fix_header, finalize_header_fixing
 from app.features.sheet_parsers.notes_processor import NotesProcessor, _SERVICE_EMPTY
 
 

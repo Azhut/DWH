@@ -46,6 +46,8 @@ class HeaderFixer:
         print(f"[HeaderFixer] Saved manual_map to {self.map_file}")
 
     def fix(self, text: str) -> str:
+        if text in self.manual_map and self.manual_map[text] not in ('join', 'space'):
+            return self.manual_map[text]
         parts = text.split('\n')
         if not parts:
             return ''
@@ -73,7 +75,8 @@ class HeaderFixer:
                 if combo:
                     self._new_cases[combo] = action
 
-        merged = re.sub(r'\s+', ' ', ' '.join(result)).strip()
+        merged = ' '.join(result)
+        merged = re.sub(r'(\S)\s+(\S)', r'\1 \2', merged)
         return merged
 
     def finalize(self):

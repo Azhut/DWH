@@ -2,6 +2,7 @@
 **/__pycache__/
 # Ignore data files
 data/
+app/features/sheet_parsers/tester.py
 
 # Ignore Docker-related files
 *.log
