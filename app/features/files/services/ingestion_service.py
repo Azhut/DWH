@@ -59,8 +59,8 @@ class IngestionService:
                         file_id=file.filename,
                         filename=file.filename,
                         error_message=str(e.detail),
-                        year=metadata.year,
-                        city=metadata.city
+                        year=metadata.year if metadata else None,
+                        city=metadata.city if metadata else None
                     )
                     file_model.status = FileStatus.FAILED
                     await self.data_service.save_file(file_model)
