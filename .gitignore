@@ -3,6 +3,7 @@
 # Ignore data files
 data/
 app/features/sheet_parsers/tester.py
+profile_stats
 
 # Ignore Docker-related files
 *.log
