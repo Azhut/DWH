@@ -39,12 +39,14 @@ class SheetProcessor:
         all_flat_data = []
 
         for sheet in sheets:
-            if sheet["sheet_name"] == 'Раздел0':
+            sheet_name = sheet["sheet_name"].strip()
+            if sheet_name in ('Раздел0', 'Лист1'):
                 continue
+
             try:
-                parser = get_sheet_parser(sheet["sheet_name"])
+                parser = get_sheet_parser(sheet_name)
                 parsed_data = parser.parse(sheet["data"])
-                flat_data = parser.generate_flat_data(year, city, sheet["sheet_name"])
+                flat_data = parser.generate_flat_data(year, city, sheet_name)
 
                 logger.debug(f"Generated {len(flat_data)} flat records")
                 logger.debug("Parsed data structure:")
@@ -62,7 +64,7 @@ class SheetProcessor:
     def _build_sheet_model(self, file_id: str, sheet: dict, parsed_data: dict, city: str, year: int) -> SheetModel:
         return SheetModel(
             file_id=file_id,
-            sheet_name=sheet["sheet_name"],
+            sheet_name=sheet["sheet_name"].strip(),
             sheet_fullname=sheet['data'].columns[0],
             year=year,
             city=city,
@@ -84,7 +86,7 @@ class SheetProcessor:
             logger.debug(f"{' ' * indent}Value type: {type(data).__name__}")
 
     async def _handle_processing_error(self, sheet, error):
-        msg = (f"Ошибка обработки раздела {sheet['sheet_name']}: {error}"
+        msg = (f"Ошибка обработки раздела {sheet['sheet_name']}: {error}. "
                f"Убедитесь, что разделы имеют название 'Раздел0' 'Раздел1' и т.д."
                f"Также убедитесь, что файл имеет структуру таблиц и заголовков, схожими с остальными файлами 1ФК")
         logger.error(msg, exc_info=True)
