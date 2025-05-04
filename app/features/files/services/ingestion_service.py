@@ -23,9 +23,12 @@ class IngestionService:
 
         for file in files:
             logger.info(f"Обработка файла {file.filename}")
+            metadata = None
             try:
                 await file.seek(0)
                 metadata = self.file_processor.validate_and_extract_metadata(file)
+                if not metadata.city or not metadata.year:
+                    raise HTTPException(400, "Не удалось извлечь город или год из имени файла")
 
                 await file.seek(0)
                 sheet_models, flat_data = await self.sheet_processor.extract_and_process_sheets(file, metadata.city, metadata.year)
@@ -51,14 +54,27 @@ class IngestionService:
                 if "уже был загружен" in str(e):
                     file_responses.append(FileResponse(filename=file.filename, status=FileStatus.DUPLICATE, error=str(e)))
                 else:
-                    file_model = FileModel.create_stub(file.filename, file.filename, str(e))
-                    file_model.status = FileModel.STATUS_FAILED
+
+                    file_model = FileModel.create_stub(
+                        file_id=file.filename,
+                        filename=file.filename,
+                        error_message=str(e.detail),
+                        year=metadata.year,
+                        city=metadata.city
+                    )
+                    file_model.status = FileStatus.FAILED
                     await self.data_service.save_file(file_model)
                     file_responses.append(FileResponse(filename=file.filename, status=FileStatus.FAILED, error=str(e)))
 
             except Exception as e:
-                logger.error(f"Error processing file {file.filename}: {str(e)}")
-                file_model = FileModel.create_stub(file.filename, file.filename, f"Unexpected error: {str(e)}")
+                logger.error(f"Ошибка обработки файла {file.filename}: {str(e)}")
+                file_model = FileModel.create_stub(
+                    file_id=file.filename,
+                    filename=file.filename,
+                    error_message=f"Неожиданная ошибка: {str(e)}",
+                    year=metadata.year if metadata else None,
+                    city=metadata.city if metadata else None
+                )
                 await self.data_service.save_file(file_model)
                 file_responses.append(
                     FileResponse(filename=file.filename, status="Error", error=f"Unexpected error: {str(e)}")

@@ -41,6 +41,8 @@ class DataSaveService:
                     logger.info(f"Транзакция сохранения данных для {file_id} завершена")
         except Exception as e:
             await session.abort_transaction()
+            file_model.status = FileStatus.FAILED
+            await self.save_file(file_model)
             await self.rollback(file_id, file_model, str(e))
             log_and_raise_http(500, "Произошла ошибка при сохранении данных", e)
 

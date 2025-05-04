@@ -18,9 +18,18 @@ class FileModel(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.now)  # Время последнего обновления
 
     @classmethod
-    def create_stub(cls, file_id: str, filename: str, error_message: str = "Unknown error") -> "FileModel":
+    def create_stub(
+        cls,
+        file_id: str,
+        filename: str,
+        error_message: str,
+        year: Optional[int] = None,
+        city: Optional[str] = None
+    ) -> "FileModel":
         """
         Создает "заглушечную" модель FileModel для случаев ошибок.
+        :param year: Год.
+        :param city: Город.
         :param file_id: Уникальный идентификатор файла.
         :param filename: Имя файла.
         :param error_message: Сообщение об ошибке.
@@ -29,6 +38,8 @@ class FileModel(BaseModel):
         return cls(
             file_id=file_id,
             filename=filename,
+            year=year,
+            city=city,
             status=FileStatus.FAILED,
             error=error_message,
             upload_timestamp=datetime.now()

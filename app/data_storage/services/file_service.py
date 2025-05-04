@@ -1,3 +1,4 @@
+from app.core.exception_handler import logger
 from app.data_storage.repositories.file_repository import FileRepository
 from app.models.file_model import FileModel
 from typing import List
@@ -8,14 +9,24 @@ class FileService:
 
 
     async def update_or_create(self, file_model: FileModel):
-        existing = await self.get_file_by_id(file_model.file_id)
-        if existing:
-            await self.file_repo.update_one(
-                {"file_id": file_model.file_id},
-                {"$set": file_model.dict()}
-            )
-        else:
-            await self.file_repo.insert_one(file_model.dict())
+        try:
+            existing = await self.get_file_by_id(file_model.file_id)
+            if existing:
+                await self.file_repo.update_one(
+                    {"file_id": file_model.file_id},
+                    {"$set": file_model.dict()}
+                )
+            else:
+                await self.file_repo.insert_one(file_model.dict())
+
+
+            updated = await self.get_file_by_id(file_model.file_id)
+            if not updated or updated.status != file_model.status:
+                raise ValueError("Ошибка сохранения статуса файла")
+
+        except Exception as e:
+            logger.error(f"Ошибка в FileService: {str(e)}")
+            raise
 
     async def get_file_by_id(self, file_id: str) -> FileModel:
         """

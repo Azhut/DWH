@@ -84,7 +84,9 @@ class SheetProcessor:
             logger.debug(f"{' ' * indent}Value type: {type(data).__name__}")
 
     async def _handle_processing_error(self, sheet, error):
-        msg = f"Ошибка обработки раздела {sheet['sheet_name']} в файле: {error}"
+        msg = (f"Ошибка обработки раздела {sheet['sheet_name']}: {error}"
+               f"Убедитесь, что разделы имеют название 'Раздел0' 'Раздел1' и т.д."
+               f"Также убедитесь, что файл имеет структуру таблиц и заголовков, схожими с остальными файлами 1ФК")
         logger.error(msg, exc_info=True)
         await self.data_service.save_logs(msg, level="error")
         log_and_raise_http(400, msg)

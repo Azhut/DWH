@@ -27,10 +27,11 @@ class FileProcessor:
                 filename=file.filename,
                 extension=file.filename.split(".")[-1].lower()
             )
-        except HTTPException:
+        except HTTPException as e:
             raise
         except Exception as e:
-            log_and_raise_http(400, "Ошибка извлечения метаданных файла", e)
+            logger.error(f"Ошибка извлечения метаданных для {file.filename}: {str(e)}")
+            log_and_raise_http(400, "Некорректное имя файла. Ожидается: 'ГОРОД ГГГГ.расширение", e)
 
     def _validate_file_extension(self, filename: str):
         if not any(filename.endswith(ext) for ext in self.VALID_EXTENSIONS):
