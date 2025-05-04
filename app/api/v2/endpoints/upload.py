@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, UploadFile, File, Depends
 
 from app.api.v2.schemas.files import UploadResponse
 from app.core.exception_handler import log_and_raise_http
