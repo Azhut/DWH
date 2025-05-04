@@ -26,3 +26,6 @@ class BaseRepository:
 
     async def count_documents(self, query: Dict[str, Any]) -> int:
         return await self.collection.count_documents(query)
+
+    async def delete_many(self, query: Dict[str, Any]) -> Any:
+        return await self.collection.delete_many(query)

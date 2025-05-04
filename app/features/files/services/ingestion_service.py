@@ -43,9 +43,8 @@ class IngestionService:
                 try:
                     await self.data_service.process_and_save_all(file.filename, flat_data, file_model)
                     file_responses.append(FileResponse(filename=file.filename, status=FileStatus.SUCCESS, error=""))
-                except Exception:
-                    # await self.data_service.rollback(file_id) TODO # Реализуйте метод отката
-                    raise
+                except Exception as e:
+                    file_responses.append(FileResponse(filename=file.filename, status=FileStatus.FAILED, error=str(e)))
 
             except HTTPException as e:
                 logger.error(f"HTTP error processing {file.filename}: {e.detail}")

@@ -3,7 +3,9 @@ from app.data_storage.repositories.flat_data_repository import FlatDataRepositor
 from pymongo import UpdateOne
 from typing import List
 from app.core.logger import logger
-from fastapi import HTTPException
+
+from app.models.file_model import FileModel
+
 
 class FlatDataService:
     def __init__(self, flat_data_repo: FlatDataRepository):
@@ -39,3 +41,11 @@ class FlatDataService:
         except Exception as e:
             logger.error(f"Ошибка при сохранении плоских данных: {str(e)}", exc_info=True)
             log_and_raise_http(500, "Ошибка при сохранении плоских данных", e)
+
+    async def delete_by_file_id(self, file_model: FileModel):
+        """Удаляет записи FlatData по file_id (или другим критериям)."""
+
+        city= FileModel.city
+        year= FileModel.year
+        await self.flat_data_repo.delete_many({"city": city, "year": year})
+

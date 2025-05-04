@@ -28,6 +28,9 @@ class DataSaveService:
         Обрабатывает и сохраняет данные во все коллекции
         """
         try:
+            await self.save_file(file_model)
+            await self.log_service.save_log(f"Начало обработки файла {file_id}")
+
             client = self.flat_data_service.flat_data_repo.collection.database.client
             async with await client.start_session() as session:
                 async with session.start_transaction():
@@ -38,6 +41,7 @@ class DataSaveService:
                     logger.info(f"Транзакция сохранения данных для {file_id} завершена")
         except Exception as e:
             await session.abort_transaction()
+            await self.rollback(file_id, file_model, str(e))
             log_and_raise_http(500, "Произошла ошибка при сохранении данных", e)
 
     async def save_flat_data(self, records: List[dict]):
@@ -58,6 +62,19 @@ class DataSaveService:
         """
 
         await self.file_service.update_or_create(file_model)
+
+    async def rollback(self, file_id: str, file_model: FileModel, error: str):
+        """Откатывает изменения: удаляет FlatData, сохраняет ошибку в File и Logs."""
+        try:
+            await self.flat_data_service.delete_by_file_id(file_model)
+
+            file_model.status = FileStatus.FAILED
+            file_model.error = error
+            await self.save_file(file_model)
+
+            await self.log_service.save_log(f"Откат файла {file_id}: {error}", "error")
+        except Exception as e:
+            logger.error(f"Ошибка при откате файла {file_id}: {str(e)}")
 
 
 def create_data_save_service():
