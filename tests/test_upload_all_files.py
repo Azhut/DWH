@@ -8,9 +8,9 @@ def test_send_files_to_server():
     Отправляет все файлы из указанной директории (включая вложенные папки)
     с отображением прогресса выполнения
     """
-    directory = r"C:\Users\Egor\Desktop\to_server"
+    directory = r"C:\Users\Egor\Desktop\Projects\Min_sport\SPORT files"
     url = "http://5.165.236.240:2700/api/v2/upload"
-    recursive=False
+    recursive=True
 
     if not os.path.exists(directory):
         print(f"Ошибка: Директория '{directory}' не существует")
