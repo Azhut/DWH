@@ -7,17 +7,17 @@ ROWS_QUANTITY= 0
 class NotesProcessor:
     @staticmethod
     def process_notes(sheet: pd.DataFrame, raw_quantity: int) -> pd.DataFrame:
-        # Проверка типа
+
         if not isinstance(sheet, pd.DataFrame):
             return sheet
 
-        # Если меньше 7 строк - ничего не трогаем
+
         if sheet.shape[0] <= raw_quantity:
             return sheet
 
-        # Разделяем первые 7 строк (заголовки) и тело
+
         header_df = sheet.iloc[:raw_quantity].copy()
-        # Заполняем в заголовках столбец 'Справочно' значением 'Справочно'
+
         if 'Справочно' not in header_df.columns:
             header_df['Справочно'] = 'Справочно'
         else:
@@ -25,11 +25,10 @@ class NotesProcessor:
 
         body_df = sheet.iloc[7:].copy().reset_index(drop=True)
 
-        # Инициализация столбца 'Справочно' служебным значением в теле
+
         if 'Справочно' not in body_df.columns:
             body_df['Справочно'] = _SERVICE_EMPTY
 
-        # Находим координаты 'Справочно:' только в теле
         coords = [
             (r, c)
             for r in range(body_df.shape[0])
@@ -91,11 +90,9 @@ class NotesProcessor:
         if new_rows:
             new_df = pd.DataFrame(new_rows, columns=body_df.columns)
             combined_body = pd.concat([body_df, new_df], ignore_index=True)
-            # Удаляем строки-метки и пустые
             mask_not_marker = ~combined_body.apply(lambda row: row.astype(str).eq('Справочно:').any(), axis=1)
             mask_label = combined_body[first_col].notna() & (~combined_body[first_col].eq(_SERVICE_EMPTY))
             mask_value = combined_body['Справочно'].notna() & (~combined_body['Справочно'].eq(_SERVICE_EMPTY))
             filtered_body = combined_body.loc[mask_not_marker & (mask_label | mask_value)].reset_index(drop=True)
-            # Объединяем заголовки и тело
             sheet = pd.concat([header_df, filtered_body], ignore_index=True)
         return sheet

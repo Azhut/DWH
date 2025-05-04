@@ -29,7 +29,6 @@ class FlatDataService:
                     "section": record.get("section"),
                     "row": record.get("row"),
                     "column": record.get("column"),
-                    "value": record.get("value")
                 }
                 operations.append(
                     UpdateOne(filter_criteria, {"$setOnInsert": record}, upsert=True)
@@ -45,7 +44,7 @@ class FlatDataService:
     async def delete_by_file_id(self, file_model: FileModel):
         """Удаляет записи FlatData по file_id (или другим критериям)."""
 
-        city= FileModel.city
-        year= FileModel.year
+        city= file_model.city
+        year= file_model.year
         await self.flat_data_repo.delete_many({"city": city, "year": year})
 

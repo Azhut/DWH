@@ -65,24 +65,38 @@ class FilterService:
         return [doc["value"] async for doc in cursor]
 
 
+def _process_data(data: List[Dict]) -> List[List[Union[str, int, float, None]]]:
+    processed_data = []
+    required_fields = ["year", "city", "section", "row", "column"]
 
-
-def _process_data(data: List[Dict]) -> List[List[Union[str, int, float]]]:
-    processed = []
     for item in data:
         row = []
-        for key in ["year", "city", "section", "row", "column", "value"]:
+        for key in required_fields + ["value"]:
             value = item.get(key)
-            if isinstance(value, float):
-                if key == "value":
-                    value = int(value) if value.is_integer() else f"{value:.2f}"
-                else:
-                    value = int(value) if value.is_integer() else value
-            elif isinstance(value, float) and math.isnan(value):
-                value = None
-            row.append(value)
-        processed.append(row)
-    return processed
+
+            if key in required_fields:
+                if value is None or (isinstance(value, float) and math.isnan(value)):
+                    raise ValueError(f"Обязательное поле '{key}' содержит NaN или None")
+
+                if key == "year" and isinstance(value, float):
+                    value = int(value)
+
+                row.append(value)
+                continue
+
+            if key == "value":
+                if isinstance(value, float):
+
+                    if math.isnan(value):
+                        value = 0.0
+
+                    value = int(value) if value.is_integer() else round(value, 2)
+
+                row.append(value)
+
+        processed_data.append(row)
+
+    return processed_data
 
 
 def _map_filter_name(filter_name: str) -> str:
