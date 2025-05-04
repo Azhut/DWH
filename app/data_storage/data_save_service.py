@@ -9,7 +9,6 @@ from app.data_storage.services.flat_data_service import FlatDataService
 from app.core.config import mongo_connection
 from app.data_storage.repositories.logs_repository import LogsRepository
 from app.data_storage.repositories.flat_data_repository import FlatDataRepository
-from fastapi import HTTPException
 import logging
 
 from app.models.file_status import FileStatus
@@ -33,14 +32,12 @@ class DataSaveService:
 
             client = self.flat_data_service.flat_data_repo.collection.database.client
             async with await client.start_session() as session:
-                async with session.start_transaction():
                     await self.save_flat_data(flat_data)
                     file_model.status = FileStatus.SUCCESS
                     await self.save_file(file_model)
                     await self.log_service.save_log(f"Успешно сохранены данные для {file_id}")
                     logger.info(f"Транзакция сохранения данных для {file_id} завершена")
         except Exception as e:
-            await session.abort_transaction()
             file_model.status = FileStatus.FAILED
             await self.save_file(file_model)
             await self.rollback(file_id, file_model, str(e))

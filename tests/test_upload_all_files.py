@@ -1,4 +1,6 @@
 import os
+import time
+
 import requests
 from tqdm import tqdm
 
@@ -8,8 +10,11 @@ def test_send_files_to_server():
     Отправляет все файлы из указанной директории (включая вложенные папки)
     с отображением прогресса выполнения
     """
+    file_objects = []
+    start_time = time.time()  # Начало замера времени
     directory = r"C:\Users\Egor\Desktop\Projects\Min_sport\SPORT files"
-    url = "http://5.165.236.240:2700/api/v2/upload"
+    # url = "http://5.165.236.240:2700/api/v2/upload"
+    url = "http://localhost:2700/api/v2/upload"
     recursive=True
 
     if not os.path.exists(directory):
@@ -83,7 +88,8 @@ def test_send_files_to_server():
         assert 'message' in response.json()
 
     finally:
-
+        elapsed_time = time.time() - start_time
+        print(f"\nОбщее время выполнения: {elapsed_time:.2f} секунд")
         for _, file in file_objects:
             try:
                 file.close()

@@ -109,41 +109,26 @@ class BaseSheetParser:
         """Удаляет переносы строк в заголовках."""
         return [fix_header(h) for h in headers]
 
-    def generate_flat_data(
-            self,
-            year: int,
-            city: str,
-            sheet_name: str
-    ) -> List[Dict[str, Union[str, float]]]:
-        """Генерирует плоскую структуру данных."""
-        flat_data = []
+    def generate_flat_data(self, year: int, city: str, sheet_name: str):
+        city = city.upper().strip()
+        return [
+            {
+                "year": year,
+                "city": city,
+                "section": sheet_name,
+                "row": str(row["row_header"]).strip(),
+                "column": str(col["column_header"]).strip(),
+                "value": self._sanitize_value(row["value"])
+            }
+            for col in self.data
+            for row in col["values"]
+            if row.get("value") != _SERVICE_EMPTY
+        ]
 
-        if not self.data:
-            raise ValueError("Данные не были распаршены")
-
-        for column in self.data:
-            column_header = column.get("column_header", "")
-            values = column.get("values", [])
-
-            for row in values:
-                if row.get("value") == _SERVICE_EMPTY:
-                    continue
-
-                value = row.get("value", 0)
-                if isinstance(value, float) and math.isnan(value):
-                    value = 0
-
-                flat_record = {
-                    "year": year,
-                    "city": city,
-                    "section": sheet_name,
-                    "row": row.get("row_header", ""),
-                    "column": column_header,
-                    "value": value
-                }
-                flat_data.append(flat_record)
-
-        return flat_data
+    def _sanitize_value(self, value):
+        if isinstance(value, float):
+            return round(value, 2) if not value.is_integer() else int(value)
+        return value or 0
 
     def _clean_specific_headers(self, headers: list) -> list:
         """

@@ -6,14 +6,31 @@ class MongoIndexManager:
     def __init__(self, db):
         self.db = db
 
+    # app/data_storage/index_manager.py
+
     async def create_flat_data_index(self):
+        # Основной уникальный индекс
         await self.db.FlatData.create_index([
             ("year", 1),
             ("city", 1),
             ("section", 1),
             ("row", 1),
             ("column", 1)
-        ], unique=True)
+        ], unique=True, name="main_unique_idx", background=True)
+
+        # Индекс для часто используемых фильтров
+        await self.db.FlatData.create_index(
+            [("city", 1), ("year", 1)],
+            name="city_year_idx",
+            background=True
+        )
+
+        # Текстовый индекс для поиска по колонкам
+        await self.db.FlatData.create_index(
+            [("column", "text"), ("row", "text")],
+            name="text_search_idx",
+            background=True
+        )
 
     async def create_file_indexes(self):
         await self.db.Files.create_index("file_id", unique=True)
