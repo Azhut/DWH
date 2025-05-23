@@ -6,7 +6,7 @@ url = "http://5.165.236.240:2700/api/v2/upload"
 def test_file_upload():
 
     files = [
-        ('files', open('data/АЛАПАЕВСК 2020.xls', 'rb')),
+        ('files', open('data/!свод СВЕРДЛОВСКАЯ ОБЛАСТЬ 2019 год ИТОГ.xls', 'rb')),
         # ('files', open('data/ИРБИТ 2023.xls', 'rb')),
     ]
 

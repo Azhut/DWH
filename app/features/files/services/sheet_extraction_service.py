@@ -11,7 +11,7 @@ class SheetExtractionService:
         try:
             file_content = await file.read()
             file_stream = BytesIO(file_content)
-            df_dict = pd.read_excel(file_stream, sheet_name=None)
+            df_dict = pd.read_excel(file_stream, sheet_name=None, dtype=str)
             logger.info(f"Извлечено {len(df_dict)} листов из файла {file.filename}")
             sheets = [{"sheet_name": sheet_name, "data": df} for sheet_name, df in df_dict.items()]
             return sheets
