@@ -20,3 +20,5 @@ class LogService:
             "message": message,
         }
         await self.logs_repo.insert_one(log_doc)
+
+

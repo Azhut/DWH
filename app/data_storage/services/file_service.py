@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from app.core.exception_handler import logger
 from app.data_storage.repositories.file_repository import FileRepository
 from app.models.file_model import FileModel
@@ -12,6 +14,7 @@ class FileService:
         try:
             existing = await self.get_file_by_id(file_model.file_id)
             if existing:
+                file_model.updated_at = datetime.now()
                 await self.file_repo.update_one(
                     {"file_id": file_model.file_id},
                     {"$set": file_model.dict()}
