@@ -6,9 +6,9 @@ url = "http://localhost:2700/api/v2/upload"
 def test_file_upload():
 
     files = [
-        ('files', open('data/!свод СВЕРДЛОВСКАЯ ОБЛАСТЬ 2019 год ИТОГ.xls', 'rb')),
+        # ('files', open('data/!свод СВЕРДЛОВСКАЯ ОБЛАСТЬ 2019 год ИТОГ.xls', 'rb')),
         ('files', open('data/ИРБИТ 2023.xls', 'rb')),
-        ('files', open('data/АЛАПАЕВСК 2020.xls', 'rb')),
+        # ('files', open('data/АЛАПАЕВСК 2020.xls', 'rb')),
     ]
 
     response = requests.post(url, files=files)

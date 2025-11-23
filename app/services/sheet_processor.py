@@ -9,6 +9,7 @@ from app.models.file_status import FileStatus
 from app.data.repositories.file import FileRepository
 from app.core.config import mongo_connection
 from app.models.file_model import FileModel as DomainFileModel
+from app.data.services.data_save import create_data_save_service
 
 class SheetProcessor:
     def __init__(self):
@@ -23,15 +24,20 @@ class SheetProcessor:
             # Проверка дублей по filename (если нужно — можно менять логику)
             if not await is_file_unique(file.filename):
                 msg = f"Файл '{file.filename}' уже был загружен."
-                raise HTTPException(400, msg)
+                raise HTTPException(status_code=400, detail=msg)
 
             sheets = await self.sheet_extractor.extract(file)
             sheet_models, flat_data = await self._process_sheets(file_model.file_id, sheets, file_model.city, file_model.year)
             logger.info(f"Успешно обработано {len(sheets)} листов файла {file.filename}")
 
-            # Проставляем file_id в каждой flat записи
+            # Проставляем file_id в каждой flat записи (если ещё не проставлен)
             for rec in flat_data:
-                rec["file_id"] = file_model.file_id
+                if "file_id" not in rec or not rec.get("file_id"):
+                    rec["file_id"] = file_model.file_id
+            # после формирования flat_data
+            for rec in flat_data:
+                if "file_id" not in rec or not rec.get("file_id"):
+                    rec["file_id"] = file_model.file_id
 
             return sheet_models, flat_data
         except HTTPException:
@@ -50,7 +56,17 @@ class SheetProcessor:
                 parser = get_sheet_parser(name)
                 parsed_data = parser.parse(sheet["data"])
                 flat_data = parser.generate_flat_data(year, city, name)
+                # Диагностика: лог количества сгенерированных flat-строк
+                if flat_data:
+                    logger.info("SheetProcessor: sheet '%s' сгенерировал %d flat записей (file_id=%s)", name,
+                                len(flat_data), file_id)
+                    # лог первых 3 записей (чтобы не захламлять)
+                    for sample in flat_data[:3]:
+                        logger.debug("SheetProcessor sample flat: %s", sample)
+                else:
+                    logger.warning("SheetProcessor: sheet '%s' сгенерировал 0 flat записей (file_id=%s)", name, file_id)
                 all_flat_data.extend(flat_data)
+
                 sheet_model = SheetModel(
                     file_id=file_id,
                     sheet_name=name,
@@ -69,10 +85,9 @@ class SheetProcessor:
         msg = (f"Ошибка обработки раздела {sheet.get('sheet_name')}: {error}. "
                "Убедитесь в корректности структуры файла.")
         logger.error(msg, exc_info=True)
-        # логируем в отдельный сервис
-        from app.data.services.data_save import create_data_save_service
-        await create_data_save_service().log_service.save_log(msg, level="error")
-        raise HTTPException(400, msg)
+        # Записываем лог об ошибке
+        await create_data_save_service().save_logs(msg, level="error")
+        raise HTTPException(status_code=400, detail=msg)
 
 
 async def is_file_unique(filename: str) -> bool:
@@ -85,5 +100,4 @@ async def is_file_unique(filename: str) -> bool:
     existing = await repo.find_by_filename(filename)
     if not existing:
         return True
-    # Если есть и статус SUCCESS — дубликат; иначе можно перезаписать/продолжить в зависимости от политики
     return existing.get("status") != FileStatus.SUCCESS.value
