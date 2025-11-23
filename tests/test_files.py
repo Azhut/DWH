@@ -2,8 +2,8 @@ import requests
 import pytest
 from datetime import datetime
 
-# BASE_URL = "http://localhost:2700/api/v2/files" # Измененный URL!
-BASE_URL = "http://5.165.236.240:2700/api/v2/files" # Измененный URL!
+BASE_URL = "http://localhost:2700/api/v2/files" # Измененный URL!
+# BASE_URL = "http://5.165.236.240:2700/api/v2/files" # Измененный URL!
 
 
 def print_response(response):

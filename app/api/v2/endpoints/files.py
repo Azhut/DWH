@@ -1,53 +1,49 @@
-from typing import Optional
-
-from fastapi import APIRouter, HTTPException, Query
+from typing import List, Optional
+from fastapi import APIRouter, HTTPException, Query, Depends
+from app.data.services.data_delete import DataDeleteService
+from app.api.v2.schemas.files import FileListResponse, DeleteFileResponse
 from app.core.config import mongo_connection
-from app.data_storage.repositories.logs_repository import LogsRepository
-from app.data_storage.services.log_service import LogService
 
 router = APIRouter()
-log_service = LogService(LogsRepository(mongo_connection.get_database().get_collection("Logs")))
 
-@router.get("/files")
+
+@router.get("/files", response_model=List[FileListResponse])
 async def list_files(
     limit: int = Query(100, ge=0),
     offset: int = Query(0, ge=0),
-    year: Optional[int] = None  # Добавить параметр
+    year: Optional[int] = None
 ):
     try:
         db = mongo_connection.get_database()
-        query = {} if year is None else {"year": year}  # Фильтрация по году
-        cursor = db.get_collection("Files").find(query).skip(offset).limit(limit)
+        files_col = db.get_collection("Files")
+        query = {} if year is None else {"year": year}
+        cursor = files_col.find(query).skip(offset).limit(limit)
         docs = await cursor.to_list(length=None)
-        return [
-            {
-                "filename": doc["filename"],
-                "status": doc["status"],
-                "error": doc.get("error", ""),
-                "upload_timestamp": doc["upload_timestamp"],
-                "updated_at": doc.get("updated_at", doc["upload_timestamp"]),
-                "year": doc.get("year")  # Добавить поле year в ответ
-            }
-            for doc in docs
-        ]
+        result = []
+        for doc in docs:
+            result.append(FileListResponse(
+                file_id=doc.get("file_id"),
+                filename=doc.get("filename"),
+                status=doc.get("status"),
+                error=doc.get("error"),
+                upload_timestamp=doc.get("upload_timestamp"),
+                updated_at=doc.get("updated_at", doc.get("upload_timestamp")),
+                year=doc.get("year")
+            ))
+        return result
     except Exception as e:
-        raise HTTPException(500, str(e) + "... Обратитесь к разработчикам")
+        raise HTTPException(500, f"{str(e)}... Обратитесь к разработчикам")
 
 
-@router.delete("/files/{file_id}")
-async def delete_file_record(file_id: str):
-    db = mongo_connection.get_database()
-    files_col = db.get_collection("Files")
+@router.delete("/files/{file_id}", response_model=DeleteFileResponse)
+async def delete_file_record(
+    file_id: str,
+    delete_service: DataDeleteService = Depends(DataDeleteService)
+):
     try:
-        result = await files_col.delete_one({"file_id": file_id})
-        if result.deleted_count == 0:
-            raise HTTPException(404, f"Файл '{file_id}' не найден")
-
-        await log_service.save_log(f"Удален файл {file_id}", level="info")
-        return {"detail": f"Запись файла '{file_id}' успешно удалена"}
+        await delete_service.delete_file(file_id)
+        return DeleteFileResponse(detail=f"Запись файла '{file_id}' успешно удалена")
     except HTTPException:
         raise
     except Exception as e:
-
-        await log_service.save_log(f"Ошибка удаления файла: {file_id}: {e}", level="error")
-        raise HTTPException(500, str(e) + "... Обратитесь к разработчикам")
+        raise HTTPException(500, f"{str(e)}... Обратитесь к разработчикам")

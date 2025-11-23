@@ -1,7 +1,18 @@
 from typing import List, Optional
-
+from datetime import datetime
 from pydantic import BaseModel
 
+class FileListResponse(BaseModel):
+    file_id: str
+    filename: str
+    status: str
+    error: Optional[str] = None
+    upload_timestamp: datetime
+    updated_at: datetime
+    year: Optional[int] = None
+
+class DeleteFileResponse(BaseModel):
+    detail: str
 
 class FileResponse(BaseModel):
     filename: str

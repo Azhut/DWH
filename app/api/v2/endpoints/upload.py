@@ -3,8 +3,8 @@ from typing import List
 from fastapi import APIRouter, UploadFile, File, Depends
 
 from app.api.v2.schemas.files import UploadResponse
-from app.core.exception_handler import log_and_raise_http
-from app.features.files.services.ingestion_service import IngestionService
+from app.core.exceptions import log_and_raise_http
+from app.services.ingestion_service import IngestionService
 
 router = APIRouter()
 

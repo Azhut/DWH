@@ -13,8 +13,8 @@ def test_send_files_to_server():
     file_objects = []
     start_time = time.time()  # Начало замера времени
     directory = r"C:\Users\Egor\Desktop\Projects\Min_sport\SPORT files"
-    url = "http://5.165.236.240:2700/api/v2/upload"
-    # url = "http://localhost:2700/api/v2/upload"
+    # url = "http://5.165.236.240:2700/api/v2/upload"
+    url = "http://localhost:2700/api/v2/upload"
     recursive=True
 
     if not os.path.exists(directory):
