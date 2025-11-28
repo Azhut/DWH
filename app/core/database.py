@@ -1,22 +1,10 @@
-from pathlib import Path
-
-from pydantic_settings import BaseSettings
 from motor.motor_asyncio import AsyncIOMotorClient
 
-
-class Settings(BaseSettings):
-    # DATABASE_URI: str = "mongodb://mongo:27017"
-    DATABASE_URI: str = "mongodb://localhost:27017"
-    DATABASE_NAME: str = "sport_data"
-    MANUAL_MAP_PATH: Path = Path("app/utils/manual_map.json")
-
-
-settings = Settings()
+from config import config
 
 
 class DatabaseConnection:
     def __init__(self, db_uri: str, db_name: str):
-        # оставить retryWrites=False как в проекте, но схема обязательна
         self.client = AsyncIOMotorClient(
             db_uri,
             maxPoolSize=100,
@@ -32,5 +20,7 @@ class DatabaseConnection:
     def get_database(self):
         return self.db
 
+    async def close(self):
+        self.client.close()
 
-mongo_connection = DatabaseConnection(settings.DATABASE_URI, settings.DATABASE_NAME)
+mongo_connection = DatabaseConnection(config.DATABASE_URI, config.DATABASE_NAME)

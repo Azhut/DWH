@@ -7,7 +7,7 @@ from app.services.sheet_extraction_service import SheetExtractionService
 from app.models.sheet_model import SheetModel
 from app.models.file_status import FileStatus
 from app.data.repositories.file import FileRepository
-from app.core.config import mongo_connection
+from app.core.database import mongo_connection
 from app.models.file_model import FileModel as DomainFileModel
 from app.data.services.data_save import create_data_save_service
 

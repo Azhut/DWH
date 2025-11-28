@@ -6,7 +6,10 @@ from io import TextIOWrapper
 
 from pymorphy3 import MorphAnalyzer
 
-from app.core.config import settings
+from config import config
+
+# Импортируем из новой системы конфигурации
+
 
 logging.getLogger("pymorphy3").setLevel(logging.WARNING)
 logging.getLogger("pymorphy3_dicts_ru").setLevel(logging.WARNING)
@@ -16,11 +19,12 @@ class HeaderFixer:
     Класс для удаления переносов '\n' в заголовках с учетом морфологии
     и ручного маппинга с автоматическим сохранением новых кейсов.
     """
-    DEFAULT_MAP_FILE = settings.MANUAL_MAP_PATH
+    # Используем launcher из новой системы
+    DEFAULT_MAP_FILE = config.MANUAL_MAP_PATH
 
     def __init__(self, map_file: str = None):
         self.morph = MorphAnalyzer()
-        self.map_file = Path(map_file) if map_file else settings.MANUAL_MAP_PATH
+        self.map_file = Path(map_file) if map_file else config.MANUAL_MAP_PATH
         self.manual_map = self._load_manual_map()
         self._new_cases: dict[str, str] = {}
 
@@ -85,16 +89,13 @@ class HeaderFixer:
 
 _fixer = HeaderFixer()
 
-
 def fix_header(text: str) -> str:
     """
     Убирает переносы строк в заголовке
     с учётом морфологии и ручного маппинга
     """
-
-    result=_fixer.fix(text)
+    result = _fixer.fix(text)
     return result
-
 
 def finalize_header_fixing():
     """

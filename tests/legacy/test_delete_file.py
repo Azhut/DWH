@@ -4,7 +4,7 @@ from pymongo import MongoClient
 # URL твоего API
 BASE_URL = "http://localhost:2700/api/v2/files"
 
-# Настройки MongoDB (как у тебя в config)
+# Настройки MongoDB (как у тебя в launcher)
 MONGO_URI = "mongodb://localhost:27017"
 DB_NAME = "sport_data"
 
