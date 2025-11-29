@@ -1,22 +1,18 @@
-import os
-
-import uvicorn
+# main.py
 from fastapi import FastAPI
-from starlette.middleware.cors import CORSMiddleware
+from config.config import config
+from launcher import get_launcher
 
 from app.api.v2.endpoints.upload import router as upload_router
 from app.api.v2.endpoints.filters import router as filters_router
 from app.api.v2.endpoints.files import router as files_router
-from config import config
-from launcher import get_launcher
-
+from starlette.middleware.cors import CORSMiddleware
 
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Document Processing API",
-        description="API для загрузки и обработки Excel-файлов",
         version="2.0.0",
-        debug=config.DEBUG
+        debug=(config.APP_ENV == "development")
     )
 
     app.add_middleware(
@@ -33,28 +29,19 @@ def create_app() -> FastAPI:
 
     return app
 
-
-# Создаем приложение
 app = create_app()
 
+
 if __name__ == "__main__":
-    # Убедимся что мы в правильной директории
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
-    # Получаем соответствующий лаунчер
     launcher = get_launcher(config.APP_ENV)
-
-    # Запускаем проверки
     launcher.run_checks()
-
-    # Выводим информацию о запуске
     launcher.print_startup_info()
 
-    # Запускаем сервер
+    import uvicorn
     uvicorn.run(
         "main:app",
         host=config.API_HOST,
         port=config.API_PORT,
-        reload=config.DEBUG,
-        log_level="debug" if config.DEBUG else "info"
+        reload=(config.APP_ENV == "development"),
+        log_level="debug" if config.APP_ENV == "development" else "info"
     )

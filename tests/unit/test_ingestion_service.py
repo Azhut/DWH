@@ -1,10 +1,10 @@
 import pytest
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
+from unittest.mock import Mock, AsyncMock, patch
 from fastapi import UploadFile, HTTPException
 
 from app.services.ingestion_service import IngestionService
 from app.models.file_status import FileStatus
-from app.models.file_model import FileModel
+
 
 
 class TestIngestionService:

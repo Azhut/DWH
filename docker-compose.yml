@@ -1,16 +1,25 @@
 version: '3.8'
+
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: sport_api
     ports:
-      - "2700:2700" 
+      - "2700:2700"
     environment:
-      - PORT=2700
-      - MONGO_URI=mongodb://mongo:27017/mydatabase
+      APP_ENV: "production"
+      MONGO_URI: "mongodb://mongo:27017"
+      DATABASE_NAME: "sport_data"
+      API_HOST: "0.0.0.0"
+      API_PORT: 2700
+      DEBUG: "False"
     depends_on:
       - mongo
+    restart: always
+
+
 
   mongo:
     image: mongo:5.0
@@ -19,6 +28,12 @@ services:
       - "2701:27017"
     volumes:
       - mongodb_data:/data/db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   mongodb_data:

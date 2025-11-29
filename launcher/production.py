@@ -9,7 +9,7 @@ class ProductionLauncher(ApplicationLauncher):
 
     def run_checks(self):
         """Минимальные проверки для продакшна"""
-        print("🏭 Запуск в продакшн режиме")
+        print("Запуск в продакшн режиме")
         self._run_critical_checks()
 
     def print_startup_info(self):
