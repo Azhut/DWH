@@ -6,6 +6,8 @@ from app.core.database import mongo_connection
 
 router = APIRouter()
 
+def get_data_delete_service() -> DataDeleteService:
+    return DataDeleteService()
 
 @router.get("/files", response_model=List[FileListResponse])
 async def list_files(
@@ -38,10 +40,10 @@ async def list_files(
 @router.delete("/files/{file_id}", response_model=DeleteFileResponse)
 async def delete_file_record(
     file_id: str,
-    delete_service: DataDeleteService = Depends(DataDeleteService)
+    svc: DataDeleteService = Depends(get_data_delete_service)
 ):
     try:
-        await delete_service.delete_file(file_id)
+        await svc.delete_file(file_id)
         return DeleteFileResponse(detail=f"Запись файла '{file_id}' успешно удалена")
     except HTTPException:
         raise

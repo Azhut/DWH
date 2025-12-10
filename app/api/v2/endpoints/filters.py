@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from app.api.v2.models.filters import (
     FilterValuesRequest,
@@ -11,6 +11,9 @@ from app.core.exceptions import log_and_raise_http
 from app.data.services.data_retrieval import create_data_retrieval_service
 
 router = APIRouter()
+
+def get_data_retrieval_service():
+    return create_data_retrieval_service()
 
 @router.get("/filters-names", response_model=FiltersNamesResponse)
 async def get_filters_names():
@@ -30,7 +33,8 @@ async def get_filters_names():
     return {"filters": ["год", "город", "раздел", "строка", "колонка"]}
 
 @router.post("/filter-values", response_model=FilterValuesResponse)
-async def get_filter_values(request: FilterValuesRequest):
+async def get_filter_values(request: FilterValuesRequest,
+                            svc=Depends(get_data_retrieval_service)):
     """
     Возвращает доступные значения для указанного фильтра с учётом других фильтров и шаблона поиска.
 
@@ -64,10 +68,9 @@ async def get_filter_values(request: FilterValuesRequest):
     - `200 OK`: Успешный запрос.
     - `500 Internal Server Error`: Ошибка сервера.
     """
-    service = create_data_retrieval_service()
     try:
         filters_list = [item.model_dump(by_alias=True) for item in request.filters]
-        values = await service.get_filter_values(
+        values = await svc.get_filter_values(
             request.filter_name,
             filters_list,
             request.pattern or ""
@@ -76,8 +79,10 @@ async def get_filter_values(request: FilterValuesRequest):
     except Exception as e:
         log_and_raise_http(500, "Ошибка при получении значений фильтра", e)
 
+
 @router.post("/filtered-data", response_model=FilteredDataResponse)
-async def get_filtered_data(payload: FilteredDataRequest):
+async def get_filtered_data(payload: FilteredDataRequest,
+                            svc=Depends(get_data_retrieval_service)):
     """
     Возвращает данные, отфильтрованные по указанным параметрам.
 
@@ -118,10 +123,9 @@ async def get_filtered_data(payload: FilteredDataRequest):
     - `200 OK`: Успешный запрос.
     - `500 Internal Server Error`: Ошибка сервера.
     """
-    service = create_data_retrieval_service()
     try:
         filters_list = [item.model_dump(by_alias=True) for item in payload.filters]
-        data, total = await service.get_filtered_data(
+        data, total = await svc.get_filtered_data(
             filters_list,
             payload.limit,
             payload.offset

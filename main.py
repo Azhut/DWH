@@ -1,4 +1,3 @@
-# main.py
 from fastapi import FastAPI
 from config.config import config
 from launcher import get_launcher
@@ -26,11 +25,9 @@ def create_app() -> FastAPI:
     app.include_router(upload_router, prefix="/api/v2", tags=["upload"])
     app.include_router(filters_router, prefix="/api/v2", tags=["filters"])
     app.include_router(files_router, prefix="/api/v2", tags=["files"])
-
     return app
 
 app = create_app()
-
 
 if __name__ == "__main__":
     launcher = get_launcher(config.APP_ENV)

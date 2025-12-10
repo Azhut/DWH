@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from uuid import uuid4
 
@@ -7,8 +7,8 @@ from app.models.file_status import FileStatus
 
 
 class FileModel(BaseModel):
-    file_id: str                                                # UUID
-    filename: str                                               # Оригинальное имя
+    file_id: str
+    filename: str
     year: Optional[int] = None
     city: Optional[str] = None
     status: FileStatus = FileStatus.PROCESSING
@@ -17,6 +17,7 @@ class FileModel(BaseModel):
     sheets: List[str] = []
     size: int = 0
     updated_at: datetime = Field(default_factory=datetime.now)
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @classmethod
     def create_new(cls, filename: str, year: Optional[int] = None, city: Optional[str] = None) -> "FileModel":

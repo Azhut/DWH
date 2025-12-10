@@ -1,6 +1,5 @@
 from typing import List, Dict, Optional, Union
-
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, ConfigDict
 
 
 class SheetModel(BaseModel):
@@ -12,7 +11,9 @@ class SheetModel(BaseModel):
     headers: Dict[str, List[str]]
     data: List[Dict[str, Union[str, List[Dict[str, Optional[Union[str, float]]]]]]]
 
-    @root_validator(pre=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @classmethod
     def convert_column_header_to_list(cls, values):
 
         if 'data' in values:

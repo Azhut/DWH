@@ -1,6 +1,5 @@
 from typing import List, Union, Optional
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class FilterItem(BaseModel):
@@ -18,15 +17,12 @@ class FilterValuesRequest(BaseModel):
     filters: List[FilterItem] = Field(default=[], description="Список других фильтров и их значений для контекстного поиска.")
     pattern: Optional[str] = Field(None, description="Шаблон для поиска значений фильтра.")
 
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 class FilterValuesResponse(BaseModel):
     filter_name: str = Field(..., alias="filter-name", description="Название фильтра, для которого возвращены значения.")
     values: List[Union[str, int, float]] = Field(..., description="Список доступных значений для указанного фильтра.")
-
-    class Config:
-        populate_by_name = True
+    model_config = ConfigDict(populate_by_name=True)
 
 class FiltersNamesResponse(BaseModel):
     filters: List[str] = Field(..., description="Список доступных фильтров, например, ['год', 'город', 'раздел'].")
