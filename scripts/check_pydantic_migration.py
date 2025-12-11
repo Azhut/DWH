@@ -1,10 +1,8 @@
-# check_pydantic_migration.py
 import pydantic
 
 print(f"Pydantic version: {pydantic.__version__}")
 
 
-# Проверяем старый синтаксис
 class OldModel(pydantic.BaseModel):
     name: str
 
@@ -12,7 +10,6 @@ class OldModel(pydantic.BaseModel):
         extra = "ignore"
 
 
-# Проверяем новый синтаксис
 try:
     from pydantic import ConfigDict
 

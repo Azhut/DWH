@@ -1,9 +1,8 @@
-# config/config.py
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 
 class Settings(BaseSettings):
-    APP_ENV: str = "development"
+    APP_ENV: str
     MONGO_URI: str
     DATABASE_NAME: str
     API_HOST: str
