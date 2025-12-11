@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Query, Depends
 from app.data.services.data_delete import DataDeleteService
 from app.api.v2.schemas.files import FileListResponse, DeleteFileResponse
 from app.core.database import mongo_connection
-from app.core.container import get_data_delete_service
+from app.core.dependencies import get_data_delete_service
 
 router = APIRouter()
 

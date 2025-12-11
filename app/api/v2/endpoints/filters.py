@@ -7,7 +7,7 @@ from app.api.v2.schemas.filters import (
     FilteredDataResponse
 )
 from app.core.exceptions import log_and_raise_http
-from app.core.container import get_data_retrieval_service
+from app.core.dependencies import get_data_retrieval_service
 
 
 router = APIRouter()

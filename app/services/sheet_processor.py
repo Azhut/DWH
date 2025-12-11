@@ -1,7 +1,5 @@
 from typing import List, Tuple
 from fastapi import HTTPException, UploadFile
-
-from app.core.container import get_data_save_service
 from app.core.exceptions import log_and_raise_http
 from app.core.logger import logger
 from app.parsers.parsers import get_sheet_parser
@@ -11,7 +9,6 @@ from app.models.file_status import FileStatus
 from app.data.repositories.file import FileRepository
 from app.core.database import mongo_connection
 from app.models.file_model import FileModel as DomainFileModel
-
 
 class SheetProcessor:
     def __init__(self):
@@ -80,16 +77,12 @@ class SheetProcessor:
                 )
                 sheet_models.append(sheet_model)
             except Exception as e:
-                await self._handle_processing_error(sheet, e)
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Ошибка обработки раздела {name}: {str(e)}. Убедитесь в корректности структуры файла."
+                )
         return sheet_models, all_flat_data
 
-    async def _handle_processing_error(self, sheet, error):
-        msg = (f"Ошибка обработки раздела {sheet.get('sheet_name')}: {error}. "
-               "Убедитесь в корректности структуры файла.")
-        logger.error(msg, exc_info=True)
-        # Записываем лог об ошибке
-        await get_data_save_service().log_service.save_log(msg, level="error")
-        raise HTTPException(status_code=400, detail=msg)
 
 
 async def is_file_unique(filename: str) -> bool:
