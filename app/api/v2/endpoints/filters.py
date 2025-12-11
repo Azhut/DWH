@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.api.v2.models.filters import (
+from app.api.v2.schemas.filters import (
     FilterValuesRequest,
     FilterValuesResponse,
     FiltersNamesResponse,
