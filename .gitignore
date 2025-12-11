@@ -5,6 +5,7 @@ data/
 app/parsers/tester.py
 profile_stats
 tests/client/
+scripts
 
 
 # Ignore Docker-related files
