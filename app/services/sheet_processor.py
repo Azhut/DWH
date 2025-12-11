@@ -1,4 +1,6 @@
 from typing import List, Tuple
+
+import pandas as pd
 from fastapi import HTTPException, UploadFile
 from app.core.exceptions import log_and_raise_http
 from app.core.logger import logger
@@ -52,6 +54,10 @@ class SheetProcessor:
             if name in ('Раздел0', 'Лист1'):
                 continue
             try:
+                pd.set_option('display.max_columns', None)
+                pd.set_option('display.width', None)
+                pd.set_option('display.max_colwidth', None)
+                print(sheet['data'].head(15))
                 parser = get_sheet_parser(name)
                 parsed_data = parser.parse(sheet["data"])
                 flat_data = parser.generate_flat_data(year, city, name)

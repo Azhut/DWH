@@ -50,7 +50,8 @@ class HeaderFixer:
     def fix(self, text: str) -> str:
         if text in self.manual_map and self.manual_map[text] not in ('join', 'space'):
             return self.manual_map[text]
-        parts = text.split('\n')
+
+        parts = str(text).split('\n')
         if not parts:
             return ''
         result = [parts[0]]
