@@ -34,6 +34,7 @@ if __name__ == "__main__":
     launcher.run_checks()
     launcher.print_startup_info()
 
+
     import uvicorn
     uvicorn.run(
         "main:app",

@@ -1,33 +1,30 @@
+"""
+Модуль зависимостей - использует единый контейнер для всех зависимостей
+"""
+from .container import (
+    get_file_repository,
+    get_flat_data_repository,
+    get_logs_repository,
+    get_log_service,
+    get_flat_data_service,
+    get_file_service,
+    get_filter_service,
+    get_data_retrieval_service,
+    get_data_save_service,
+    get_data_delete_service
+)
+from .service_factory import get_ingestion_service
 
-from app.core.database import mongo_connection
-from app.data.repositories.file import FileRepository
-from app.data.repositories.flat_data import FlatDataRepository
-from app.data.repositories.logs import LogsRepository
-from app.data.services.log_service import LogService
-from app.data.services.flat_data_service import FlatDataService
-from app.data.services.file_service import FileService
-
-def get_db():
-    """Возвращаем текущую DB (в тестах можно патчить mongo_connection.get_database)."""
-    return mongo_connection.get_database()
-
-def get_file_repo():
-    db = get_db()
-    return FileRepository(db.get_collection("Files"))
-
-def get_flat_repo():
-    db = get_db()
-    return FlatDataRepository(db.get_collection("FlatData"))
-
-def get_logs_repo():
-    db = get_db()
-    return LogsRepository(db.get_collection("Logs"))
-
-def get_log_service():
-    return LogService(get_logs_repo())
-
-def get_flat_data_service():
-    return FlatDataService(get_flat_repo())
-
-def get_file_service():
-    return FileService(get_file_repo())
+__all__ = [
+    "get_file_repository",
+    "get_flat_data_repository",
+    "get_logs_repository",
+    "get_log_service",
+    "get_flat_data_service",
+    "get_file_service",
+    "get_filter_service",
+    "get_data_retrieval_service",
+    "get_data_save_service",
+    "get_data_delete_service",
+    "get_ingestion_service"
+]

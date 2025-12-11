@@ -1,5 +1,7 @@
 from typing import List, Tuple
 from fastapi import HTTPException, UploadFile
+
+from app.core.container import get_data_save_service
 from app.core.exceptions import log_and_raise_http
 from app.core.logger import logger
 from app.parsers.parsers import get_sheet_parser
@@ -9,7 +11,7 @@ from app.models.file_status import FileStatus
 from app.data.repositories.file import FileRepository
 from app.core.database import mongo_connection
 from app.models.file_model import FileModel as DomainFileModel
-from app.data.services.data_save import create_data_save_service
+
 
 class SheetProcessor:
     def __init__(self):
@@ -86,7 +88,7 @@ class SheetProcessor:
                "Убедитесь в корректности структуры файла.")
         logger.error(msg, exc_info=True)
         # Записываем лог об ошибке
-        await create_data_save_service().save_logs(msg, level="error")
+        await get_data_save_service().log_service.save_log(msg, level="error")
         raise HTTPException(status_code=400, detail=msg)
 
 

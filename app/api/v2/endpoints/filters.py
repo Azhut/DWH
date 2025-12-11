@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends
-
 from app.api.v2.schemas.filters import (
     FilterValuesRequest,
     FilterValuesResponse,
@@ -8,12 +7,10 @@ from app.api.v2.schemas.filters import (
     FilteredDataResponse
 )
 from app.core.exceptions import log_and_raise_http
-from app.data.services.data_retrieval import create_data_retrieval_service
+from app.core.container import get_data_retrieval_service
+
 
 router = APIRouter()
-
-def get_data_retrieval_service():
-    return create_data_retrieval_service()
 
 @router.get("/filters-names", response_model=FiltersNamesResponse)
 async def get_filters_names():

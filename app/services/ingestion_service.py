@@ -5,14 +5,20 @@ from app.services.file_processor import FileProcessor
 from app.services.sheet_processor import SheetProcessor
 from app.models.file_model import FileModel
 from app.models.file_status import FileStatus
-from app.data.services.data_save import create_data_save_service
+from app.data.services.data_save import DataSaveService
 from app.core.logger import logger
 
+
 class IngestionService:
-    def __init__(self):
-        self.file_processor = FileProcessor()
-        self.sheet_processor = SheetProcessor()
-        self.data_service = create_data_save_service()
+    def __init__(
+            self,
+            file_processor: FileProcessor,
+            sheet_processor: SheetProcessor,
+            data_save_service: DataSaveService
+    ):
+        self.file_processor = file_processor
+        self.sheet_processor = sheet_processor
+        self.data_service = data_save_service
 
     async def process_files(self, files: List[UploadFile]) -> UploadResponse:
         file_responses = []

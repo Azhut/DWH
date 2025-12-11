@@ -2,18 +2,12 @@ from typing import List
 from fastapi import APIRouter, UploadFile, File, Depends
 from app.api.v2.schemas.files import UploadResponse
 from app.core.exceptions import log_and_raise_http
-from app.services.ingestion_service import IngestionService
 from prometheus_client import Counter
-
+from app.core.service_factory import get_ingestion_service
+from app.services.ingestion_service import IngestionService
 router = APIRouter()
 FILE_PROCESSED = Counter('files_processed', 'Total processed files')
 
-def get_ingestion_service() -> IngestionService:
-    """
-    Фабрика зависимости — возвращает текущую реализацию сервиса.
-    Тесты могут переопределять именно эту функцию через app.dependency_overrides
-    """
-    return IngestionService()
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_files(
