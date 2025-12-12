@@ -4,11 +4,11 @@ import pandas as pd
 from fastapi import HTTPException, UploadFile
 from app.core.exceptions import log_and_raise_http
 from app.core.logger import logger
+from app.data.repositories import FileRepository
 from app.parsers.parsers import get_sheet_parser
 from app.services.sheet_extraction_service import SheetExtractionService
 from app.models.sheet_model import SheetModel
 from app.models.file_status import FileStatus
-from app.data.repositories.file import FileRepository
 from app.core.database import mongo_connection
 from app.models.file_model import FileModel as DomainFileModel
 

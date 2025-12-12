@@ -3,12 +3,11 @@
 Используем functools.lru_cache для синглтонов в рамках приложения.
 """
 from functools import lru_cache
-from typing import Generator
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.core.database import mongo_connection
-from app.data.repositories.file import FileRepository
+from app.data.repositories import FileRepository
 from app.data.repositories.flat_data import FlatDataRepository
 from app.data.repositories.logs import LogsRepository
 from app.data.services.data_delete import DataDeleteService
