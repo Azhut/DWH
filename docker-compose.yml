@@ -17,7 +17,7 @@ services:
       DEBUG: "False"
     depends_on:
       - mongo
-    restart: always
+    restart: unless-stopped
 
 
 
