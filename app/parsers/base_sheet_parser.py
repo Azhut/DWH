@@ -1,5 +1,5 @@
 import math
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Optional, Any
 
 import pandas as pd
 
@@ -7,12 +7,17 @@ from app.parsers.header_fixer import fix_header, finalize_header_fixing
 from app.parsers.notes_processor import NotesProcessor, _SERVICE_EMPTY
 
 
+
 class BaseSheetParser:
     """
     Базовый класс для парсинга данных с листов Excel.
     """
 
-    def __init__(self, header_row_range, vertical_header_col, start_data_row):
+    def __init__(self, header_row_range=(1, 4), vertical_header_col=0, start_data_row=4):
+        self.header_row_range = header_row_range
+        self.vertical_header_col = vertical_header_col
+        self.start_data_row = start_data_row
+        self.data = []
         """
         Инициализация парсера с конкретными параметрами.
 
@@ -20,10 +25,8 @@ class BaseSheetParser:
         :param vertical_header_col: Индекс колонки для вертикальных заголовков
         :param start_data_row: Строка, с которой начинаются данные
         """
-        self.header_row_range = header_row_range
-        self.vertical_header_col = vertical_header_col
-        self.start_data_row = start_data_row
-        self.data = None
+
+
 
     def parse_headers(self, sheet: pd.DataFrame):
         """Парсит заголовки с листа."""
@@ -95,6 +98,7 @@ class BaseSheetParser:
         """Основной метод парсинга."""
 
         sheet = NotesProcessor.process_notes(sheet, raw_quantity=self.header_row_range[1])
+
         horizontal_headers, vertical_headers = self.parse_headers(sheet)
         self.data = self.create_data(sheet, horizontal_headers, vertical_headers)
         return {
@@ -113,9 +117,10 @@ class BaseSheetParser:
             self,
             year: int,
             city: str,
-            sheet_name: str
-    ) -> List[Dict[str, Union[str, float]]]:
-        """Генерирует плоскую структуру данных."""
+            sheet_name: str,
+            form_id: Optional[str] = None
+    ) -> List[Dict[str, Union[str, float, Any]]]:
+        """Генерирует плоскую структуру данных; добавляет поле 'form' если передано"""
         flat_data = []
 
         if not self.data:
@@ -139,7 +144,8 @@ class BaseSheetParser:
                     "section": sheet_name,
                     "row": row.get("row_header", ""),
                     "column": column_header,
-                    "value": value
+                    "value": value,
+                    "form": form_id  # новое поле
                 }
                 flat_data.append(flat_record)
 

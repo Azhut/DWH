@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import HTTPException, UploadFile
 from app.api.v2.schemas.files import UploadResponse, FileResponse
 from app.services.file_processor import FileProcessor
@@ -20,7 +20,17 @@ class IngestionService:
         self.sheet_processor = sheet_processor
         self.data_service = data_save_service
 
-    async def process_files(self, files: List[UploadFile]) -> UploadResponse:
+    async def process_files(
+            self,
+            files: List[UploadFile],
+            form_id: str,
+            skip_sheets: Optional[List[int]] = None,
+            spravochno_keywords: Optional[List[str]] = None
+    ) -> UploadResponse:
+        """
+        form_id: обязательный идентификатор формы (строка), передаётся фронтендом
+        skip_sheets, spravochno_keywords: опциональные переопределения от клиента
+        """
         file_responses = []
         for file in files:
             metadata = None
@@ -35,7 +45,13 @@ class IngestionService:
 
                 # читаем и обрабатываем листы
                 await file.seek(0)
-                sheet_models, flat_data = await self.sheet_processor.extract_and_process_sheets(file, file_model)
+                sheet_models, flat_data = await self.sheet_processor.extract_and_process_sheets(
+                    file,
+                    file_model,
+                    form_id=form_id,
+                    skip_sheets=skip_sheets,
+                    spravochno_keywords=spravochno_keywords
+                )
 
                 # обновляем поля файла (size, sheets)
                 file_model.size = len(sheet_models) if sheet_models else 0
@@ -63,7 +79,7 @@ class IngestionService:
                 file_responses.append(FileResponse(filename=file.filename, status=FileStatus.FAILED.value, error=err_msg))
             except Exception as e:
                 # Непредвиденная ошибка
-                logger.exception("Непредвиденная ошибка при обработке файла")
+                logger.exception("Непредвиданная ошибка при обработке файла")
                 err_msg = str(e)
                 temp_id = file.filename
                 stub = FileModel.create_stub(
@@ -78,8 +94,7 @@ class IngestionService:
                 except Exception:
                     logger.exception("Не удалось сохранить stub запись файла")
                 file_responses.append(FileResponse(filename=file.filename, status=FileStatus.FAILED.value, error=err_msg))
-
-        # формируем итоговую структуру
-        success_count = sum(1 for resp in file_responses if resp.status == FileStatus.SUCCESS.value)
-        failure_count = len(file_responses) - success_count
-        return UploadResponse(message=f"{success_count} files processed successfully, {failure_count} failed.", details=file_responses)
+        return UploadResponse(
+            message=f"{len([r for r in file_responses if r.status==FileStatus.SUCCESS.value])} files processed successfully, {len([r for r in file_responses if r.status==FileStatus.FAILED.value])} failed.",
+            details=file_responses
+        )

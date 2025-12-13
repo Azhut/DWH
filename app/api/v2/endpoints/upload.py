@@ -1,5 +1,5 @@
-from typing import List
-from fastapi import APIRouter, UploadFile, File, Depends
+from typing import List, Optional
+from fastapi import APIRouter, UploadFile, File, Depends, Form
 from app.api.v2.schemas.files import UploadResponse
 from app.core.exceptions import log_and_raise_http
 from prometheus_client import Counter
@@ -12,6 +12,9 @@ FILE_PROCESSED = Counter('files_processed', 'Total processed files')
 @router.post("/upload", response_model=UploadResponse)
 async def upload_files(
     files: List[UploadFile] = File(...),
+    form_id: str = Form(...),
+    skip_sheets: Optional[List[int]] = Form(None),
+    spravochno_keywords: Optional[List[str]] = Form(None),
     svc: IngestionService = Depends(get_ingestion_service)
 ):
     """
@@ -44,8 +47,8 @@ async def upload_files(
     - `500 Internal Server Error`: Ошибка сервера при обработке файлов.
     """
     try:
-        result = await svc.process_files(files)
+        result = await svc.process_files(files, form_id=form_id, skip_sheets=skip_sheets,
+                                         spravochno_keywords=spravochno_keywords)
         return result
     except Exception as e:
         log_and_raise_http(500, "Ошибка при обработке файла", e)
-

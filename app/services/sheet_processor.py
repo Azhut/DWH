@@ -1,6 +1,5 @@
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
-import pandas as pd
 from fastapi import HTTPException, UploadFile
 from app.core.exceptions import log_and_raise_http
 from app.core.logger import logger
@@ -16,26 +15,37 @@ class SheetProcessor:
     def __init__(self):
         self.sheet_extractor = SheetExtractionService()
 
-    async def extract_and_process_sheets(self, file: UploadFile, file_model: DomainFileModel) -> Tuple[List[SheetModel], List[dict]]:
+    async def extract_and_process_sheets(
+        self,
+        file: UploadFile,
+        file_model: DomainFileModel,
+        form_id: str,
+        skip_sheets: Optional[List[int]] = None,
+        spravochno_keywords: Optional[List[str]] = None
+    ) -> Tuple[List[SheetModel], List[dict]]:
         """
         file_model: объект FileModel с уже сгенерированным file_id (UUID).
-        Возвращает (sheet_models, flat_data) — flat_data уже содержит поле 'file_id'
+        Возвращает (sheet_models, flat_data) — flat_data уже содержит поле 'file_id' и 'form'
         """
         try:
-            # Проверка дублей по filename (если нужно — можно менять логику)
+            # Проверка дублей по filename
             if not await is_file_unique(file.filename):
                 msg = f"Файл '{file.filename}' уже был загружен."
                 raise HTTPException(status_code=400, detail=msg)
 
             sheets = await self.sheet_extractor.extract(file)
-            sheet_models, flat_data = await self._process_sheets(file_model.file_id, sheets, file_model.city, file_model.year)
+            sheet_models, flat_data = await self._process_sheets(
+                file_model.file_id,
+                sheets,
+                file_model.city,
+                file_model.year,
+                form_id,
+                skip_sheets,
+                spravochno_keywords
+            )
             logger.info(f"Успешно обработано {len(sheets)} листов файла {file.filename}")
 
             # Проставляем file_id в каждой flat записи (если ещё не проставлен)
-            for rec in flat_data:
-                if "file_id" not in rec or not rec.get("file_id"):
-                    rec["file_id"] = file_model.file_id
-            # после формирования flat_data
             for rec in flat_data:
                 if "file_id" not in rec or not rec.get("file_id"):
                     rec["file_id"] = file_model.file_id
@@ -46,26 +56,39 @@ class SheetProcessor:
         except Exception as e:
             log_and_raise_http(500, "Ошибка при обработке листов", e)
 
-    async def _process_sheets(self, file_id: str, sheets: List[dict], city: str, year: int) -> Tuple[List[SheetModel], List[dict]]:
+    async def _process_sheets(
+        self,
+        file_id: str,
+        sheets: List[dict],
+        city: str,
+        year: int,
+        form_id: str,
+        skip_sheets: Optional[List[int]] = None,
+        spravochno_keywords: Optional[List[str]] = None
+    ) -> Tuple[List[SheetModel], List[dict]]:
         sheet_models = []
         all_flat_data = []
-        for sheet in sheets:
+        for idx, sheet in enumerate(sheets):
             name = sheet["sheet_name"].strip()
+            # пропускаем по имени устоявшиеся ненужные листы
             if name in ('Раздел0', 'Лист1'):
                 continue
+            # проверка skip_sheets (используется индекс листа)
+            if skip_sheets and isinstance(skip_sheets, list) and idx in skip_sheets:
+                logger.info(f"SheetProcessor: пропускаем лист индекс={idx}, name='{name}' по skip_sheets")
+                continue
             try:
-                pd.set_option('display.max_columns', None)
-                pd.set_option('display.width', None)
-                pd.set_option('display.max_colwidth', None)
-                print(sheet['data'].head(15))
                 parser = get_sheet_parser(name)
+                # передаём spravochno_keywords в парсер (он пробросит в NotesProcessor)
+                if spravochno_keywords:
+                    setattr(parser, "spravochno_keywords", spravochno_keywords)
+
                 parsed_data = parser.parse(sheet["data"])
-                flat_data = parser.generate_flat_data(year, city, name)
-                # Диагностика: лог количества сгенерированных flat-строк
+                flat_data = parser.generate_flat_data(year, city, name, form_id=form_id)
+
                 if flat_data:
                     logger.info("SheetProcessor: sheet '%s' сгенерировал %d flat записей (file_id=%s)", name,
                                 len(flat_data), file_id)
-                    # лог первых 3 записей (чтобы не захламлять)
                     for sample in flat_data[:3]:
                         logger.debug("SheetProcessor sample flat: %s", sample)
                 else:
@@ -88,7 +111,6 @@ class SheetProcessor:
                     detail=f"Ошибка обработки раздела {name}: {str(e)}. Убедитесь в корректности структуры файла."
                 )
         return sheet_models, all_flat_data
-
 
 
 async def is_file_unique(filename: str) -> bool:

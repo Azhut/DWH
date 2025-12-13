@@ -5,6 +5,7 @@ from launcher import get_launcher
 from app.api.v2.endpoints.upload import router as upload_router
 from app.api.v2.endpoints.filters import router as filters_router
 from app.api.v2.endpoints.files import router as files_router
+from app.api.v2.endpoints.forms import router as forms_router
 from starlette.middleware.cors import CORSMiddleware
 
 def create_app() -> FastAPI:
@@ -25,6 +26,8 @@ def create_app() -> FastAPI:
     app.include_router(upload_router, prefix="/api/v2", tags=["upload"])
     app.include_router(filters_router, prefix="/api/v2", tags=["filters"])
     app.include_router(files_router, prefix="/api/v2", tags=["files"])
+    app.include_router(forms_router, prefix="/api/v2", tags=["forms"])
+
     return app
 
 app = create_app()

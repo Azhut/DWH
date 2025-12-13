@@ -9,6 +9,7 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.core.database import mongo_connection
 from app.data.repositories import FileRepository
 from app.data.repositories.flat_data import FlatDataRepository
+from app.data.repositories.forms import FormsRepository
 from app.data.repositories.logs import LogsRepository
 from app.data.services.data_delete import DataDeleteService
 from app.data.services.data_retrieval import DataRetrievalService
@@ -16,6 +17,7 @@ from app.data.services.data_save import DataSaveService
 from app.data.services.file_service import FileService
 from app.data.services.flat_data_service import FlatDataService
 from app.data.services.filter_service import FilterService
+from app.data.services.forms_service import FormsService
 from app.data.services.log_service import LogService
 from app.services.file_processor import FileProcessor
 from app.services.sheet_processor import SheetProcessor
@@ -112,3 +114,21 @@ def get_ingestion_service() -> IngestionService:
         sheet_processor=get_sheet_processor(),
         data_save_service=get_data_save_service()
     )
+
+def get_forms_repository() -> FormsRepository:
+    """
+    Возвращает репозиторий Forms (синхронный фабричный вызов).
+    Мы используем mongo_connection напрямую: предполагается, что mongo_connection корректно инициализирован.
+    """
+    db = mongo_connection.get_database()
+    col = db.get_collection("Forms")
+    return FormsRepository(col)
+
+
+def get_forms_service() -> FormsService:
+    """
+    Возвращает FormsService — используется как Depends(get_forms_service) в эндпоинтах.
+    """
+    repo = get_forms_repository()
+    service = FormsService(repo)
+    return service
