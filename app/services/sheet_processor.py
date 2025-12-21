@@ -1,126 +1,134 @@
+# app/services/sheet_processor.py
 from typing import List, Tuple, Optional
-
-from fastapi import HTTPException, UploadFile
-from app.core.exceptions import log_and_raise_http
-from app.core.logger import logger
-from app.data.repositories import FileRepository
-from app.parsers.parsers import get_sheet_parser
-from app.services.sheet_extraction_service import SheetExtractionService
+from fastapi import UploadFile
+import pandas as pd
+import math
 from app.models.sheet_model import SheetModel
-from app.models.file_status import FileStatus
 from app.core.database import mongo_connection
-from app.models.file_model import FileModel as DomainFileModel
+import logging
 
-class SheetProcessor:
-    def __init__(self):
-        self.sheet_extractor = SheetExtractionService()
+from app.parsers.parsers import get_sheet_parser, PARSERS
 
-    async def extract_and_process_sheets(
-        self,
-        file: UploadFile,
-        file_model: DomainFileModel,
-        form_id: str,
-        skip_sheets: Optional[List[int]] = None,
-        spravochno_keywords: Optional[List[str]] = None
-    ) -> Tuple[List[SheetModel], List[dict]]:
-        """
-        file_model: объект FileModel с уже сгенерированным file_id (UUID).
-        Возвращает (sheet_models, flat_data) — flat_data уже содержит поле 'file_id' и 'form'
-        """
-        try:
-            # Проверка дублей по filename
-            if not await is_file_unique(file.filename):
-                msg = f"Файл '{file.filename}' уже был загружен."
-                raise HTTPException(status_code=400, detail=msg)
-
-            sheets = await self.sheet_extractor.extract(file)
-            sheet_models, flat_data = await self._process_sheets(
-                file_model.file_id,
-                sheets,
-                file_model.city,
-                file_model.year,
-                form_id,
-                skip_sheets,
-                spravochno_keywords
-            )
-            logger.info(f"Успешно обработано {len(sheets)} листов файла {file.filename}")
-
-            # Проставляем file_id в каждой flat записи (если ещё не проставлен)
-            for rec in flat_data:
-                if "file_id" not in rec or not rec.get("file_id"):
-                    rec["file_id"] = file_model.file_id
-
-            return sheet_models, flat_data
-        except HTTPException:
-            raise
-        except Exception as e:
-            log_and_raise_http(500, "Ошибка при обработке листов", e)
-
-    async def _process_sheets(
-        self,
-        file_id: str,
-        sheets: List[dict],
-        city: str,
-        year: int,
-        form_id: str,
-        skip_sheets: Optional[List[int]] = None,
-        spravochno_keywords: Optional[List[str]] = None
-    ) -> Tuple[List[SheetModel], List[dict]]:
-        sheet_models = []
-        all_flat_data = []
-        for idx, sheet in enumerate(sheets):
-            name = sheet["sheet_name"].strip()
-            # пропускаем по имени устоявшиеся ненужные листы
-            if name in ('Раздел0', 'Лист1'):
-                continue
-            # проверка skip_sheets (используется индекс листа)
-            if skip_sheets and isinstance(skip_sheets, list) and idx in skip_sheets:
-                logger.info(f"SheetProcessor: пропускаем лист индекс={idx}, name='{name}' по skip_sheets")
-                continue
-            try:
-                parser = get_sheet_parser(name)
-                # передаём spravochno_keywords в парсер (он пробросит в NotesProcessor)
-                if spravochno_keywords:
-                    setattr(parser, "spravochno_keywords", spravochno_keywords)
-
-                parsed_data = parser.parse(sheet["data"])
-                flat_data = parser.generate_flat_data(year, city, name, form_id=form_id)
-
-                if flat_data:
-                    logger.info("SheetProcessor: sheet '%s' сгенерировал %d flat записей (file_id=%s)", name,
-                                len(flat_data), file_id)
-                    for sample in flat_data[:3]:
-                        logger.debug("SheetProcessor sample flat: %s", sample)
-                else:
-                    logger.warning("SheetProcessor: sheet '%s' сгенерировал 0 flat записей (file_id=%s)", name, file_id)
-                all_flat_data.extend(flat_data)
-
-                sheet_model = SheetModel(
-                    file_id=file_id,
-                    sheet_name=name,
-                    sheet_fullname=str(sheet['data'].columns[0]) if hasattr(sheet['data'], 'columns') else "",
-                    year=year,
-                    city=city,
-                    headers=parsed_data.get("headers", {}),
-                    data=parsed_data.get("data", [])
-                )
-                sheet_models.append(sheet_model)
-            except Exception as e:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Ошибка обработки раздела {name}: {str(e)}. Убедитесь в корректности структуры файла."
-                )
-        return sheet_models, all_flat_data
+logger = logging.getLogger(__name__)
 
 
 async def is_file_unique(filename: str) -> bool:
     """
-    Проверяет по коллекции Files: если уже есть запись с таким filename и status == success —
-    считаем дубликатом.
+    Проверка на дубликат по имени файла в коллекции Files.
+    Возвращает True, если файла в базе нет.
     """
     db = mongo_connection.get_database()
-    repo = FileRepository(db.get_collection("Files"))
-    existing = await repo.find_by_filename(filename)
-    if not existing:
-        return True
-    return existing.get("status") != FileStatus.SUCCESS.value
+    doc = await db.Files.find_one({"filename": filename})
+    return doc is None
+
+
+class SheetProcessor:
+    """
+    Задача: прочитать все листы из переданного UploadFile (pandas),
+    для каждого листа подобрать соответствующий парсер (get_sheet_parser)
+    и выполнить парсинг -> собрать SheetModel-ы и flat_data.
+    Поддерживает пропуск листов по индексам (skip_sheets).
+    """
+
+    def __init__(self):
+        # ничего не храним в состоянии
+        pass
+
+    async def extract_and_process_sheets(
+        self,
+        file: UploadFile,
+        file_model,
+        skip_sheets: Optional[List[int]] = None
+    ) -> Tuple[List[SheetModel], List[dict]]:
+        """
+        file: UploadFile (fastapi)
+        file_model: экземпляр FileModel (для использования year/city/file_id)
+        skip_sheets: список индексов листов (0-based), которые нужно пропустить
+        Возвращает: (sheet_models, flat_data)
+        """
+        if skip_sheets is None:
+            skip_sheets = []
+
+        # Переустанавливаем указатель на начало
+        try:
+            await file.seek(0)
+        except Exception:
+            try:
+                file.file.seek(0)
+            except Exception:
+                pass
+
+        # pandas может читать из file.file-like
+        try:
+            # Читаем все листы как DataFrame-ы без интерпретации заголовков
+            # keep_default_na=False чтобы не поменять пустые ячейки на NaN (мы сами обработаем)
+            xls = pd.read_excel(file.file, sheet_name=None, header=None, engine=None)
+        except Exception as e:
+            logger.exception("Не удалось прочитать xls/xlsx через pandas: %s", e)
+            raise
+
+        sheet_models: List[SheetModel] = []
+        flat_data: List[dict] = []
+
+        # xls is dict: {sheet_name: DataFrame}
+        for idx, (sheet_name, df) in enumerate(xls.items()):
+            # пропускаем по индексам, если указано
+            if idx in skip_sheets:
+                logger.debug("SheetProcessor: пропускаем лист по индексу %s (%s) согласно skip_sheets", idx, sheet_name)
+                continue
+
+            parser = None
+            # 1) Попробуем взять парсер по точному имени
+            try:
+                parser = get_sheet_parser(sheet_name)
+            except Exception:
+                # 2) Попробуем подобрать парсер по наличию ключа PARSERS в названии листа
+                for patt in PARSERS.keys():
+                    if patt in str(sheet_name):
+                        try:
+                            parser = get_sheet_parser(patt)
+                            break
+                        except Exception:
+                            continue
+                # 3) Если не нашли - логируем и пропускаем лист
+            if parser is None:
+                logger.info("SheetProcessor: нет парсера для листа '%s' (индекс %d) — пропускаем", sheet_name, idx)
+                continue
+
+            try:
+                # Парсеры ожидают pandas.DataFrame с индексами строк/столбцов.
+                # В проекте парсеры используют NotesProcessor.process_notes и т.п.
+                parsed = parser.parse(df)
+                # parser.create_data и .data устанавливаются в parser.parse
+                # Получим список плоских записей через generate_flat_data
+                records = parser.generate_flat_data(file_model.year, file_model.city, sheet_name)
+                # Создаём SheetModel-представление (совместимо с существующей моделью)
+                sheet_model_doc = {
+                    "file_id": file_model.file_id,
+                    "sheet_name": sheet_name,
+                    "sheet_fullname": sheet_name,
+                    "year": file_model.year,
+                    "city": file_model.city,
+                    "headers": parsed.get("headers", {}),
+                    "data": parsed.get("data", [])
+                }
+                sheet_models.append(SheetModel(**sheet_model_doc))
+                # records — список dict, у них ещё не должно быть file_id, мы добавим его позже в IngestionService
+                for r in records:
+                    # гарантируем, что year/city/section/row/column/value присутствуют в записи
+                    flat = {
+                        "year": r.get("year", file_model.year),
+                        "city": r.get("city", file_model.city),
+                        "section": r.get("section", sheet_name),
+                        "row": r.get("row"),
+                        "column": r.get("column"),
+                        "value": r.get("value")
+                    }
+                    # file_id добавим в ingestion_service (там легче контролировать откат)
+                    flat_data.append(flat)
+            except Exception as e:
+                logger.exception("Ошибка обработки листа %s: %s", sheet_name, e)
+                # если парсинг одного листа упал — логируем и продолжаем с другими листами
+                continue
+
+        return sheet_models, flat_data

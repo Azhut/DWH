@@ -8,6 +8,7 @@ from app.models.file_status import FileStatus
 
 class FileModel(BaseModel):
     file_id: str
+    form_id: str
     filename: str
     year: Optional[int] = None
     city: Optional[str] = None
@@ -20,7 +21,7 @@ class FileModel(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @classmethod
-    def create_new(cls, filename: str, year: Optional[int] = None, city: Optional[str] = None) -> "FileModel":
+    def create_new(cls, filename: str, year: Optional[int] = None, city: Optional[str] = None, form_id: Optional[str] = None) -> "FileModel":
         """
         Создаёт новый FileModel с сгенерированным UUID (file_id).
         Использовать при старте обработки файла.
@@ -34,29 +35,25 @@ class FileModel(BaseModel):
             error=None,
             upload_timestamp=datetime.now(),
             sheets=[],
-            size=0
+            size=0,
+            form_id=form_id
         )
 
     @classmethod
     def create_stub(
-        cls,
-        file_id: str,
-        filename: str,
-        error_message: str,
-        year: Optional[int] = None,
-        city: Optional[str] = None
-    ) -> "FileModel":
-        """
-        Создаёт заглушечную модель при ошибках.
-        """
+            cls,
+            file_id: str,
+            filename: str,
+            form_id: str,
+            error_message: str,
+            year: int | None = None,
+            city: str | None = None
+    ):
         return cls(
             file_id=file_id,
             filename=filename,
+            form_id=form_id,
+            error_message=error_message,
             year=year,
-            city=city,
-            status=FileStatus.FAILED,
-            error=error_message,
-            upload_timestamp=datetime.now(),
-            sheets=[],
-            size=0
+            city=city
         )

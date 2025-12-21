@@ -18,7 +18,7 @@ class BaseRepository:
                        projection: Dict[str, Any] = None) -> Optional[Dict[str, Any]]:
         return await self.collection.find_one(query, projection)
 
-    # Остальные методы уже async - оставляем
+
     async def insert_one(self, document: Dict[str, Any]) -> Any:
         return await self.collection.insert_one(document)
 

@@ -1,57 +1,71 @@
-from fastapi import APIRouter, HTTPException, Depends
-from app.api.v2.schemas.forms import FormCreateRequest, FormResponse, FormsListResponse
-from app.core.dependencies import get_forms_service
-from app.data.services.forms_service import FormsService
+import uuid
+from datetime import datetime
+from fastapi import APIRouter, HTTPException
+
+from app.core.database import mongo_connection
+from app.api.v2.schemas.forms import (
+    FormCreate,
+    FormUpdate,
+    FormResponse,
+    FormsListResponse,
+    CreateFormResponse,
+    UpdateFormResponse,
+    DeleteFormResponse,
+)
 
 router = APIRouter()
 
 
 @router.get("/forms", response_model=FormsListResponse)
-async def list_forms(svc: FormsService = Depends(get_forms_service)):
-    docs = await svc.list_forms()
-    forms = []
-    for d in docs:
-        forms.append(FormResponse(
-            id=d.get("id"),
-            name=d.get("name"),
-            spravochno_keywords=d.get("spravochno_keywords", []),
-            skip_sheets=d.get("skip_sheets", []),
-            created_at=d.get("created_at")
-        ))
-    return FormsListResponse(forms=forms)
+async def get_forms():
+    db = mongo_connection.get_database()
+    forms = await db.Forms.find().to_list(None)
+    return {"forms": forms}
 
 
 @router.get("/forms/{form_id}", response_model=FormResponse)
-async def get_form(form_id: str, svc: FormsService = Depends(get_forms_service)):
-    doc = await svc.get_form(form_id)
-    if not doc:
+async def get_form(form_id: str):
+    db = mongo_connection.get_database()
+    form = await db.Forms.find_one({"id": form_id})
+    if not form:
         raise HTTPException(404, "Form not found")
-    return FormResponse(
-        id=doc.get("id"),
-        name=doc.get("name"),
-        spravochno_keywords=doc.get("spravochno_keywords", []),
-        skip_sheets=doc.get("skip_sheets", []),
-        created_at=doc.get("created_at")
-    )
+    return form
 
 
-@router.post("/forms")
-async def create_form(payload: FormCreateRequest, svc: FormsService = Depends(get_forms_service)):
-    doc = await svc.create_form(payload.model_dump())
-    return {"message": "Form created", "form": doc}
+@router.post("/forms", response_model=CreateFormResponse)
+async def create_form(payload: FormCreate):
+    db = mongo_connection.get_database()
+    form = {
+        "id": str(uuid.uuid4()),
+        "name": payload.name,
+        "requisites": payload.requisites.model_dump() if payload.requisites else {},
+        "created_at": datetime.utcnow(),
+    }
+    await db.Forms.insert_one(form)
+    return {"message": "Form created", "form": form}
 
 
-@router.put("/forms/{form_id}")
-async def update_form(form_id: str, payload: FormCreateRequest, svc: FormsService = Depends(get_forms_service)):
-    updated = await svc.update_form(form_id, payload.model_dump())
-    if not updated:
+@router.put("/forms/{form_id}", response_model=UpdateFormResponse)
+async def update_form(form_id: str, payload: FormUpdate):
+    db = mongo_connection.get_database()
+    update = {}
+    if payload.name is not None:
+        update["name"] = payload.name
+    if payload.requisites is not None:
+        update["requisites"] = payload.requisites.model_dump()
+
+    result = await db.Forms.update_one({"id": form_id}, {"$set": update})
+    if result.matched_count == 0:
         raise HTTPException(404, "Form not found")
-    return {"message": "Form updated", "form": updated}
+
+    form = await db.Forms.find_one({"id": form_id})
+    return {"message": "Form updated", "form": form}
 
 
-@router.delete("/forms/{form_id}")
-async def delete_form(form_id: str, svc: FormsService = Depends(get_forms_service)):
-    ok = await svc.delete_form(form_id)
-    if not ok:
+@router.delete("/forms/{form_id}", response_model=DeleteFormResponse)
+async def delete_form(form_id: str):
+    db = mongo_connection.get_database()
+    result = await db.Forms.delete_one({"id": form_id})
+    if result.deleted_count == 0:
         raise HTTPException(404, "Form not found")
     return {"message": "Form deleted", "id": form_id}

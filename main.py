@@ -6,6 +6,7 @@ from app.api.v2.endpoints.upload import router as upload_router
 from app.api.v2.endpoints.filters import router as filters_router
 from app.api.v2.endpoints.files import router as files_router
 from app.api.v2.endpoints.forms import router as forms_router
+
 from starlette.middleware.cors import CORSMiddleware
 
 def create_app() -> FastAPI:

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends
+# app/api/v2/endpoints/filters.py
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
 from app.api.v2.schemas.filters import (
     FilterValuesRequest,
     FilterValuesResponse,
@@ -9,123 +11,86 @@ from app.api.v2.schemas.filters import (
 from app.core.exceptions import log_and_raise_http
 from app.core.dependencies import get_data_retrieval_service
 
-
 router = APIRouter()
 
+# пользовательский набор фильтров (контракт API)
+FILTERS = ["год", "город", "раздел", "строка", "колонка"]
+
+
+def require_form_id(form_id: Optional[str]):
+    if not form_id:
+        raise HTTPException(status_code=400, detail="отсутствует обязательный параметр form_id")
+    return form_id
+
+
 @router.get("/filters-names", response_model=FiltersNamesResponse)
-async def get_filters_names():
+async def get_filters_names(form_id: Optional[str] = Query(None, description="ID формы")):
     """
     Возвращает список доступных фильтров.
-
-    **Пример ответа:**
-    ```json
-    {
-        "filters": ["год", "город", "раздел", "строка", "колонка"]
-    }
-    ```
-
-    **Коды ответа:**
-    - `200 OK`: Успешный запрос.
+    form_id обязателен в query
     """
-    return {"filters": ["год", "город", "раздел", "строка", "колонка"]}
+    require_form_id(form_id)
+    return {"filters": FILTERS}
+
 
 @router.post("/filter-values", response_model=FilterValuesResponse)
-async def get_filter_values(request: FilterValuesRequest,
-                            svc=Depends(get_data_retrieval_service)):
+async def get_filter_values(
+    request: FilterValuesRequest,
+    form_id: Optional[str] = Query(None, description="ID формы"),
+    svc=Depends(get_data_retrieval_service)
+):
     """
-    Возвращает доступные значения для указанного фильтра с учётом других фильтров и шаблона поиска.
-
-    **Пример запроса:**
-    ```json
-    {
-        "filter-name": "раздел",
-        "filters": [
-            {
-                "filter-name": "год",
-                "values": [2022, 2023, 2024]
-            },
-            {
-                "filter-name": "город",
-                "values": ["Алапаевск"]
-            }
-        ],
-        "pattern": ""
-    }
-    ```
-
-    **Пример ответа:**
-    ```json
-    {
-        "filter-name": "раздел",
-        "values": ["Раздел 1", "Раздел 2", "Раздел 3"]
-    }
-    ```
-
-    **Коды ответа:**
-    - `200 OK`: Успешный запрос.
-    - `500 Internal Server Error`: Ошибка сервера.
+    Возвращает значения для указанного фильтра с учётом переданных бизнес-фильтров и pattern
+    form_id обязательный query-параметр
     """
     try:
+        require_form_id(form_id)
+
+        # валидация имени фильтра
+        if request.filter_name not in FILTERS:
+            raise HTTPException(status_code=400, detail=f"Неизвестный фильтр: {request.filter_name}")
+
+        # подготовим фильтры в формате [{'filter-name':..., 'values':[...]}]
         filters_list = [item.model_dump(by_alias=True) for item in request.filters]
+
         values = await svc.get_filter_values(
             request.filter_name,
             filters_list,
-            request.pattern or ""
+            request.pattern or "",
+            form_id
         )
         return FilterValuesResponse(filter_name=request.filter_name, values=values)
+    except HTTPException:
+        raise
     except Exception as e:
         log_and_raise_http(500, "Ошибка при получении значений фильтра", e)
 
 
 @router.post("/filtered-data", response_model=FilteredDataResponse)
-async def get_filtered_data(payload: FilteredDataRequest,
-                            svc=Depends(get_data_retrieval_service)):
+async def get_filtered_data(
+    payload: FilteredDataRequest,
+    form_id: Optional[str] = Query(None, description="ID формы"),
+    svc=Depends(get_data_retrieval_service)
+):
     """
-    Возвращает данные, отфильтрованные по указанным параметрам.
-
-    **Пример запроса:**
-    ```json
-    {
-        "filters": [
-            {
-                "filter-name": "год",
-                "values": [2022, 2023, 2024]
-            },
-            {
-                "filter-name": "город",
-                "values": ["Алапаевск"]
-            }
-        ],
-        "limit": 4,
-        "offset": 0
-    }
-    ```
-
-    **Пример ответа:**
-    ```json
-    {
-        "headers": ["год", "город", "раздел", "строка", "колонка", "значение"],
-        "data": [
-            [2022, "Алапаевск", "Раздел1", "строка1", "колонка1", 10],
-            [2022, "Алапаевск", "Раздел1", "строка2", "колонка1", 11],
-            [2023, "Алапаевск", "Раздел1", "строка1", "колонка1", 13],
-            [2023, "Алапаевск", "Раздел1", "строка2", "колонка1", 18]
-        ],
-        "size": 4,
-        "max_size": 100
-    }
-    ```
-
-    **Коды ответа:**
-    - `200 OK`: Успешный запрос.
-    - `500 Internal Server Error`: Ошибка сервера.
+    Возвращает таблицу данных по бизнес-фильтрам с пагинацией.
+    form_id обязательный query-параметр
     """
     try:
+        require_form_id(form_id)
+
+        # валидация имен фильтров внутри списка
+        for f in payload.filters:
+            if f.filter_name not in FILTERS:
+                raise HTTPException(status_code=400, detail=f"Неизвестный фильтр: {f.filter_name}")
+
         filters_list = [item.model_dump(by_alias=True) for item in payload.filters]
+
         data, total = await svc.get_filtered_data(
             filters_list,
             payload.limit,
-            payload.offset
+            payload.offset,
+            form_id
         )
         return FilteredDataResponse(
             headers=["год", "город", "раздел", "строка", "колонка", "значение"],
@@ -133,5 +98,7 @@ async def get_filtered_data(payload: FilteredDataRequest,
             size=len(data),
             max_size=total
         )
+    except HTTPException:
+        raise
     except Exception as e:
         log_and_raise_http(500, "Ошибка при получении отфильтрованной таблицы", e)

@@ -10,6 +10,8 @@ class FileListResponse(BaseModel):
     upload_timestamp: datetime
     updated_at: datetime
     year: Optional[int] = None
+    form_id: Optional[str] = None
+
 
 class DeleteFileResponse(BaseModel):
     detail: str
