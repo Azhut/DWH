@@ -77,7 +77,8 @@ class IngestionService:
                 skip_sheets = form_doc.get("requisites", {}).get("skip_sheets", []) or []
 
                 # 5) читаем и обрабатываем листы, передавая тип формы
-                await file.seek(0)
+
+                await file.seek(0)  # Возвращаем указатель в начало
                 sheet_models, flat_data = await self.sheet_processor.extract_and_process_sheets(
                     file=file,
                     file_model=file_model,

@@ -28,7 +28,8 @@ async def list_files(
                 error=doc.get("error"),
                 upload_timestamp=doc.get("upload_timestamp"),
                 updated_at=doc.get("updated_at", doc.get("upload_timestamp")),
-                year=doc.get("year")
+                year=doc.get("year"),
+                form_id = doc.get("form_id")
             ))
         return result
     except Exception as e:
