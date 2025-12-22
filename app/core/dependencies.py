@@ -3,6 +3,7 @@
 Используем functools.lru_cache для синглтонов в рамках приложения.
 """
 from functools import lru_cache
+from typing import Type
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -23,6 +24,7 @@ from app.services.file_processor import FileProcessor
 from app.services.sheet_processor import SheetProcessor
 from app.services.sheet_extraction_service import SheetExtractionService
 from app.services.ingestion_service import IngestionService
+from app.parsers.parser_factory import ParserFactory  # НОВОЕ
 
 
 # Database
@@ -114,6 +116,16 @@ def get_ingestion_service() -> IngestionService:
         sheet_processor=get_sheet_processor(),
         data_save_service=get_data_save_service()
     )
+
+
+# НОВОЕ: Фабрика парсеров
+@lru_cache
+def get_parser_factory() -> Type[ParserFactory]:
+    """
+    Возвращает фабрику парсеров.
+    """
+    return ParserFactory
+
 
 def get_forms_repository() -> FormsRepository:
     """

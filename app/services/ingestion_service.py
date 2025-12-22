@@ -5,10 +5,12 @@ from app.api.v2.schemas.files import UploadResponse, FileResponse
 from app.services.file_processor import FileProcessor
 from app.services.sheet_processor import SheetProcessor, is_file_unique
 from app.models.file_model import FileModel
+from app.models.form_model import FormInfo
 from app.models.file_status import FileStatus
 from app.data.services.data_save import DataSaveService
 from app.core.logger import logger
 from app.core.database import mongo_connection
+
 
 class IngestionService:
     def __init__(
@@ -41,7 +43,19 @@ class IngestionService:
                 if not unique:
                     raise HTTPException(status_code=400, detail=f"Файл '{file.filename}' уже был загружен.")
 
-                # 3) создаём FileModel с UUID ДО обработки листов и сохраним form_id
+                # 3) получаем форму из БД и определяем её тип
+                form_doc = await db.Forms.find_one({"id": form_id})
+                if not form_doc:
+                    raise HTTPException(status_code=400, detail=f"Форма '{form_id}' не найдена")
+
+                # Создаем FormInfo с определением типа
+                form_info = FormInfo.from_mongo_doc(form_doc)
+
+                # Логируем тип формы
+                logger.info(f"Обработка файла '{file.filename}' для формы '{form_info.name}' "
+                            f"(ID: {form_id}, тип: {form_info.type.value})")
+
+                # 4) создаём FileModel с UUID ДО обработки листов и сохраним form_id
                 file_model = FileModel.create_new(
                     filename=file.filename,
                     year=metadata.year,
@@ -51,18 +65,14 @@ class IngestionService:
                 # присвоим form_id до сохранения, чтобы при ошибках было понятно к какой форме привязан stub
                 file_model.form_id = form_id
 
-                # 4) получаем форму (requisites) из БД — на случай неверного form_id это ошибка
-                form_doc = await db.Forms.find_one({"id": form_id})
-                if not form_doc:
-                    raise HTTPException(status_code=400, detail=f"Форма '{form_id}' не найдена")
-
                 skip_sheets = form_doc.get("requisites", {}).get("skip_sheets", []) or []
 
-                # 5) читаем и обрабатываем листы
+                # 5) читаем и обрабатываем листы, передавая тип формы
                 await file.seek(0)
                 sheet_models, flat_data = await self.sheet_processor.extract_and_process_sheets(
                     file=file,
                     file_model=file_model,
+                    form_type=form_info.type,  # Передаем тип формы!
                     skip_sheets=skip_sheets
                 )
 
@@ -77,11 +87,19 @@ class IngestionService:
                     # city/ year/section должны уже быть установлены; приведение к единообразному регистру
                     if "city" in rec and isinstance(rec["city"], str):
                         rec["city"] = rec["city"].upper()
+                    # Добавляем тип формы в flat_data для аналитики
+                    rec["form_type"] = form_info.type.value
 
                 # 8) Сохраняем всё (DataSaveService сделает откат в случае ошибки)
                 await self.data_service.process_and_save_all(file_model, flat_data)
 
                 file_responses.append(FileResponse(filename=file.filename, status=FileStatus.SUCCESS.value, error=""))
+
+                logger.info(f"Файл '{file.filename}' успешно обработан. "
+                            f"Тип формы: {form_info.type.value}, "
+                            f"листов: {len(sheet_models)}, "
+                            f"записей: {len(flat_data)}")
+
             except HTTPException as e:
                 # Сохраняем stub с информацией об ошибке
                 err_msg = e.detail if isinstance(e.detail, str) else str(e)
@@ -105,7 +123,11 @@ class IngestionService:
                     await self.data_service.save_file(stub)
                 except Exception:
                     logger.exception("Не удалось сохранить stub запись файла")
-                file_responses.append(FileResponse(filename=file.filename, status=FileStatus.FAILED.value, error=err_msg))
+                file_responses.append(
+                    FileResponse(filename=file.filename, status=FileStatus.FAILED.value, error=err_msg))
+
+                logger.error(f"Ошибка HTTP при обработке файла '{file.filename}': {err_msg}")
+
             except Exception as e:
                 # Непредвиденная ошибка — логируем и сохраняем stub
                 logger.exception("Непредвиденная ошибка при обработке файла: %s", e)
@@ -129,9 +151,14 @@ class IngestionService:
                     await self.data_service.save_file(stub)
                 except Exception:
                     logger.exception("Не удалось сохранить stub запись файла")
-                file_responses.append(FileResponse(filename=file.filename, status=FileStatus.FAILED.value, error=err_msg))
+                file_responses.append(
+                    FileResponse(filename=file.filename, status=FileStatus.FAILED.value, error=err_msg))
 
         # формируем итоговую структуру
         success_count = sum(1 for resp in file_responses if resp.status == FileStatus.SUCCESS.value)
         failure_count = len(file_responses) - success_count
-        return UploadResponse(message=f"{success_count} files processed successfully, {failure_count} failed.", details=file_responses)
+
+        logger.info(f"Обработка завершена. Успешно: {success_count}, с ошибками: {failure_count}")
+
+        return UploadResponse(message=f"{success_count} files processed successfully, {failure_count} failed.",
+                              details=file_responses)
