@@ -56,18 +56,19 @@ class SheetProcessor:
 
         # Переустанавливаем указатель на начало
         try:
+            # Сбрасываем указатель файла
             await file.seek(0)
-        except Exception:
+        except (AttributeError, TypeError):
             try:
                 file.file.seek(0)
-            except Exception:
+            except (AttributeError, TypeError):
                 pass
 
         # pandas может читать из file.file-like
         try:
             # Читаем все листы как DataFrame-ы без интерпретации заголовков
             # keep_default_na=False чтобы не поменять пустые ячейки на NaN (мы сами обработаем)
-            xls = pd.read_excel(file.file, sheet_name=None, header=None, engine=None)
+            xls = pd.read_excel(file.file, sheet_name=None, header=None)
             logger.info(f"Прочитано {len(xls)} листов из файла {file.filename}")
         except Exception as e:
             logger.exception("Не удалось прочитать xls/xlsx через pandas: %s", e)

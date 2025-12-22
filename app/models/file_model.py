@@ -8,7 +8,7 @@ from app.models.file_status import FileStatus
 
 class FileModel(BaseModel):
     file_id: str
-    form_id: str
+    form_id: Optional[str] = None
     filename: str
     year: Optional[int] = None
     city: Optional[str] = None
@@ -45,7 +45,7 @@ class FileModel(BaseModel):
             file_id: str,
             filename: str,
             form_id: str,
-            error_message: str,
+            error_message: str,  # Этот параметр не используется правильно
             year: int | None = None,
             city: str | None = None
     ):
@@ -53,7 +53,8 @@ class FileModel(BaseModel):
             file_id=file_id,
             filename=filename,
             form_id=form_id,
-            error_message=error_message,
+            error=error_message,
             year=year,
-            city=city
+            city=city,
+            status=FileStatus.FAILED
         )

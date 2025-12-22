@@ -113,7 +113,7 @@ class FilterService:
 
         # form_id как обязательный контекст — если передано, добавляем первым условием
         if form_id is not None:
-            conditions.append({"form": form_id})
+            conditions.append({"form": form_id})  # Здесь используется поле "form"
 
         for f in filters or []:
             fname = f.get("filter-name")

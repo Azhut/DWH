@@ -1,5 +1,8 @@
 # app/services/ingestion_service.py
+from datetime import datetime
 from typing import List
+from uuid import uuid4
+
 from fastapi import HTTPException, UploadFile
 from app.api.v2.schemas.files import UploadResponse, FileResponse
 from app.services.file_processor import FileProcessor
@@ -27,8 +30,14 @@ class IngestionService:
         """
         Обрабатываем список файлов. form_id обязателен — если его нет, вызывающий код должен был это проверить.
         """
+        if not form_id or not isinstance(form_id, str):
+            raise HTTPException(status_code=400, detail="form_id обязателен и должен быть строкой")
+
         file_responses: List[FileResponse] = []
         db = mongo_connection.get_database()
+        form_doc = await db.Forms.find_one({"id": form_id})
+        if not form_doc:
+            raise HTTPException(status_code=400, detail=f"Форма '{form_id}' не найдена")
 
         for file in files:
             metadata = None
@@ -133,20 +142,20 @@ class IngestionService:
                 logger.exception("Непредвиденная ошибка при обработке файла: %s", e)
                 err_msg = str(e)
                 temp_id = file.filename
-                stub = FileModel.create_stub(
-                    file_id=temp_id,
+                stub = FileModel(
+                    file_id=str(uuid4()),  # Генерируем уникальный ID
                     filename=file.filename,
-                    form_id=form_id,
-                    error_message=err_msg,
+                    form_id=form_id,  # Явно указываем form_id
                     year=metadata.year if metadata else None,
-                    city=metadata.city if metadata else None
+                    city=metadata.city if metadata else None,
+                    status=FileStatus.FAILED,
+                    error=err_msg,
+                    upload_timestamp=datetime.now(),
+                    updated_at=datetime.now(),
+                    sheets=[],
+                    size=0
                 )
 
-                try:
-                    if form_id:
-                        stub.form_id = form_id
-                except Exception:
-                    pass
                 try:
                     await self.data_service.save_file(stub)
                 except Exception:
