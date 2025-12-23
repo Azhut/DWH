@@ -31,19 +31,18 @@ class ParserFactory:
         logger.debug(f"Создание парсера для листа '{sheet_name}', тип формы: {form_type}")
 
         if form_type == FormType.FK_1:
-            # Используем существующие парсеры для 1ФК
+
             parser_class = FK1_PARSERS.get(sheet_name)
             if parser_class:
                 parser = parser_class()
                 logger.debug(f"Используется парсер 1ФК для листа '{sheet_name}'")
                 return parser
             else:
-                # Если для этого листа нет специфичного парсера 1ФК
                 logger.warning(f"Не найден специфичный парсер 1ФК для листа '{sheet_name}', "
                                f"используется универсальный парсер")
 
         elif form_type == FormType.FK_5:
-            # Используем парсер для 5ФК
+
             logger.info(f"Используется парсер 5ФК для листа '{sheet_name}'")
             return FiveFKParser(sheet_name)
 
@@ -65,7 +64,6 @@ class ParserFactory:
         if form_type == FormType.FK_1:
             return FK1_PARSERS.copy()
         elif form_type == FormType.FK_5:
-            # Для 5ФК пока только один парсер, но можно расширить
             return {"*": FiveFKParser}
         else:
             return {"*": UniversalParser}

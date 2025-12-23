@@ -36,28 +36,23 @@ class SheetProcessor:
             form_type: FormType,
             skip_sheets: Optional[List[int]] = None
     ) -> Tuple[List[SheetModel], List[dict]]:
-        """
-        Исправленная версия с обработкой seekable() проблемы
-        """
+
         if skip_sheets is None:
             skip_sheets = []
         logger.info(f"Начало обработки листов. Тип формы: {form_type.value}, "
                     f"пропускаемые листы: {skip_sheets}")
 
         try:
-            # Считываем содержимое файла в память
             content = await file.read()
-            await file.seek(0)  # Возвращаем указатель в начало
+            await file.seek(0)
 
-            # Создаем BytesIO объект, который имеет все необходимые методы
             file_buffer = BytesIO(content)
 
-            # pandas теперь работает с BytesIO, который имеет seekable()
             xls = pd.read_excel(
                 file_buffer,
                 sheet_name=None,
                 header=None,
-                engine=None  # pandas сам выберет подходящий движок
+                engine=None
             )
             logger.info(f"Прочитано {len(xls)} листов из файла {file.filename}")
         except Exception as e:

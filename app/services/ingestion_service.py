@@ -82,7 +82,7 @@ class IngestionService:
                 sheet_models, flat_data = await self.sheet_processor.extract_and_process_sheets(
                     file=file,
                     file_model=file_model,
-                    form_type=form_info.type,  # Передаем тип формы!
+                    form_type=form_info.type,
                     skip_sheets=skip_sheets
                 )
 
@@ -144,9 +144,9 @@ class IngestionService:
                 err_msg = str(e)
                 temp_id = file.filename
                 stub = FileModel(
-                    file_id=str(uuid4()),  # Генерируем уникальный ID
+                    file_id=str(uuid4()),
                     filename=file.filename,
-                    form_id=form_id,  # Явно указываем form_id
+                    form_id=form_id,
                     year=metadata.year if metadata else None,
                     city=metadata.city if metadata else None,
                     status=FileStatus.FAILED,
