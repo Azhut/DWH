@@ -1,11 +1,10 @@
 """
 Парсер для форм типа 5ФК с автоматическим определением структуры таблицы.
 """
+
 import pandas as pd
-import numpy as np
 import logging
 from typing import Dict, List, Optional, Any, Tuple
-import re
 from app.parsers.base_sheet_parser import BaseSheetParser
 from app.parsers.header_fixer import fix_header, finalize_header_fixing
 from app.parsers.notes_processor import NotesProcessor, _SERVICE_EMPTY
@@ -103,7 +102,7 @@ class FiveFKParser(BaseSheetParser):
         for i in range(max_rows_to_check):
             row = analysis_df.iloc[i]
             non_empty_count = sum(1 for val in row if not self._is_empty_or_nan(val))
-            if non_empty_count > 3:  # Если в строке больше 3 непустых ячеек
+            if non_empty_count > 1:  # Если в строке больше 3 непустых ячеек
                 first_non_empty_row = i
                 break
 
@@ -133,14 +132,10 @@ class FiveFKParser(BaseSheetParser):
                 # Проверяем, является ли значение натуральным числом
                 if str_val.isdigit() and int(str_val) > 0:
                     numeric_count += 1
-                else:
-                    # Если есть нечисловые значения, кроме специальных ключевых слов
-                    if not any(keyword in str_val.lower() for keyword in ['итого', 'всего', 'сумма', '№ строки', '№', 'столбец', 'колонка']):
-                        valid_numeric_row = False
-                        break
+
 
             # Если в строке достаточно натуральных чисел и они последовательны
-            if valid_numeric_row and numeric_count >= 3:
+            if valid_numeric_row and numeric_count >= 8:
                 column_numbers_row = current_row
                 break
 
@@ -198,9 +193,12 @@ class FiveFKParser(BaseSheetParser):
                 sheet_name=sheet_name,
                 header=header_rows
             )
+            print("Названия колонок:")
+            for i, col in enumerate(df.columns, 1):
+                print(f"{i}. {col}")
 
             # Обработка примечаний
-            df = NotesProcessor.process_notes(df, raw_quantity=self.num_header_levels)
+            # df = NotesProcessor.process_notes(df, raw_quantity=self.num_header_levels)
 
             # Обрезаем строки до начала данных
             if self.data_start_row > self.header_end_row + 1:
