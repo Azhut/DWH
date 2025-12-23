@@ -369,41 +369,130 @@ class FiveFKParser(BaseSheetParser):
     def _create_data_structure(self, df: pd.DataFrame, horizontal_headers: list, vertical_headers: list) -> List[Dict]:
         """
         Создает структурированные данные в формате, совместимом с существующей системой.
-        Использует первый ненулевой столбец как боковые заголовки и прямой доступ к ячейкам.
+        Улучшенная версия с использованием боковых заголовков как индексов:
+        1. Фильтруем DataFrame: удаляем все Unnamed_Column_* колонки
+        2. Используем первый ненулевой столбец как индекс (боковые заголовки)
+        3. Прямо обращаемся к ячейкам по значениям заголовков
         """
         data = []
 
-        # Удаляем Unnamed колонки и столбец с боковыми заголовками из горизонтальных заголовков
-        filtered_horizontal_headers = []
-        filtered_columns = []
+        # 1. Фильтруем DataFrame: удаляем все Unnamed_Column_* колонки
+        filtered_df = df.copy()
 
-        for i, col_name in enumerate(horizontal_headers):
-            if self.vertical_header_column and col_name == self.vertical_header_column:
-                continue
-            if col_name.startswith('Unnamed_Column_'):
-                continue
-            filtered_horizontal_headers.append(col_name)
-            filtered_columns.append(df.columns[i])
+        # Удаляем колонки, начинающиеся с "Unnamed_Column_"
+        cols_to_drop = [col for col in filtered_df.columns if str(col).startswith('Unnamed_Column_')]
+        if cols_to_drop:
+            filtered_df = filtered_df.drop(columns=cols_to_drop)
 
-        # Для каждого горизонтального заголовка создаем структуру данных
-        for col_idx, column_header in enumerate(filtered_horizontal_headers):
-            if col_idx >= len(filtered_columns):
-                break
+        # 2. Проверяем, что остались колонки для обработки
+        if filtered_df.empty or len(filtered_df.columns) < 2:
+            logger.warning(f"Недостаточно колонок для обработки после фильтрации (лист: '{self.sheet_name}')")
+            return data
 
-            df_col_name = filtered_columns[col_idx]
+        # 3. Определяем колонку с боковыми заголовками (первую оставшуюся колонку)
+        vertical_header_col = filtered_df.columns[0]
+        logger.debug(f"Колонка с боковыми заголовками для индексации: '{vertical_header_col}'")
+
+        # 4. Устанавливаем боковые заголовки как индекс DataFrame
+        try:
+            # Создаем копию для индексации
+            indexed_df = filtered_df.copy()
+
+            # Очищаем значения в колонке индекса для корректной работы
+            indexed_df[vertical_header_col] = indexed_df[vertical_header_col].astype(str).str.strip()
+
+            # Устанавливаем индекс
+            indexed_df = indexed_df.set_index(vertical_header_col)
+
+            logger.debug(f"Успешно установлен индекс по колонке '{vertical_header_col}'")
+            logger.debug(f"Уникальные значения индекса: {list(indexed_df.index.unique())[:5]}...")
+
+        except Exception as e:
+            logger.error(f"Ошибка при установке индекса для листа '{self.sheet_name}': {e}")
+            # Если не удалось установить индекс, возвращаемся к индексной нумерации
+            return self._fallback_create_data_structure(filtered_df, vertical_header_col)
+
+        # 5. Формируем список колонок для данных (все кроме боковых заголовков)
+        data_columns = filtered_df.columns[1:].tolist()
+
+        # 6. Создаем структуру данных для каждой колонки
+        for col_name in data_columns:
+            # Получаем заголовок колонки
+            column_header = str(col_name).strip()
+
+            # Получаем значения для этой колонки
             column_values = []
 
-            # Для каждого вертикального заголовка получаем значение из ячейки
-            for row_idx, row_header in enumerate(vertical_headers):
-                if row_idx >= len(df):
-                    continue
+            # Проходим по всем боковым заголовкам (индексам)
+            for row_header in vertical_headers:
+                row_header_clean = str(row_header).strip()
 
-                # Получаем значение из ячейки
+                # Проверяем, существует ли такой индекс в DataFrame
+                if row_header_clean in indexed_df.index:
+                    try:
+                        # Получаем значение из ячейки по индексу и имени колонки
+                        cell_value = indexed_df.loc[row_header_clean, col_name]
+
+                        # Преобразуем значение в число если возможно
+                        processed_value = cell_value
+                        if self._is_numeric_value(cell_value):
+                            try:
+                                str_val = str(cell_value).strip().replace(',', '.').replace(' ', '')
+                                if '.' in str_val:
+                                    processed_value = float(str_val)
+                                    if processed_value.is_integer():
+                                        processed_value = int(processed_value)
+                                else:
+                                    processed_value = int(str_val)
+                            except (ValueError, TypeError):
+                                pass
+
+                        column_values.append({
+                            "row_header": row_header_clean,
+                            "value": processed_value
+                        })
+                    except KeyError:
+                        logger.debug(
+                            f"Ключ '{col_name}' не найден в индексированном DataFrame для листа '{self.sheet_name}'")
+                        continue
+                    except Exception as e:
+                        logger.debug(f"Ошибка при получении значения ({row_header_clean}, {col_name}): {e}")
+                        continue
+                else:
+                    logger.debug(f"Индекс '{row_header_clean}' не найден в DataFrame для листа '{self.sheet_name}'")
+
+            # Добавляем колонку в данные, если есть значения
+            if column_values:
+                data.append({
+                    "column_header": column_header,
+                    "values": column_values
+                })
+
+        return data
+
+    def _fallback_create_data_structure(self, filtered_df: pd.DataFrame, vertical_header_col: str) -> List[Dict]:
+        """
+        Резервный метод создания структуры данных на случай ошибки при индексации.
+        Использует числовые индексы строк вместо значений заголовков.
+        """
+        logger.warning(f"Используется резервный метод создания структуры данных для листа '{self.sheet_name}'")
+
+        data = []
+        data_columns = filtered_df.columns[1:].tolist()
+
+        for col_name in data_columns:
+            column_header = str(col_name).strip()
+            column_values = []
+
+            for idx, row in filtered_df.iterrows():
                 try:
-                    cell_value = df.iloc[row_idx][df_col_name]
+                    row_header = str(row[vertical_header_col]).strip()
+                    if self._is_empty_or_nan(row_header) or self._is_numeric_value(row_header):
+                        continue
 
-                    # Преобразуем значение в число если возможно
+                    cell_value = row[col_name]
                     processed_value = cell_value
+
                     if self._is_numeric_value(cell_value):
                         try:
                             str_val = str(cell_value).strip().replace(',', '.').replace(' ', '')
@@ -420,14 +509,11 @@ class FiveFKParser(BaseSheetParser):
                         "row_header": row_header,
                         "value": processed_value
                     })
-                except KeyError:
-                    logger.debug(f"Ключ {df_col_name} не найден в DataFrame для листа '{self.sheet_name}'")
-                    continue
                 except Exception as e:
-                    logger.debug(f"Ошибка при получении значения ({row_idx}, {df_col_name}): {e}")
+                    logger.debug(f"Ошибка в резервном методе для строки {idx}, колонки {col_name}: {e}")
                     continue
 
-            if column_values:  # Добавляем только если есть значения
+            if column_values:
                 data.append({
                     "column_header": column_header,
                     "values": column_values
