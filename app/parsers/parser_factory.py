@@ -1,9 +1,8 @@
 # app/parsers/parser_factory.py
 """
-Фабрика для создания парсеров в зависимости от типа формы.
-Сохраняет старые интерфейсы (create_parser, get_available_parsers)
-и добавляет удобный helper create_file_parser(form_model), который
-возвращает объект с методом parse(file_path) — парсит весь файл по листам.
+Единое место выбора обработчиков форм по типу формы.
+Чтобы добавить новый тип формы: FormType в form_model.py, detect_form_type,
+и ветка в create_parser здесь. Логика форм сосредоточена в form_model + ParserFactory.
 """
 
 import logging
@@ -21,7 +20,10 @@ logger = logging.getLogger(__name__)
 
 
 class ParserFactory:
-    """Фабрика для создания парсеров в зависимости от типа формы"""
+    """
+    Фабрика парсеров по типу формы. Единое место для добавления/изменения
+    обработчиков форм: новый FormType → ветка в create_parser.
+    """
 
     @staticmethod
     def create_parser(sheet_name: str, form_type: FormType) -> BaseSheetParser:

@@ -1,26 +1,22 @@
 # app/api/v2/endpoints/filters.py
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
+
 from app.api.v2.schemas.filters import (
     FilterValuesRequest,
     FilterValuesResponse,
     FiltersNamesResponse,
     FilteredDataRequest,
-    FilteredDataResponse
+    FilteredDataResponse,
 )
 from app.core.exceptions import log_and_raise_http
 from app.core.dependencies import get_data_retrieval_service
+from app.services.form_validation import validate_form_id
 
 router = APIRouter()
 
 # пользовательский набор фильтров (контракт API)
 FILTERS = ["год", "город", "раздел", "строка", "колонка"]
-
-
-def require_form_id(form_id: Optional[str]):
-    if not form_id:
-        raise HTTPException(status_code=400, detail="отсутствует обязательный параметр form_id")
-    return form_id
 
 
 @router.get("/filters-names", response_model=FiltersNamesResponse)
@@ -29,7 +25,7 @@ async def get_filters_names(form_id: Optional[str] = Query(None, description="ID
     Возвращает список доступных фильтров.
     form_id обязателен в query
     """
-    require_form_id(form_id)
+    validate_form_id(form_id)
     return {"filters": FILTERS}
 
 
@@ -44,7 +40,7 @@ async def get_filter_values(
     form_id обязательный query-параметр
     """
     try:
-        require_form_id(form_id)
+        validate_form_id(form_id)
 
         # валидация имени фильтра
         if request.filter_name not in FILTERS:
@@ -77,7 +73,7 @@ async def get_filtered_data(
     form_id обязательный query-параметр
     """
     try:
-        require_form_id(form_id)
+        validate_form_id(form_id)
 
         # валидация имен фильтров внутри списка
         for f in payload.filters:

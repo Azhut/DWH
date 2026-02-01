@@ -20,11 +20,11 @@ from app.data.services.flat_data_service import FlatDataService
 from app.data.services.filter_service import FilterService
 from app.data.services.forms_service import FormsService
 from app.data.services.log_service import LogService
-from app.services.file_processor import FileProcessor
-from app.services.sheet_processor import SheetProcessor
-from app.services.sheet_extraction_service import SheetExtractionService
-from app.services.ingestion_service import IngestionService
-from app.parsers.parser_factory import ParserFactory  # НОВОЕ
+from app.services.upload_manager import UploadManager
+from app.services.file_handling_service import FileHandlingService
+from app.services.form_service import FormService
+from app.services.sheet_handling_service import SheetHandlingService
+from app.parsers.parser_factory import ParserFactory
 
 
 # Database
@@ -93,28 +93,30 @@ def get_data_delete_service() -> DataDeleteService:
     )
 
 
-# Processing services
+# Upload: оркестратор эндпоинта upload; сервисы — файлы, форма, листы
 @lru_cache
-def get_file_processor() -> FileProcessor:
-    return FileProcessor()
-
-
-@lru_cache
-def get_sheet_processor() -> SheetProcessor:
-    return SheetProcessor()
+def get_file_handling_service() -> FileHandlingService:
+    return FileHandlingService()
 
 
 @lru_cache
-def get_sheet_extraction_service() -> SheetExtractionService:
-    return SheetExtractionService()
+def get_form_service() -> FormService:
+    """FormService для upload (обёртка над FormsService из data layer)."""
+    return FormService(forms_service=get_forms_service())
 
 
 @lru_cache
-def get_ingestion_service() -> IngestionService:
-    return IngestionService(
-        file_processor=get_file_processor(),
-        sheet_processor=get_sheet_processor(),
-        data_save_service=get_data_save_service()
+def get_sheet_handling_service() -> SheetHandlingService:
+    return SheetHandlingService()
+
+
+@lru_cache
+def get_upload_manager() -> UploadManager:
+    return UploadManager(
+        file_handling_service=get_file_handling_service(),
+        form_service=get_form_service(),
+        sheet_handling_service=get_sheet_handling_service(),
+        data_save_service=get_data_save_service(),
     )
 
 

@@ -1,5 +1,4 @@
-from typing import List, Optional
-from datetime import datetime
+from typing import List
 from pydantic import BaseModel
 from app.api.v2.schemas.files import FileResponse
 

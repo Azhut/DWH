@@ -1,5 +1,9 @@
+"""
+Округление числовых данных по листам. Используется в upload pipeline (ProcessSheetsStep).
+"""
 import pandas as pd
 from decimal import Decimal, ROUND_HALF_UP
+
 
 class RoundingService:
     SHEETS_INT = {"Раздел1", "Раздел2", "Раздел5", "Раздел7"}

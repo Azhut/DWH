@@ -1,5 +1,7 @@
 """
-Модели для работы с типами форм
+Типы форм и определение типа по названию — единое место.
+Новый тип формы: добавить значение в FormType и правило в detect_form_type.
+Выбор парсера по типу — в app.parsers.parser_factory.ParserFactory.
 """
 from enum import Enum
 from pydantic import BaseModel, Field
