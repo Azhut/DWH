@@ -10,7 +10,7 @@ from typing import Optional, Any
 
 import pandas as pd
 
-from app.models.form_model import FormType, FormInfo, detect_form_type
+from app.domain.form.models import FormType, FormInfo, detect_form_type
 from app.parsers.parsers import PARSERS as FK1_PARSERS
 from app.parsers.five_fk_parser import FiveFKParser
 from app.parsers.universal_parser import UniversalParser
@@ -81,7 +81,7 @@ class ParserFactory:
         """
         Возвращает объект FileParser, у которого есть метод parse(file_path_or_buffer).
         form_model может быть:
-          - экземпляром app.models.form_model.FormInfo
+          - экземпляром app.domain.form.models.FormInfo
           - dict с ключом 'name' и/или 'type'
           - простой строкой с названием формы
         """

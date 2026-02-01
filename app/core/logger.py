@@ -1,37 +1,38 @@
-# app/core/logger.py
+# app/core/logger.py — централизованная настройка логирования (stdout + опционально Mongo по схеме LogEntry).
 import logging
-from config import config
 from datetime import datetime
+
+from config import config
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
+
+from app.domain.log.models import LogEntry
 
 level = logging.DEBUG if config.DEBUG else logging.INFO
 logging.basicConfig(level=level, format="%(asctime)s - %(levelname)s - %(name)s - %(message)s")
 logger = logging.getLogger("sport_api")
 
-# В продакшне — попытка отправлять логи в коллекцию Logs, но только если соединение успешно
 if config.APP_ENV == "production":
     try:
         mongo_client = MongoClient(config.MONGO_URI, serverSelectionTimeoutMS=5000)
-        # Тестируем подключение
         mongo_client.admin.command("ping")
         logs_collection = mongo_client[config.DATABASE_NAME]["Logs"]
 
         class MongoHandler(logging.Handler):
+            """Пишет записи логгера в MongoDB по схеме LogEntry."""
+
             def emit(self, record):
                 try:
-                    log_entry = {
-                        "timestamp": datetime.utcnow(),
-                        "level": record.levelname,
-                        "message": record.getMessage(),
-                        "logger": record.name,
-                        "pathname": record.pathname,
-                        "lineno": record.lineno
-                    }
-                    # Не блокируем основной поток (insert_one в pymongo — быстрый вызов)
-                    logs_collection.insert_one(log_entry)
+                    entry = LogEntry(
+                        timestamp=datetime.utcnow(),
+                        level=record.levelname,
+                        message=record.getMessage(),
+                        logger=record.name,
+                        pathname=record.pathname,
+                        lineno=record.lineno,
+                    )
+                    logs_collection.insert_one(entry.to_mongo_doc())
                 except PyMongoError:
-                    # При проблемах с Mongo — падаем на консоль (чтобы не терять логи)
                     logging.getLogger("sport_api").exception("Не удалось записать лог в Mongo")
 
         mongo_handler = MongoHandler()

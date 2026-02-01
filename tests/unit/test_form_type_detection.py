@@ -2,7 +2,7 @@
 Тесты для определения типа форм
 """
 import pytest
-from app.models.form_model import detect_form_type, FormType
+from app.domain.form.models import detect_form_type, FormType
 
 
 @pytest.mark.parametrize("form_name, expected_type", [

@@ -1,6 +1,6 @@
 """
 Единая точка для всех зависимостей FastAPI.
-Используем functools.lru_cache для синглтонов в рамках приложения.
+Aggregate-Centric: репозитории и сервисы — из domain; сценарии — из application.
 """
 from functools import lru_cache
 from typing import Type
@@ -8,32 +8,24 @@ from typing import Type
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.core.database import mongo_connection
-from app.data.repositories import FileRepository
-from app.data.repositories.flat_data import FlatDataRepository
-from app.data.repositories.forms import FormsRepository
-from app.data.repositories.logs import LogsRepository
-from app.data.services.data_delete import DataDeleteService
-from app.data.services.data_retrieval import DataRetrievalService
-from app.data.services.data_save import DataSaveService
-from app.data.services.file_service import FileService
-from app.data.services.flat_data_service import FlatDataService
-from app.data.services.filter_service import FilterService
-from app.data.services.forms_service import FormsService
-from app.data.services.log_service import LogService
-from app.services.upload_manager import UploadManager
-from app.services.file_handling_service import FileHandlingService
-from app.services.form_service import FormService
-from app.services.sheet_handling_service import SheetHandlingService
+from app.domain.file import FileRepository, FileService
+from app.domain.flat_data import FlatDataRepository, FlatDataService
+from app.domain.form import FormRepository, FormService
+from app.domain.log import LogRepository, LogService
+from app.domain.sheet import SheetService
+from app.application.upload import UploadManager
+from app.application.upload.data_save import DataSaveService
+from app.application.file_delete import DataDeleteService
+from app.application.retrieval import DataRetrievalService
 from app.parsers.parser_factory import ParserFactory
 
 
-# Database
 @lru_cache
 def get_database() -> AsyncIOMotorDatabase:
     return mongo_connection.get_database()
 
 
-# Repositories
+# --- Domain: репозитории ---
 @lru_cache
 def get_file_repository() -> FileRepository:
     return FileRepository(get_database().get_collection("Files"))
@@ -45,14 +37,19 @@ def get_flat_data_repository() -> FlatDataRepository:
 
 
 @lru_cache
-def get_logs_repository() -> LogsRepository:
-    return LogsRepository(get_database().get_collection("Logs"))
+def get_form_repository() -> FormRepository:
+    return FormRepository(get_database().get_collection("Forms"))
 
 
-# Services
 @lru_cache
-def get_log_service() -> LogService:
-    return LogService(get_logs_repository())
+def get_logs_repository() -> LogRepository:
+    return LogRepository(get_database().get_collection("Logs"))
+
+
+# --- Domain: сервисы агрегатов ---
+@lru_cache
+def get_file_service() -> FileService:
+    return FileService(get_file_repository())
 
 
 @lru_cache
@@ -61,88 +58,54 @@ def get_flat_data_service() -> FlatDataService:
 
 
 @lru_cache
-def get_file_service() -> FileService:
-    return FileService(get_file_repository())
+def get_form_service() -> FormService:
+    return FormService(get_form_repository())
 
 
 @lru_cache
-def get_filter_service() -> FilterService:
-    return FilterService(get_flat_data_repository())
+def get_log_service() -> LogService:
+    return LogService(get_logs_repository())
 
 
 @lru_cache
-def get_data_retrieval_service() -> DataRetrievalService:
-    return DataRetrievalService(get_filter_service())
+def get_sheet_service() -> SheetService:
+    return SheetService()
 
 
+# --- Application: сценарии ---
 @lru_cache
 def get_data_save_service() -> DataSaveService:
     return DataSaveService(
-        log_service=get_log_service(),
+        file_service=get_file_service(),
         flat_data_service=get_flat_data_service(),
-        file_service=get_file_service()
+        log_service=get_log_service(),
     )
 
 
 @lru_cache
 def get_data_delete_service() -> DataDeleteService:
     return DataDeleteService(
-        file_repo=get_file_repository(),
-        flat_repo=get_flat_data_repository(),
-        log_service=get_log_service()
+        file_service=get_file_service(),
+        flat_data_service=get_flat_data_service(),
+        log_service=get_log_service(),
     )
 
 
-# Upload: оркестратор эндпоинта upload; сервисы — файлы, форма, листы
 @lru_cache
-def get_file_handling_service() -> FileHandlingService:
-    return FileHandlingService()
-
-
-@lru_cache
-def get_form_service() -> FormService:
-    """FormService для upload (обёртка над FormsService из data layer)."""
-    return FormService(forms_service=get_forms_service())
-
-
-@lru_cache
-def get_sheet_handling_service() -> SheetHandlingService:
-    return SheetHandlingService()
+def get_data_retrieval_service() -> DataRetrievalService:
+    return DataRetrievalService(get_flat_data_service())
 
 
 @lru_cache
 def get_upload_manager() -> UploadManager:
     return UploadManager(
-        file_handling_service=get_file_handling_service(),
+        file_service=get_file_service(),
         form_service=get_form_service(),
-        sheet_handling_service=get_sheet_handling_service(),
+        sheet_service=get_sheet_service(),
         data_save_service=get_data_save_service(),
     )
 
 
-# НОВОЕ: Фабрика парсеров
 @lru_cache
 def get_parser_factory() -> Type[ParserFactory]:
-    """
-    Возвращает фабрику парсеров.
-    """
     return ParserFactory
-
-
-def get_forms_repository() -> FormsRepository:
-    """
-    Возвращает репозиторий Forms (синхронный фабричный вызов).
-    Мы используем mongo_connection напрямую: предполагается, что mongo_connection корректно инициализирован.
-    """
-    db = mongo_connection.get_database()
-    col = db.get_collection("Forms")
-    return FormsRepository(col)
-
-
-def get_forms_service() -> FormsService:
-    """
-    Возвращает FormsService — используется как Depends(get_forms_service) в эндпоинтах.
-    """
-    repo = get_forms_repository()
-    service = FormsService(repo)
-    return service

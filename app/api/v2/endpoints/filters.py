@@ -11,7 +11,7 @@ from app.api.v2.schemas.filters import (
 )
 from app.core.exceptions import log_and_raise_http
 from app.core.dependencies import get_data_retrieval_service
-from app.services.form_validation import validate_form_id
+from app.domain.form.service import validate_form_id
 
 router = APIRouter()
 

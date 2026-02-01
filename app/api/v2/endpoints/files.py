@@ -1,24 +1,23 @@
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, Depends
-from app.data.services.data_delete import DataDeleteService
+
 from app.api.v2.schemas.files import FileListResponse, DeleteFileResponse
-from app.core.database import mongo_connection
-from app.core.dependencies import get_data_delete_service
+from app.application.file_delete import DataDeleteService
+from app.core.dependencies import get_data_delete_service, get_file_service
+from app.domain.file.service import FileService
 
 router = APIRouter()
+
 
 @router.get("/files", response_model=List[FileListResponse])
 async def list_files(
     limit: int = Query(100, ge=0),
     offset: int = Query(0, ge=0),
-    year: Optional[int] = None
+    year: Optional[int] = None,
+    file_service: FileService = Depends(get_file_service),
 ):
     try:
-        db = mongo_connection.get_database()
-        files_col = db.get_collection("Files")
-        query = {} if year is None else {"year": year}
-        cursor = files_col.find(query).skip(offset).limit(limit)
-        docs = await cursor.to_list(length=None)
+        docs = await file_service.list_files(limit=limit, offset=offset, year=year)
         result = []
         for doc in docs:
             result.append(FileListResponse(
@@ -29,7 +28,7 @@ async def list_files(
                 upload_timestamp=doc.get("upload_timestamp"),
                 updated_at=doc.get("updated_at", doc.get("upload_timestamp")),
                 year=doc.get("year"),
-                form_id = doc.get("form_id")
+                form_id=doc.get("form_id"),
             ))
         return result
     except Exception as e:

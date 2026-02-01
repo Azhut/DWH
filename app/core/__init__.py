@@ -1,22 +1,13 @@
 """
-Ядро приложения - только базовые компоненты
+Ядро приложения: database, exceptions, logger.
+Зависимости (get_upload_manager и др.) — импортировать из app.core.dependencies.
 """
 from .database import mongo_connection
 from .exceptions import log_and_raise_http
 from .logger import logger
-from .dependencies import (
-    get_data_retrieval_service,
-    get_data_delete_service,
-    get_data_save_service,
-    get_upload_manager,
-)
 
 __all__ = [
     "mongo_connection",
     "log_and_raise_http",
     "logger",
-    "get_data_retrieval_service",
-    "get_data_delete_service",
-    "get_data_save_service",
-    "get_upload_manager",
 ]

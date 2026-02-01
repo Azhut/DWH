@@ -3,7 +3,7 @@
 """
 import pytest
 from app.parsers.parser_factory import ParserFactory
-from app.models.form_model import FormType
+from app.domain.form.models import FormType
 from app.parsers.five_fk_parser import FiveFKParser
 from app.parsers.universal_parser import UniversalParser
 
