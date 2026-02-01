@@ -466,150 +466,99 @@ class FiveFKParser(BaseSheetParser):
 
     def _create_data_structure(self, df: pd.DataFrame, horizontal_headers: list, vertical_headers: list) -> List[Dict]:
         """
-        Создает структурированные данные в формате, совместимом с существующей системой.
-        Исправления:
-        1. Применяем fix_header() к значениям колонки индекса для синхронизации с vertical_headers
-        2. Обрабатываем дубликаты в индексе (возвращаем первое значение)
-        3. Используем сохранённый столбец self.vertical_header_column
+        Создаёт структуру данных с обработкой дубликатов колонок:
+        - Для строк: обработка по ПОЗИЦИИ (решает проблему дубликатов заголовков вроде "из них крытые")
+        - Для колонок: берём ТОЛЬКО ПЕРВОЕ вхождение каждого имени колонки (игнорируем дубликаты)
         """
         data = []
 
-        # 1. Фильтруем DataFrame: удаляем все Unnamed_Column_* колонки
+        # 1. Фильтруем мусорные колонки
         filtered_df = df.copy()
-
-        # Удаляем колонки, начинающиеся с "Unnamed_Column_"
         cols_to_drop = [col for col in filtered_df.columns if str(col).startswith('Unnamed_Column_')]
         if cols_to_drop:
             filtered_df = filtered_df.drop(columns=cols_to_drop)
 
-        # 2. Проверяем, что остались колонки для обработки
         if filtered_df.empty or len(filtered_df.columns) < 2:
-            logger.warning(f"Недостаточно колонок для обработки после фильтрации (лист: '{self.sheet_name}')")
+            logger.warning(f"Недостаточно колонок для обработки (лист: '{self.sheet_name}')")
             return data
 
-        # 3. Используем столбец, найденный в _extract_vertical_headers
-        vertical_header_col = self.vertical_header_column
+        # 2. Определяем колонку заголовков
+        vertical_header_col = self.vertical_header_column or filtered_df.columns[0]
+        if vertical_header_col not in filtered_df.columns:
+            vertical_header_col = filtered_df.columns[0]
+            logger.warning(f"Используем первый столбец как заголовки: '{vertical_header_col}'")
 
-        # Если столбец не найден — ищем альтернативу
-        if vertical_header_col is None or vertical_header_col not in filtered_df.columns:
+        # 3. Очищаем заголовки для сравнения
+        working_df = filtered_df.copy()
+        working_df[vertical_header_col] = working_df[vertical_header_col].apply(
+            lambda x: fix_header(str(x)) if not pd.isna(x) else ''
+        ).str.strip()
+
+        # 4. Синхронизируем длины
+        min_len = min(len(working_df), len(vertical_headers))
+        if len(working_df) != len(vertical_headers):
             logger.warning(
-                f"Столбец '{vertical_header_col}' не найден в отфильтрованном DataFrame для листа '{self.sheet_name}'. "
-                f"Доступные столбцы: {list(filtered_df.columns)[:5]}..."
+                f"Рассинхрон строк в '{self.sheet_name}': headers={len(vertical_headers)}, "
+                f"df={len(working_df)} → используем {min_len} строк"
             )
-            # Ищем первый столбец с текстовыми значениями
-            for col in filtered_df.columns:
-                non_empty_vals = [v for v in filtered_df[col].dropna() if not self._is_numeric_value(v)]
-                if len(non_empty_vals) >= 3:
-                    vertical_header_col = col
-                    logger.info(f"Найден альтернативный столбец с боковыми заголовками: '{vertical_header_col}'")
-                    break
+        working_df = working_df.iloc[:min_len].reset_index(drop=True)
+        vertical_headers = vertical_headers[:min_len]
 
-            if vertical_header_col is None or vertical_header_col not in filtered_df.columns:
-                vertical_header_col = filtered_df.columns[0]
-                logger.warning(f"Не найден подходящий столбец, используем первый: '{vertical_header_col}'")
+        # 5. === КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: оставляем ТОЛЬКО ПЕРВОЕ вхождение каждого имени колонки ===
+        # Создаём маппинг: имя колонки -> позиция ПЕРВОГО вхождения
+        column_map = {}  # {col_name: first_position}
+        duplicate_count = 0
 
-        logger.debug(f"Колонка с боковыми заголовками для индексации: '{vertical_header_col}'")
+        for pos, col_name in enumerate(working_df.columns):
+            if col_name == vertical_header_col:
+                continue
 
-        # Выводим образцы значений для отладки
-        sample_values = filtered_df[vertical_header_col].head(10).tolist()
-        logger.debug(f"Образцы значений в колонке '{vertical_header_col}' ДО очистки: {sample_values}")
-        logger.debug(f"Извлеченные vertical_headers (первые 10): {vertical_headers[:10]}")
-
-        # 4. Устанавливаем боковые заголовки как индекс DataFrame С ОЧИСТКОЙ ПЕРЕНОСОВ
-        try:
-            indexed_df = filtered_df.copy()
-
-            # === КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ 1: применяем ту же очистку, что и в _extract_vertical_headers ===
-            indexed_df[vertical_header_col] = indexed_df[vertical_header_col].apply(
-                lambda x: fix_header(str(x)) if not pd.isna(x) else 'nan'
-            ).str.strip()
-
-            # Устанавливаем индекс
-            indexed_df = indexed_df.set_index(vertical_header_col)
-
-            logger.debug(f"Успешно установлен индекс по колонке '{vertical_header_col}'")
-            logger.debug(f"Уникальные значения индекса (первые 10): {list(indexed_df.index.unique())[:10]}")
-
-            # === КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ 2: проверяем дубликаты в индексе ===
-            duplicates = indexed_df.index[indexed_df.index.duplicated()].unique()
-            if len(duplicates) > 0:
-                logger.warning(
-                    f"Обнаружены дубликаты в индексе ({len(duplicates)} уникальных): {list(duplicates)[:5]}... "
-                    f"Будет использоваться ПЕРВОЕ значение для каждого дубликата."
+            if col_name not in column_map:
+                column_map[col_name] = pos
+            else:
+                duplicate_count += 1
+                logger.debug(
+                    f"Пропущен дубликат колонки '{col_name}' (позиция {pos}, оригинал на позиции {column_map[col_name]}) "
+                    f"в листе '{self.sheet_name}'"
                 )
 
-        except Exception as e:
-            logger.error(f"Ошибка при установке индекса для листа '{self.sheet_name}': {e}", exc_info=True)
-            return self._fallback_create_data_structure(filtered_df, vertical_header_col)
+        if duplicate_count > 0:
+            logger.info(
+                f"В листе '{self.sheet_name}' обнаружено {duplicate_count} дубликатов колонок. "
+                f"Используются только первые вхождения."
+            )
 
-        # 5. Формируем список колонок для данных (все кроме боковых заголовков)
-        data_columns = [col for col in filtered_df.columns if col != vertical_header_col]
-
-        # 6. Создаем структуру данных для каждой колонки
-        debug_printed = False
-
-        for col_name in data_columns:
-            column_header = str(col_name).strip()
+        # 6. Обработка по ПОЗИЦИИ (строка + колонка)
+        for col_name, col_pos in column_map.items():
             column_values = []
+            column_header = str(col_name).strip()
 
-            for row_header in vertical_headers:
-                row_header_clean = str(row_header).strip()
-
+            for row_idx in range(len(vertical_headers)):
                 try:
-                    # === КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ 3: безопасное получение значения с обработкой дубликатов ===
-                    # Используем .loc с проверкой типа результата
-                    result = indexed_df.loc[row_header_clean, col_name]
+                    # Получаем значение ПО ПОЗИЦИИ (гарантированно скаляр)
+                    cell_value = working_df.iloc[row_idx, col_pos]
 
-                    # Если результат — Series (дубликаты), берём первое значение
-                    if isinstance(result, pd.Series):
-                        cell_value = result.iloc[0] if len(result) > 0 else None
-                        logger.debug(
-                            f"Дубликат индекса '{row_header_clean}' для колонки '{col_name}' — "
-                            f"используем первое значение из {len(result)} записей"
-                        )
+                    # Обработка значения
+                    if pd.isna(cell_value) or cell_value is None:
+                        processed_value = None
+                    elif self._is_numeric_value(cell_value):
+                        try:
+                            str_val = str(cell_value).strip().replace(',', '.').replace(' ', '')
+                            num = float(str_val)
+                            processed_value = int(num) if num.is_integer() else num
+                        except (ValueError, TypeError):
+                            processed_value = cell_value
                     else:
-                        cell_value = result
-
-                    # Преобразуем значение в число если возможно
-                    processed_value = cell_value
-                    if cell_value is not None and not pd.isna(cell_value):
-                        if self._is_numeric_value(cell_value):
-                            try:
-                                str_val = str(cell_value).strip().replace(',', '.').replace(' ', '')
-                                if '.' in str_val:
-                                    processed_value = float(str_val)
-                                    if processed_value.is_integer():
-                                        processed_value = int(processed_value)
-                                else:
-                                    processed_value = int(str_val)
-                            except (ValueError, TypeError):
-                                pass
+                        processed_value = cell_value
 
                     column_values.append({
-                        "row_header": row_header_clean,
-                        "value": processed_value if not pd.isna(processed_value) else None
+                        "row_header": str(vertical_headers[row_idx]).strip(),
+                        "value": processed_value
                     })
-
-                except KeyError:
-                    # Отладочный вывод при первой ошибке
-                    if not debug_printed:
-                        debug_printed = True
-                        logger.warning(
-                            f"НЕСОВПАДЕНИЕ ИНДЕКСОВ в листе '{self.sheet_name}': "
-                            f"vertical_headers не найдены в индексе DataFrame!"
-                        )
-                        logger.warning(f"  Используемый столбец индекса: '{vertical_header_col}'")
-                        logger.warning(f"  Первые 10 значений в индексе: {list(indexed_df.index[:10])}")
-                        logger.warning(f"  Первые 10 vertical_headers: {vertical_headers[:10]}")
-                        logger.warning(f"  Пример отсутствующего индекса: '{row_header_clean}'")
-                        # Сравниваем с очисткой
-                        cleaned_sample = [fix_header(str(x)) for x in indexed_df.index[:10]]
-                        logger.warning(f"  Индекс ПОСЛЕ очистки fix_header(): {cleaned_sample}")
-
-                    logger.debug(f"Индекс '{row_header_clean}' не найден в DataFrame для листа '{self.sheet_name}'")
-                    continue
                 except Exception as e:
-                    logger.debug(f"Ошибка при получении значения ({row_header_clean}, {col_name}): {e}")
+                    logger.debug(
+                        f"Ошибка обработки строки {row_idx}, колонки '{col_name}' (позиция {col_pos}): {e}"
+                    )
                     continue
 
             if column_values:
@@ -618,6 +567,11 @@ class FiveFKParser(BaseSheetParser):
                     "values": column_values
                 })
 
+        logger.debug(
+            f"Создана структура данных для листа '{self.sheet_name}': "
+            f"{len(data)} колонок (из {len(column_map)} уникальных), "
+            f"{len(vertical_headers)} строк"
+        )
         return data
 
     def _fallback_create_data_structure(self, filtered_df: pd.DataFrame, vertical_header_col: str) -> List[Dict]:
