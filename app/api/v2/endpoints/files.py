@@ -2,7 +2,7 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, Depends
 
 from app.api.v2.schemas.files import FileListResponse, DeleteFileResponse
-from app.application.file_delete import DataDeleteService
+from app.data.file_delete import DataDeleteService
 from app.core.dependencies import get_data_delete_service, get_file_service
 from app.domain.file.service import FileService
 

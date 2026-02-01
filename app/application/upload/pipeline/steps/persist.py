@@ -1,5 +1,5 @@
 """Шаг: сохранение файла и flat_data через координатор DataSaveService."""
-from app.application.upload.data_save import DataSaveService
+from app.data.data_save import DataSaveService
 from app.application.upload.pipeline.context import UploadPipelineContext
 
 
