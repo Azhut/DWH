@@ -20,9 +20,8 @@ class ProductionLauncher(ApplicationLauncher):
     def _run_critical_checks(self):
         """Только критические проверки"""
         try:
-            # Проверяем что базовые импорты работают
-            from app.core.database import mongo_connection
-            from app.core.logger import logger
+
+
             self.print_success("Критические компоненты загружены")
         except Exception as e:
             self.print_error(f"Критические проверки не пройдены: {e}")

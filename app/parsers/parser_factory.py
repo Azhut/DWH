@@ -1,10 +1,17 @@
+# app/parsers/parser_factory.py
 """
-Фабрика для создания парсеров в зависимости от типа формы
+Фабрика для создания парсеров в зависимости от типа формы.
+Сохраняет старые интерфейсы (create_parser, get_available_parsers)
+и добавляет удобный helper create_file_parser(form_model), который
+возвращает объект с методом parse(file_path) — парсит весь файл по листам.
 """
-import logging
-from typing import Optional
 
-from app.models.form_model import FormType
+import logging
+from typing import Optional, Any
+
+import pandas as pd
+
+from app.models.form_model import FormType, FormInfo, detect_form_type
 from app.parsers.parsers import PARSERS as FK1_PARSERS
 from app.parsers.five_fk_parser import FiveFKParser
 from app.parsers.universal_parser import UniversalParser
@@ -31,35 +38,31 @@ class ParserFactory:
         logger.debug(f"Создание парсера для листа '{sheet_name}', тип формы: {form_type}")
 
         if form_type == FormType.FK_1:
-
             parser_class = FK1_PARSERS.get(sheet_name)
             if parser_class:
                 parser = parser_class()
                 logger.debug(f"Используется парсер 1ФК для листа '{sheet_name}'")
                 return parser
             else:
-                logger.warning(f"Не найден специфичный парсер 1ФК для листа '{sheet_name}', "
-                               f"используется универсальный парсер")
+                logger.warning(
+                    f"Не найден специфичный парсер 1ФК для листа '{sheet_name}', "
+                    "используется универсальный парсер"
+                )
 
         elif form_type == FormType.FK_5:
-
             logger.info(f"Используется парсер 5ФК для листа '{sheet_name}'")
             return FiveFKParser(sheet_name)
 
         # Fallback: универсальный парсер для неизвестных типов или отсутствующих парсеров
-        logger.info(f"Используется универсальный парсер для листа '{sheet_name}' (тип формы: {form_type})")
+        logger.info(
+            f"Используется универсальный парсер для листа '{sheet_name}' (тип формы: {form_type})"
+        )
         return UniversalParser(sheet_name)
 
     @staticmethod
     def get_available_parsers(form_type: FormType) -> dict:
         """
         Возвращает доступные парсеры для указанного типа формы.
-
-        Args:
-            form_type: Тип формы
-
-        Returns:
-            Словарь {название_листа: класс_парсера}
         """
         if form_type == FormType.FK_1:
             return FK1_PARSERS.copy()
@@ -67,3 +70,78 @@ class ParserFactory:
             return {"*": FiveFKParser}
         else:
             return {"*": UniversalParser}
+
+    # ---------------------------
+    # Новый helper: парсер файла
+    # ---------------------------
+    @staticmethod
+    def create_file_parser(form_model: Any):
+        """
+        Возвращает объект FileParser, у которого есть метод parse(file_path_or_buffer).
+        form_model может быть:
+          - экземпляром app.models.form_model.FormInfo
+          - dict с ключом 'name' и/или 'type'
+          - простой строкой с названием формы
+        """
+
+        # Определяем FormType
+        if form_model is None:
+            form_type = FormType.UNKNOWN
+        elif isinstance(form_model, FormInfo):
+            form_type = form_model.type
+        elif isinstance(form_model, dict):
+            # пытаемся взять явно указанный тип
+            typ = form_model.get("type")
+            if isinstance(typ, FormType):
+                form_type = typ
+            elif isinstance(typ, str):
+                # если строка — сопоставляем
+                try:
+                    form_type = FormType(typ)
+                except Exception:
+                    form_type = detect_form_type(form_model.get("name", ""))
+            else:
+                form_type = detect_form_type(form_model.get("name", ""))
+        elif isinstance(form_model, str):
+            form_type = detect_form_type(form_model)
+        else:
+            # на всякий случай
+            try:
+                # если объект имеет атрибут type
+                form_type = getattr(form_model, "type", FormType.UNKNOWN)
+                if isinstance(form_type, str):
+                    form_type = FormType(form_type)
+            except Exception:
+                form_type = FormType.UNKNOWN
+
+        class FileParser:
+            def __init__(self, form_type: FormType):
+                self.form_type = form_type
+
+            def parse(self, file_path_or_buffer) -> dict:
+                """
+                Парсит весь файл и возвращает словарь {sheet_name: parsed_result}.
+                parsed_result — объект, который возвращает конкретный sheet parser (обычно dict).
+                file_path_or_buffer может быть путь или любой объект, который pandas.read_excel принимает.
+                """
+                logger.debug(f"FileParser.parse: parsing file for form_type={self.form_type}")
+                try:
+                    xls = pd.read_excel(file_path_or_buffer, sheet_name=None, header=None)
+                except Exception as e:
+                    logger.exception("Ошибка чтения Excel-файла в create_file_parser.parse")
+                    raise
+
+                results = {}
+                for sheet_name, df in xls.items():
+                    try:
+                        sheet_parser = ParserFactory.create_parser(sheet_name, self.form_type)
+                        parsed = sheet_parser.parse(df)
+                        results[sheet_name] = parsed
+                    except Exception:
+                        # не прерываем весь файл — но логируем и кладём в results None с error
+                        logger.exception("Ошибка парсинга листа '%s'", sheet_name)
+                        results[sheet_name] = {"error": f"Не удалось распарсить лист {sheet_name}"}
+
+                return results
+
+        return FileParser(form_type)
