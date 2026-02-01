@@ -95,19 +95,91 @@ class FiveFKParser(BaseSheetParser):
         # Создаем копию для анализа
         analysis_df = raw_df.copy()
 
-        # Шаг 1: Найти первую непустую строку (начало таблицы)
+        # Шаг 1: Найти первую непустую строку с ПОДТВЕРЖДЕНИЕМ по двум критериям:
+        #   1) В столбцах под заголовком нет 6+ подряд пустых ячеек (вертикальная проверка)
+        #   2) В следующих строках есть устойчивый блок данных (горизонтальная проверка)
         first_non_empty_row = None
         max_rows_to_check = min(50, len(analysis_df))
 
         for i in range(max_rows_to_check):
             row = analysis_df.iloc[i]
             non_empty_count = sum(1 for val in row if not self._is_empty_or_nan(val))
-            if non_empty_count > 1:  # Если в строке больше 3 непустых ячеек
+
+            # Пропускаем явно пустые строки
+            if non_empty_count < 2:
+                continue
+
+            # === ВЕРТИКАЛЬНАЯ ПРОВЕРКА: проверяем каждый непустой столбец на наличие 6+ nan подряд ===
+            valid_column_found = False
+            invalid_columns = 0
+            total_non_empty_cols = 0
+
+            for col_idx in range(len(row)):
+                cell_value = row.iloc[col_idx]
+                if self._is_empty_or_nan(cell_value):
+                    continue
+
+                total_non_empty_cols += 1
+
+                # Смотрим вниз по столбцу на 10 строк
+                consecutive_nans = 0
+                max_lookahead = min(10, len(analysis_df) - i - 1)
+
+                for j in range(1, max_lookahead + 1):
+                    next_cell = analysis_df.iloc[i + j, col_idx]
+                    if self._is_empty_or_nan(next_cell):
+                        consecutive_nans += 1
+                    else:
+                        break  # Прерываем при первом непустом значении
+
+                # Если меньше 6 подряд пустых — столбец валидный
+                if consecutive_nans < 6:
+                    valid_column_found = True
+                else:
+                    invalid_columns += 1
+
+            # Если все непустые столбцы имеют >=6 nan подряд — это мусорный заголовок (например, "окаймление")
+            if not valid_column_found and total_non_empty_cols > 0:
+                logger.debug(
+                    f"Строка {i}: ВСЕ {total_non_empty_cols} столбцов имеют >=6 nan подряд → ПРОПУСКАЕМ (мусорный заголовок)"
+                )
+                continue
+
+            # === ГОРИЗОНТАЛЬНАЯ ПРОВЕРКА: устойчивый блок данных в следующих строках ===
+            look_ahead_window = min(12, len(analysis_df) - i - 1)
+            sustained_data_rows = 0
+            min_data_density = 3  # Минимум 3 непустых ячейки считаем "полезной строкой"
+
+            for j in range(1, look_ahead_window + 1):
+                next_row = analysis_df.iloc[i + j]
+                next_non_empty = sum(1 for val in next_row if not self._is_empty_or_nan(val))
+                if next_non_empty >= min_data_density:
+                    sustained_data_rows += 1
+
+            # Требуем: минимум 6 строк с данными в следующих 12 строках
+            logger.debug(
+                f"Строка {i}: непустых={non_empty_count}, "
+                f"валидных столбцов={total_non_empty_cols - invalid_columns}/{total_non_empty_cols}, "
+                f"устойчивых строк={sustained_data_rows}/{look_ahead_window} "
+                f"→ {'ПРИНИМАЕМ' if sustained_data_rows >= 6 else 'пропускаем'}"
+            )
+
+            if sustained_data_rows >= 6:
                 first_non_empty_row = i
                 break
 
+        # Fallback: если не нашли устойчивый блок — ищем самую "плотную" строку
         if first_non_empty_row is None:
-            first_non_empty_row = 0
+            logger.warning(
+                f"Не найден устойчивый блок данных для листа '{self.sheet_name}', используем эвристику по плотности")
+            best_row = None
+            max_density = 0
+            for i in range(max_rows_to_check):
+                density = sum(1 for val in analysis_df.iloc[i] if not self._is_empty_or_nan(val))
+                if density > max_density:
+                    max_density = density
+                    best_row = i
+            first_non_empty_row = best_row if best_row is not None else 0
 
         self.header_start_row = first_non_empty_row
         logger.debug(f"Начало таблицы определено на строке: {self.header_start_row}")
@@ -132,7 +204,6 @@ class FiveFKParser(BaseSheetParser):
                 # Проверяем, является ли значение натуральным числом
                 if str_val.isdigit() and int(str_val) > 0:
                     numeric_count += 1
-
 
             # Если в строке достаточно натуральных чисел и они последовательны
             if valid_numeric_row and numeric_count >= 8:
@@ -165,6 +236,21 @@ class FiveFKParser(BaseSheetParser):
         logger.debug(f"  Начало данных: {self.data_start_row}")
         logger.debug(f"  Уровней заголовков: {self.num_header_levels}")
 
+        if self.header_start_row < 0 or self.header_end_row < self.header_start_row:
+            logger.warning(
+                f"Некорректная структура таблицы для листа '{self.sheet_name}': "
+                f"header_start={self.header_start_row}, header_end={self.header_end_row}. "
+                f"Лист, вероятно, технический или пустой."
+            )
+
+            self.header_start_row = 0
+            self.header_end_row = 0
+            self.data_start_row = len(raw_df)  # Нет данных
+            self.num_header_levels = 1
+            return self.header_start_row, self.header_end_row, self.data_start_row
+
+        self.data_start_row = min(self.data_start_row, len(raw_df))
+
         return self.header_start_row, self.header_end_row, self.data_start_row
 
     def _load_with_multilevel_headers(self, file_path: str, sheet_name: str) -> pd.DataFrame:
@@ -172,12 +258,20 @@ class FiveFKParser(BaseSheetParser):
         Загружает DataFrame с многоуровневыми заголовками, используя автоматически определенные параметры.
         """
         try:
-            # Читаем весь лист для анализа структуры
+
             raw_df = pd.read_excel(file_path, sheet_name=sheet_name, header=None)
             self.original_df = raw_df.copy()
 
+            if raw_df.empty or raw_df.shape[0] < 2 or raw_df.shape[1] < 2:
+                logger.info(
+                    f"Пропускаем лист '{sheet_name}' как технический/пустой "
+                    f"(размер: {raw_df.shape[0]}x{raw_df.shape[1]})"
+                )
+                return pd.DataFrame()
+
             # Определяем структуру таблицы
             self._detect_table_structure(raw_df)
+
 
             # Проверяем, что есть данные для обработки
             if self.data_start_row >= len(raw_df):
@@ -316,6 +410,12 @@ class FiveFKParser(BaseSheetParser):
             try:
                 # Загружаем данные с многоуровневыми заголовками
                 self.processed_df = self._load_with_multilevel_headers(tmp_path, 'Sheet1')
+                if self.processed_df.empty:
+                    logger.info(
+                        f"Лист '{self.sheet_name}' пропущен: не содержит структурированных данных. "
+                        f"Вероятно, технический лист (график, макрос и т.д.)"
+                    )
+                    return self._create_empty_result()
             finally:
                 # Удаляем временный файл
                 os.unlink(tmp_path)
@@ -367,10 +467,10 @@ class FiveFKParser(BaseSheetParser):
     def _create_data_structure(self, df: pd.DataFrame, horizontal_headers: list, vertical_headers: list) -> List[Dict]:
         """
         Создает структурированные данные в формате, совместимом с существующей системой.
-        Улучшенная версия с использованием боковых заголовков как индексов:
-        1. Фильтруем DataFrame: удаляем все Unnamed_Column_* колонки
-        2. Используем первый ненулевой столбец как индекс (боковые заголовки)
-        3. Прямо обращаемся к ячейкам по значениям заголовков
+        Исправления:
+        1. Применяем fix_header() к значениям колонки индекса для синхронизации с vertical_headers
+        2. Обрабатываем дубликаты в индексе (возвращаем первое значение)
+        3. Используем сохранённый столбец self.vertical_header_column
         """
         data = []
 
@@ -387,52 +487,92 @@ class FiveFKParser(BaseSheetParser):
             logger.warning(f"Недостаточно колонок для обработки после фильтрации (лист: '{self.sheet_name}')")
             return data
 
-        # 3. Определяем колонку с боковыми заголовками (первую оставшуюся колонку)
-        vertical_header_col = filtered_df.columns[0]
+        # 3. Используем столбец, найденный в _extract_vertical_headers
+        vertical_header_col = self.vertical_header_column
+
+        # Если столбец не найден — ищем альтернативу
+        if vertical_header_col is None or vertical_header_col not in filtered_df.columns:
+            logger.warning(
+                f"Столбец '{vertical_header_col}' не найден в отфильтрованном DataFrame для листа '{self.sheet_name}'. "
+                f"Доступные столбцы: {list(filtered_df.columns)[:5]}..."
+            )
+            # Ищем первый столбец с текстовыми значениями
+            for col in filtered_df.columns:
+                non_empty_vals = [v for v in filtered_df[col].dropna() if not self._is_numeric_value(v)]
+                if len(non_empty_vals) >= 3:
+                    vertical_header_col = col
+                    logger.info(f"Найден альтернативный столбец с боковыми заголовками: '{vertical_header_col}'")
+                    break
+
+            if vertical_header_col is None or vertical_header_col not in filtered_df.columns:
+                vertical_header_col = filtered_df.columns[0]
+                logger.warning(f"Не найден подходящий столбец, используем первый: '{vertical_header_col}'")
+
         logger.debug(f"Колонка с боковыми заголовками для индексации: '{vertical_header_col}'")
 
-        # 4. Устанавливаем боковые заголовки как индекс DataFrame
+        # Выводим образцы значений для отладки
+        sample_values = filtered_df[vertical_header_col].head(10).tolist()
+        logger.debug(f"Образцы значений в колонке '{vertical_header_col}' ДО очистки: {sample_values}")
+        logger.debug(f"Извлеченные vertical_headers (первые 10): {vertical_headers[:10]}")
+
+        # 4. Устанавливаем боковые заголовки как индекс DataFrame С ОЧИСТКОЙ ПЕРЕНОСОВ
         try:
-            # Создаем копию для индексации
             indexed_df = filtered_df.copy()
 
-            # Очищаем значения в колонке индекса для корректной работы
-            indexed_df[vertical_header_col] = indexed_df[vertical_header_col].astype(str).str.strip()
+            # === КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ 1: применяем ту же очистку, что и в _extract_vertical_headers ===
+            indexed_df[vertical_header_col] = indexed_df[vertical_header_col].apply(
+                lambda x: fix_header(str(x)) if not pd.isna(x) else 'nan'
+            ).str.strip()
 
             # Устанавливаем индекс
             indexed_df = indexed_df.set_index(vertical_header_col)
 
             logger.debug(f"Успешно установлен индекс по колонке '{vertical_header_col}'")
-            logger.debug(f"Уникальные значения индекса: {list(indexed_df.index.unique())[:5]}...")
+            logger.debug(f"Уникальные значения индекса (первые 10): {list(indexed_df.index.unique())[:10]}")
+
+            # === КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ 2: проверяем дубликаты в индексе ===
+            duplicates = indexed_df.index[indexed_df.index.duplicated()].unique()
+            if len(duplicates) > 0:
+                logger.warning(
+                    f"Обнаружены дубликаты в индексе ({len(duplicates)} уникальных): {list(duplicates)[:5]}... "
+                    f"Будет использоваться ПЕРВОЕ значение для каждого дубликата."
+                )
 
         except Exception as e:
-            logger.error(f"Ошибка при установке индекса для листа '{self.sheet_name}': {e}")
-            # Если не удалось установить индекс, возвращаемся к индексной нумерации
+            logger.error(f"Ошибка при установке индекса для листа '{self.sheet_name}': {e}", exc_info=True)
             return self._fallback_create_data_structure(filtered_df, vertical_header_col)
 
         # 5. Формируем список колонок для данных (все кроме боковых заголовков)
-        data_columns = filtered_df.columns[1:].tolist()
+        data_columns = [col for col in filtered_df.columns if col != vertical_header_col]
 
         # 6. Создаем структуру данных для каждой колонки
-        for col_name in data_columns:
-            # Получаем заголовок колонки
-            column_header = str(col_name).strip()
+        debug_printed = False
 
-            # Получаем значения для этой колонки
+        for col_name in data_columns:
+            column_header = str(col_name).strip()
             column_values = []
 
-            # Проходим по всем боковым заголовкам (индексам)
             for row_header in vertical_headers:
                 row_header_clean = str(row_header).strip()
 
-                # Проверяем, существует ли такой индекс в DataFrame
-                if row_header_clean in indexed_df.index:
-                    try:
-                        # Получаем значение из ячейки по индексу и имени колонки
-                        cell_value = indexed_df.loc[row_header_clean, col_name]
+                try:
+                    # === КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ 3: безопасное получение значения с обработкой дубликатов ===
+                    # Используем .loc с проверкой типа результата
+                    result = indexed_df.loc[row_header_clean, col_name]
 
-                        # Преобразуем значение в число если возможно
-                        processed_value = cell_value
+                    # Если результат — Series (дубликаты), берём первое значение
+                    if isinstance(result, pd.Series):
+                        cell_value = result.iloc[0] if len(result) > 0 else None
+                        logger.debug(
+                            f"Дубликат индекса '{row_header_clean}' для колонки '{col_name}' — "
+                            f"используем первое значение из {len(result)} записей"
+                        )
+                    else:
+                        cell_value = result
+
+                    # Преобразуем значение в число если возможно
+                    processed_value = cell_value
+                    if cell_value is not None and not pd.isna(cell_value):
                         if self._is_numeric_value(cell_value):
                             try:
                                 str_val = str(cell_value).strip().replace(',', '.').replace(' ', '')
@@ -445,21 +585,33 @@ class FiveFKParser(BaseSheetParser):
                             except (ValueError, TypeError):
                                 pass
 
-                        column_values.append({
-                            "row_header": row_header_clean,
-                            "value": processed_value
-                        })
-                    except KeyError:
-                        logger.debug(
-                            f"Ключ '{col_name}' не найден в индексированном DataFrame для листа '{self.sheet_name}'")
-                        continue
-                    except Exception as e:
-                        logger.debug(f"Ошибка при получении значения ({row_header_clean}, {col_name}): {e}")
-                        continue
-                else:
-                    logger.debug(f"Индекс '{row_header_clean}' не найден в DataFrame для листа '{self.sheet_name}'")
+                    column_values.append({
+                        "row_header": row_header_clean,
+                        "value": processed_value if not pd.isna(processed_value) else None
+                    })
 
-            # Добавляем колонку в данные, если есть значения
+                except KeyError:
+                    # Отладочный вывод при первой ошибке
+                    if not debug_printed:
+                        debug_printed = True
+                        logger.warning(
+                            f"НЕСОВПАДЕНИЕ ИНДЕКСОВ в листе '{self.sheet_name}': "
+                            f"vertical_headers не найдены в индексе DataFrame!"
+                        )
+                        logger.warning(f"  Используемый столбец индекса: '{vertical_header_col}'")
+                        logger.warning(f"  Первые 10 значений в индексе: {list(indexed_df.index[:10])}")
+                        logger.warning(f"  Первые 10 vertical_headers: {vertical_headers[:10]}")
+                        logger.warning(f"  Пример отсутствующего индекса: '{row_header_clean}'")
+                        # Сравниваем с очисткой
+                        cleaned_sample = [fix_header(str(x)) for x in indexed_df.index[:10]]
+                        logger.warning(f"  Индекс ПОСЛЕ очистки fix_header(): {cleaned_sample}")
+
+                    logger.debug(f"Индекс '{row_header_clean}' не найден в DataFrame для листа '{self.sheet_name}'")
+                    continue
+                except Exception as e:
+                    logger.debug(f"Ошибка при получении значения ({row_header_clean}, {col_name}): {e}")
+                    continue
+
             if column_values:
                 data.append({
                     "column_header": column_header,
