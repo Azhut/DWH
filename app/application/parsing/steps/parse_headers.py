@@ -1,48 +1,31 @@
-"""Шаг: парсинг заголовков (горизонтальных и вертикальных)."""
+"""Шаг: парсинг заголовков через domain/parsing."""
 import logging
 
 from app.application.parsing.context import ParsingPipelineContext
 from app.application.parsing.steps.base import ParsingPipelineStep
+from app.domain.parsing import parse_headers
 
 logger = logging.getLogger(__name__)
 
 
 class ParseHeadersStep(ParsingPipelineStep):
-    """Парсит горизонтальные и вертикальные заголовки из листа."""
+    """Парсит горизонтальные и вертикальные заголовки по структуре из контекста."""
 
     async def execute(self, ctx: ParsingPipelineContext) -> None:
-        """Парсит заголовки и сохраняет в контекст."""
-        if ctx.processed_dataframe is None:
-            ctx.processed_dataframe = ctx.raw_dataframe
-
-        if ctx.header_start_row is None or ctx.header_end_row is None or ctx.data_start_row is None:
-            ctx.add_error("Не определена структура таблицы перед парсингом заголовков")
+        if ctx.table_structure is None:
+            ctx.add_error("Структура таблицы не определена перед парсингом заголовков")
             return
-
+        df = ctx.processed_dataframe if ctx.processed_dataframe is not None else ctx.raw_dataframe
         try:
-            # Используем логику из BaseSheetParser
-            from app.parsers.base_sheet_parser import BaseSheetParser
-
-            # Создаём временный парсер для использования его методов
-            temp_parser = BaseSheetParser(
-                header_row_range=(ctx.header_start_row, ctx.header_end_row),
-                vertical_header_col=ctx.vertical_header_column or 0,
-                start_data_row=ctx.data_start_row,
-            )
-
-            # Парсим заголовки
-            horizontal_headers, vertical_headers = temp_parser.parse_headers(ctx.processed_dataframe)
-
-            ctx.horizontal_headers = horizontal_headers
-            ctx.vertical_headers = vertical_headers
-
+            result = parse_headers(df, ctx.table_structure)
+            ctx.horizontal_headers = result.horizontal
+            ctx.vertical_headers = result.vertical
             logger.debug(
-                "Распарсены заголовки для листа '%s': горизонтальных=%d, вертикальных=%d",
+                "Заголовки для листа '%s': горизонтальных=%d, вертикальных=%d",
                 ctx.sheet_name,
-                len(horizontal_headers),
-                len(vertical_headers),
+                len(result.horizontal),
+                len(result.vertical),
             )
         except Exception as e:
-            error_msg = f"Ошибка парсинга заголовков: {str(e)}"
+            ctx.add_error(f"Ошибка парсинга заголовков: {e}")
             logger.exception("Ошибка парсинга заголовков для листа '%s'", ctx.sheet_name)
-            ctx.add_error(error_msg)

@@ -1,25 +1,28 @@
 """Централизованный реестр parsing pipeline для разных типов форм."""
 import logging
-from typing import Dict, Optional, Callable
+from typing import Callable, Dict, Optional
 
 from app.domain.form.models import FormType
 from app.application.parsing.pipeline import ParsingPipelineRunner, build_parsing_pipeline
 
 logger = logging.getLogger(__name__)
 
+# Тип фабрики: без аргументов, возвращает ParsingPipelineRunner
+PipelineBuilder = Callable[[], ParsingPipelineRunner]
+
 
 class ParsingPipelineRegistry:
     """
     Централизованный реестр для выбора parsing pipeline по типу формы и имени листа.
-    
+
     Регистрирует конфигурации pipeline для разных форм:
     - 1ФК: фиксированные параметры для каждого листа
     - 5ФК: автоматическое определение структуры
     - UNKNOWN: универсальный режим
     """
 
-    def __init__(self):
-        self._configs: Dict[str, Dict[str, Callable]] = {}
+    def __init__(self) -> None:
+        self._configs: Dict[str, PipelineBuilder] = {}
         self._init_default_configs()
 
     def _init_default_configs(self) -> None:
@@ -116,7 +119,7 @@ class ParsingPipelineRegistry:
         self,
         form_type: FormType,
         sheet_name: str,
-        config_builder: Callable[[], ParsingPipelineRunner],
+        config_builder: PipelineBuilder,
     ) -> None:
         """
         Регистрирует конфигурацию pipeline для типа формы и листа.

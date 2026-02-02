@@ -1,4 +1,4 @@
-"""Шаг: обработка примечаний в листе."""
+"""Шаг: обработка примечаний (только для 1ФК)."""
 import logging
 
 from app.application.parsing.context import ParsingPipelineContext
@@ -8,27 +8,21 @@ logger = logging.getLogger(__name__)
 
 
 class ProcessNotesStep(ParsingPipelineStep):
-    """Обрабатывает примечания (notes) в листе Excel."""
+    """Обрабатывает примечания (Справочно) в листе. Выполняется только если ctx.apply_notes=True (1ФК)."""
 
     async def execute(self, ctx: ParsingPipelineContext) -> None:
-        """Обрабатывает примечания и обновляет dataframe в контексте."""
-        if ctx.header_end_row is None:
-            ctx.add_error("Не определена структура таблицы перед обработкой примечаний")
+        if not ctx.apply_notes:
+            ctx.processed_dataframe = ctx.raw_dataframe
             return
-
+        if ctx.table_structure is None:
+            ctx.add_error("Структура таблицы не определена перед обработкой примечаний")
+            return
         try:
-            from app.parsers.notes_processor import NotesProcessor
-
-            processed_df = NotesProcessor.process_notes(
-                ctx.raw_dataframe,
-                raw_quantity=ctx.header_end_row + 1,  # +1 потому что end_row не включительно
-            )
-            ctx.processed_dataframe = processed_df
-
-            logger.debug("Обработаны примечания для листа '%s'", ctx.sheet_name)
+            from app.domain.parsing import process_notes_1fk
+            # Для 1ФК в NotesProcessor зашито 7 строк заголовка (sheet.iloc[7:] — тело)
+            header_rows_count = 7
+            ctx.processed_dataframe = process_notes_1fk(ctx.raw_dataframe, header_rows_count)
+            logger.debug("Обработаны примечания для листа '%s' (1ФК)", ctx.sheet_name)
         except Exception as e:
-            error_msg = f"Ошибка обработки примечаний: {str(e)}"
             logger.warning("Не удалось обработать примечания для листа '%s': %s", ctx.sheet_name, e)
-            ctx.add_warning(error_msg)
-            # Примечания не критичны, продолжаем с исходным dataframe
             ctx.processed_dataframe = ctx.raw_dataframe

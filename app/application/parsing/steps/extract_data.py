@@ -1,68 +1,45 @@
-"""Шаг: извлечение данных из листа."""
+"""Шаг: извлечение данных через domain/parsing."""
 import logging
 
 from app.application.parsing.context import ParsingPipelineContext
 from app.application.parsing.steps.base import ParsingPipelineStep
+from app.domain.parsing import ParsedHeaders, extract_sheet_data
 
 logger = logging.getLogger(__name__)
 
 
 class ExtractDataStep(ParsingPipelineStep):
-    """Извлекает структурированные данные из листа."""
+    """Извлекает структурированные данные по структуре и заголовкам. Поддерживает дедупликацию колонок (5ФК)."""
 
     async def execute(self, ctx: ParsingPipelineContext) -> None:
-        """Извлекает данные и сохраняет в контекст в формате parsed_data."""
-        if ctx.processed_dataframe is None:
-            ctx.processed_dataframe = ctx.raw_dataframe
-
-        if not ctx.horizontal_headers or not ctx.vertical_headers:
-            ctx.add_error("Не распарсены заголовки перед извлечением данных")
+        if ctx.table_structure is None or not ctx.horizontal_headers or not ctx.vertical_headers:
+            ctx.add_error("Структура и заголовки должны быть заданы перед извлечением данных")
             return
-
-        if ctx.data_start_row is None:
-            ctx.add_error("Не определена строка начала данных")
-            return
-
+        df = ctx.processed_dataframe if ctx.processed_dataframe is not None else ctx.raw_dataframe
+        headers = ParsedHeaders(horizontal=ctx.horizontal_headers, vertical=ctx.vertical_headers)
         try:
-            # Используем логику из BaseSheetParser
-            from app.parsers.base_sheet_parser import BaseSheetParser
-
-            temp_parser = BaseSheetParser(
-                header_row_range=(ctx.header_start_row or 0, ctx.header_end_row or 0),
-                vertical_header_col=ctx.vertical_header_column or 0,
-                start_data_row=ctx.data_start_row,
+            extracted = extract_sheet_data(
+                df,
+                ctx.table_structure,
+                headers,
+                sheet_name=ctx.sheet_name,
+                deduplicate_columns=ctx.deduplicate_columns,
             )
-
-            # Извлекаем данные
-            data = temp_parser.create_data(
-                ctx.processed_dataframe,
-                ctx.horizontal_headers,
-                ctx.vertical_headers,
-            )
-
-            # Формируем parsed_data в формате, совместимом со старым API
+            ctx.extracted_data = extracted
             ctx.parsed_data = {
-                "headers": {
-                    "horizontal": ctx.horizontal_headers,
-                    "vertical": ctx.vertical_headers,
-                },
-                "data": data,
+                "headers": {"horizontal": ctx.horizontal_headers, "vertical": ctx.vertical_headers},
+                "data": extracted.to_legacy_format(),
                 "form_type": ctx.form_info.type.value,
             }
-
-            # Сохраняем данные для SheetModel
             ctx.sheet_model_data = {
                 "headers": ctx.parsed_data["headers"],
                 "data": ctx.parsed_data["data"],
             }
-
             logger.debug(
-                "Извлечены данные для листа '%s': колонок=%d, строк=%d",
+                "Извлечены данные для листа '%s': колонок=%d",
                 ctx.sheet_name,
-                len(data),
-                len(ctx.vertical_headers),
+                len(extracted.columns),
             )
         except Exception as e:
-            error_msg = f"Ошибка извлечения данных: {str(e)}"
+            ctx.add_error(f"Ошибка извлечения данных: {e}")
             logger.exception("Ошибка извлечения данных для листа '%s'", ctx.sheet_name)
-            ctx.add_error(error_msg)

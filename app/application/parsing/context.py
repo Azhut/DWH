@@ -6,6 +6,7 @@ import pandas as pd
 
 from app.domain.flat_data.models import FlatDataRecord
 from app.domain.form.models import FormInfo, FormType
+from app.domain.parsing.models import ExtractedSheetData, TableStructure
 
 
 @dataclass
@@ -21,7 +22,12 @@ class ParsingPipelineContext:
     file_id: Optional[str]
     form_id: Optional[str]
 
-    # Промежуточные результаты парсинга
+    # Конфигурация pipeline (зависит от формы)
+    apply_notes: bool = False  # True только для 1ФК
+    deduplicate_columns: bool = False  # True для 5ФК
+
+    # Промежуточные результаты (domain/parsing)
+    table_structure: Optional[TableStructure] = None
     processed_dataframe: Optional[pd.DataFrame] = None
     header_start_row: Optional[int] = None
     header_end_row: Optional[int] = None
@@ -29,7 +35,8 @@ class ParsingPipelineContext:
     vertical_header_column: Optional[int] = None
     horizontal_headers: List[str] = field(default_factory=list)
     vertical_headers: List[str] = field(default_factory=list)
-    parsed_data: Optional[Dict] = None  # Результат parse() в старом формате
+    extracted_data: Optional[ExtractedSheetData] = None
+    parsed_data: Optional[Dict] = None  # legacy-формат для совместимости
 
     # Финальные результаты
     flat_data_records: List[FlatDataRecord] = field(default_factory=list)

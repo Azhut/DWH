@@ -5,6 +5,7 @@ from typing import List
 from app.application.parsing import ParsingPipelineContext, get_parsing_pipeline_registry
 from app.application.upload.pipeline.context import UploadPipelineContext
 from app.domain.flat_data.models import FlatDataRecord
+from app.domain.form.models import FormType
 from app.domain.sheet.models import SheetModel
 from app.domain.sheet.service import SheetService
 
@@ -48,7 +49,7 @@ class ProcessSheetsStep:
                 logger.error("Не найден parsing pipeline для формы %s, листа %s", ctx.form_info.type.value, sheet_name)
                 continue
 
-            # Создаём контекст для parsing pipeline
+            # Создаём контекст для parsing pipeline (1ФК: примечания; 5ФК: дедупликация колонок)
             parsing_ctx = ParsingPipelineContext(
                 sheet_name=sheet_name,
                 raw_dataframe=df,
@@ -57,6 +58,8 @@ class ProcessSheetsStep:
                 file_city=ctx.file_model.city,
                 file_id=ctx.file_model.file_id,
                 form_id=ctx.file_model.form_id,
+                apply_notes=(ctx.form_info.type == FormType.FK_1),
+                deduplicate_columns=(ctx.form_info.type == FormType.FK_5),
             )
 
             # Применяем округление (если нужно)
