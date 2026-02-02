@@ -6,6 +6,7 @@ from typing import Any, List, Tuple
 import pandas as pd
 from fastapi import UploadFile
 
+from app.domain.flat_data.models import FlatDataRecord
 from app.domain.form.models import FormInfo, FormType
 from app.domain.sheet.models import SheetModel
 from app.domain.sheet.rounding import RoundingService
@@ -37,7 +38,7 @@ class SheetService:
         file: UploadFile,
         file_model: Any,
         form_info: FormInfo,
-    ) -> Tuple[List[SheetModel], List[dict]]:
+    ) -> Tuple[List[SheetModel], List[FlatDataRecord]]:
         """
         Читает листы, применяет округление (round_dataframe — переопределяемо по форме),
         парсит через ParserFactory. skip_sheets берётся из form_info.requisites.
@@ -53,7 +54,7 @@ class SheetService:
         logger.info("Прочитано %d листов из файла %s", len(xls), file.filename)
 
         sheet_models: List[SheetModel] = []
-        flat_data: List[dict] = []
+        flat_data: List[FlatDataRecord] = []
         form_type: FormType = form_info.type
 
         for idx, (sheet_name, df) in enumerate(xls.items()):
@@ -90,15 +91,18 @@ class SheetService:
                 sheet_models.append(SheetModel(**sheet_model_doc))
 
                 for r in records:
-                    flat_data.append({
-                        "year": r.get("year", file_model.year),
-                        "city": r.get("city", file_model.city),
-                        "section": r.get("section", sheet_name),
-                        "row": r.get("row"),
-                        "column": r.get("column"),
-                        "value": r.get("value"),
-                        "form_type": form_type.value,
-                    })
+                    flat_data.append(
+                        FlatDataRecord(
+                            year=r.get("year", file_model.year),
+                            city=r.get("city", file_model.city),
+                            section=r.get("section", sheet_name),
+                            row=r.get("row"),
+                            column=r.get("column"),
+                            value=r.get("value"),
+                            file_id=file_model.file_id,
+                            form=file_model.form_id,
+                        )
+                    )
 
                 logger.debug("Лист '%s' обработан: %d записей", sheet_name, len(records))
             except Exception as e:

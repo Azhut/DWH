@@ -27,7 +27,10 @@ class DataDeleteService:
         try:
             await self._flat_data_service.delete_by_file_id(file_id)
         except Exception as e:
-            await self._log_service.save_log(f"Ошибка при удалении FlatData для {file_id}: {e}", level="error")
+            await self._log_service.save_log(
+                f"Ошибка при удалении FlatData для {file_id}: {e}",
+                level="error",
+            )
             raise HTTPException(500, f"Ошибка при удалении связанных данных: {str(e)}")
 
         try:
@@ -37,7 +40,11 @@ class DataDeleteService:
         except HTTPException:
             raise
         except Exception as e:
-            await self._log_service.save_log(f"Ошибка при удалении записи Files для {file_id}: {e}", level="error")
+            await self._log_service.save_log(
+                f"Ошибка при удалении записи Files для {file_id}: {e}",
+                level="error",
+            )
             raise HTTPException(500, f"Ошибка при удалении записи файла: {str(e)}")
 
         await self._log_service.save_log(f"Удалён файл {file_id}", level="info")
+

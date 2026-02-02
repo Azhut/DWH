@@ -47,7 +47,7 @@ class FlatDataService:
     def __init__(self, repository: FlatDataRepository):
         self._repo = repository
 
-    async def save_flat_data(self, records: List[Dict[str, Any]]) -> int:
+    async def save_flat_data(self, records: List[FlatDataRecord]) -> int:
         """Сохраняет flat_data чанками. Возвращает количество вставленных документов."""
         if not records:
             logger.info("FlatDataService.save_flat_data: пустой список")
@@ -56,10 +56,9 @@ class FlatDataService:
         normalized_records = []
         file_ids: Set[str] = set()
         for rec in records:
-            if not isinstance(rec, dict):
-                logger.warning("FlatDataService: пропущена не-dict запись: %s", type(rec))
-                continue
-            new_rec = {k: _to_builtin(v) for k, v in rec.items()}
+            # Конвертируем FlatDataRecord в dict для MongoDB
+            doc = rec.to_mongo_doc()
+            new_rec = {k: _to_builtin(v) for k, v in doc.items()}
             normalized_records.append(new_rec)
             fid = new_rec.get("file_id")
             if fid:

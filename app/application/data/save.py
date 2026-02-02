@@ -1,10 +1,11 @@
 """Координатор сохранения файла и flat_data (сценарий upload). Использует агрегаты file, flat_data, log."""
 import logging
-from typing import List
+from typing import List, Optional
 
 from app.core.exceptions import log_and_raise_http
 from app.domain.file.models import FileModel, FileStatus
 from app.domain.file.service import FileService
+from app.domain.flat_data.models import FlatDataRecord
 from app.domain.flat_data.service import FlatDataService
 from app.domain.log.service import LogService
 
@@ -24,7 +25,9 @@ class DataSaveService:
         self._flat_data_service = flat_data_service
         self._log_service = log_service
 
-    async def process_and_save_all(self, file_model: FileModel, flat_data: List[dict]) -> None:
+    async def process_and_save_all(
+        self, file_model: FileModel, flat_data: Optional[List[FlatDataRecord]] = None
+    ) -> None:
         try:
             await self._file_service.update_or_create(file_model)
             await self._log_service.save_log(f"Начало обработки файла {file_model.file_id}")
@@ -45,26 +48,39 @@ class DataSaveService:
             await self._log_service.save_log(
                 f"Успешно сохранены данные для {file_model.file_id}; flat_inserted={inserted_total}"
             )
-            logger.info("DataSaveService: сохранение завершено для %s; flat_inserted=%s", file_model.file_id, inserted_total)
+            logger.info(
+                "DataSaveService: сохранение завершено для %s; flat_inserted=%s",
+                file_model.file_id,
+                inserted_total,
+            )
         except Exception as e:
             try:
                 await self.rollback(file_model, str(e))
             except Exception as inner:
-                await self._log_service.save_log(f"Ошибка при откате для {file_model.file_id}: {inner}", level="error")
+                await self._log_service.save_log(
+                    f"Ошибка при откате для {file_model.file_id}: {inner}",
+                    level="error",
+                )
             log_and_raise_http(500, "Ошибка при сохранении данных", e)
 
     async def rollback(self, file_model: FileModel, error: str) -> None:
         try:
             await self._flat_data_service.delete_by_file_id(file_model.file_id)
         except Exception as e:
-            await self._log_service.save_log(f"Не удалось удалить FlatData при откате для {file_model.file_id}: {e}", level="error")
+            await self._log_service.save_log(
+                f"Не удалось удалить FlatData при откате для {file_model.file_id}: {e}",
+                level="error",
+            )
 
         file_model.status = FileStatus.FAILED
         file_model.error = error
         try:
             await self._file_service.update_or_create(file_model)
         except Exception as e:
-            await self._log_service.save_log(f"Не удалось обновить Files при откате для {file_model.file_id}: {e}", level="error")
+            await self._log_service.save_log(
+                f"Не удалось обновить Files при откате для {file_model.file_id}: {e}",
+                level="error",
+            )
         await self._log_service.save_log(f"Откат файла {file_model.file_id}: {error}", level="error")
 
     async def save_file(self, file_model: FileModel) -> None:
@@ -75,3 +91,4 @@ class DataSaveService:
         except Exception as e:
             logger.exception("Не удалось сохранить stub файл %s: %s", file_model.file_id, e)
             raise
+

@@ -18,7 +18,10 @@ class DataRetrievalService:
         form_id: str | None = None,
     ) -> List:
         return await self._flat_data_service.get_filter_values(
-            filter_name, applied_filters, pattern, form_id
+            filter_name,
+            applied_filters,
+            pattern,
+            form_id,
         )
 
     async def get_filtered_data(
@@ -29,5 +32,9 @@ class DataRetrievalService:
         form_id: str | None = None,
     ) -> Tuple[List, int]:
         return await self._flat_data_service.get_filtered_data(
-            filters, limit, offset, form_id
+            filters,
+            limit,
+            offset,
+            form_id,
         )
+
