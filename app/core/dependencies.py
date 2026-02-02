@@ -3,7 +3,6 @@
 Aggregate-Centric: репозитории и сервисы — из domain; сценарии — из application.
 """
 from functools import lru_cache
-from typing import Type
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
@@ -19,7 +18,6 @@ from app.application.data import (
     DataRetrievalService,
     DataSaveService,
 )
-from app.parsers.parser_factory import ParserFactory
 
 
 @lru_cache
@@ -106,8 +104,3 @@ def get_upload_manager() -> UploadManager:
         sheet_service=get_sheet_service(),
         data_save_service=get_data_save_service(),
     )
-
-
-@lru_cache
-def get_parser_factory() -> Type[ParserFactory]:
-    return ParserFactory

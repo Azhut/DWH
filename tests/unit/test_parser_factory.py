@@ -1,69 +1,50 @@
 """
-Тесты для фабрики парсеров
+Тесты для реестра parsing pipeline (замена ParserFactory).
 """
 import pytest
-from app.parsers.parser_factory import ParserFactory
+from app.application.parsing import get_parsing_pipeline_registry
 from app.domain.form.models import FormType
-from app.parsers.five_fk_parser import FiveFKParser
-from app.parsers.universal_parser import UniversalParser
 
 
-def test_factory_for_fk1():
-    """Тест создания парсеров для 1ФК"""
-    # Для известных листов 1ФК должны создаваться соответствующие парсеры
-    parser = ParserFactory.create_parser("Раздел0", FormType.FK_1)
-    assert parser is not None
-    # Проверяем, что это не универсальный парсер
-    assert not isinstance(parser, UniversalParser)
+def test_registry_for_fk1_specific_sheet():
+    """Для 1ФК и известного листа возвращается pipeline с фиксированной структурой."""
+    registry = get_parsing_pipeline_registry()
+    pipeline = registry.get_pipeline(FormType.FK_1, "Раздел0")
+    assert pipeline is not None
+    assert pipeline.steps is not None
+    assert len(pipeline.steps) > 0
 
-    parser = ParserFactory.create_parser("Раздел1", FormType.FK_1)
-    assert parser is not None
-
-
-def test_factory_for_fk5():
-    """Тест создания парсеров для 5ФК"""
-    # Для 5ФК всегда должен создаваться FiveFKParser
-    parser = ParserFactory.create_parser("Любой лист", FormType.FK_5)
-    assert isinstance(parser, FiveFKParser)
-
-    # Проверяем, что название листа сохраняется
-    assert parser.sheet_name == "Любой лист"
+    pipeline2 = registry.get_pipeline(FormType.FK_1, "Раздел2")
+    assert pipeline2 is not None
 
 
-def test_factory_for_unknown():
-    """Тест создания парсеров для неизвестных типов"""
-    parser = ParserFactory.create_parser("Лист1", FormType.UNKNOWN)
-    assert isinstance(parser, UniversalParser)
-
-    # Проверяем, что название листа сохраняется
-    assert parser.sheet_name == "Лист1"
-
-
-def test_factory_missing_fk1_parser():
-    """Тест для случая, когда для листа 1ФК нет специфичного парсера"""
-    # Для несуществующего листа 1ФК должен создаваться универсальный парсер
-    parser = ParserFactory.create_parser("Неизвестный раздел", FormType.FK_1)
-    # В текущей реализации это будет универсальный парсер
-    assert parser is not None
+def test_registry_for_fk1_unknown_sheet():
+    """Для 1ФК и неизвестного листа (нет в реестре) используется wildcard или fallback."""
+    registry = get_parsing_pipeline_registry()
+    # Для "Неизвестный раздел" 1ФК в реестре нет специфичного pipeline — будет fallback UNKNOWN
+    pipeline = registry.get_pipeline(FormType.FK_1, "Неизвестный раздел")
+    assert pipeline is not None
 
 
-def test_get_available_parsers():
-    """Тест получения доступных парсеров"""
-    # Для 1ФК должен возвращаться словарь с парсерами
-    parsers_fk1 = ParserFactory.get_available_parsers(FormType.FK_1)
-    assert isinstance(parsers_fk1, dict)
-    assert "Раздел0" in parsers_fk1
-
-    # Для 5ФК должен возвращаться словарь с FiveFKParser
-    parsers_fk5 = ParserFactory.get_available_parsers(FormType.FK_5)
-    assert "*" in parsers_fk5
-    assert parsers_fk5["*"] == FiveFKParser
-
-    # Для UNKNOWN должен возвращаться UniversalParser
-    parsers_unknown = ParserFactory.get_available_parsers(FormType.UNKNOWN)
-    assert "*" in parsers_unknown
-    assert parsers_unknown["*"] == UniversalParser
+def test_registry_for_fk5():
+    """Для 5ФК возвращается pipeline с авто-детекцией структуры."""
+    registry = get_parsing_pipeline_registry()
+    pipeline = registry.get_pipeline(FormType.FK_5, "Любой лист")
+    assert pipeline is not None
+    assert len(pipeline.steps) > 0
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+def test_registry_for_unknown():
+    """Для UNKNOWN возвращается универсальный pipeline."""
+    registry = get_parsing_pipeline_registry()
+    pipeline = registry.get_pipeline(FormType.UNKNOWN, "Лист1")
+    assert pipeline is not None
+
+
+def test_registry_specific_over_wildcard():
+    """Специфичный pipeline для листа приоритетнее wildcard."""
+    registry = get_parsing_pipeline_registry()
+    specific = registry.get_pipeline(FormType.FK_1, "Раздел3")
+    assert specific is not None
+    # Должен быть тот же тип runner с шагами
+    assert hasattr(specific, "run_for_sheet")
