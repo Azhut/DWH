@@ -30,7 +30,8 @@ class FormService:
     async def get_form(self, form_id: str) -> Optional[Dict[str, Any]]:
         return await self._repo.get_form(form_id)
 
-    async def get_form_or_raise(self, form_id: str) -> Dict[str, Any]:
+
+    async def get_form_info(self, form_id: str) -> Dict[str, Any]:
         """Валидирует form_id и возвращает документ формы из БД. 400 при некорректном form_id, 404 при отсутствии."""
         validate_form_id(form_id)
         form = await self._repo.get_form(form_id)
@@ -40,8 +41,10 @@ class FormService:
 
     async def get_form_info_or_raise(self, form_id: str) -> FormInfo:
         """Валидирует form_id и возвращает FormInfo (реквизиты, в т.ч. skip_sheets, в form_info.requisites)."""
-        form_doc = await self.get_form_or_raise(form_id)
+        form_doc = await self.get_form_info(form_id)
         return FormInfo.from_mongo_doc(form_doc)
+
+
 
     async def list_forms(self) -> List[Dict[str, Any]]:
         return await self._repo.list_forms()

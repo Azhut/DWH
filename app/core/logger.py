@@ -8,7 +8,6 @@ from pymongo.errors import PyMongoError
 
 from config import config
 from app.domain.log.models import LogEntry
-from app.core.exceptions import AppError
 
 
 # =========================
@@ -61,9 +60,10 @@ logger = logging.getLogger("sport_api")
 logger.setLevel(level)
 
 
-if not logger.handlers:
+
+if not logger.handlers and config.DEBUG:
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(level)
+    console_handler.setLevel(logging.DEBUG)
 
     console_formatter = ColorFormatter(
         fmt="%(asctime)s | %(levelname)s | %(message)s",
@@ -97,14 +97,13 @@ if config.APP_ENV == "production":
 
         class MongoHandler(logging.Handler):
             """
-            Пишет логи уровня ERROR | CRITICAL в MongoDB
-            по схеме LogEntry
+            Пишет все логи в MongoDB по схеме LogEntry.
+            Автоматически удаляет старые логи при превышении 1000 записей.
             """
 
-            def emit(self, record: logging.LogRecord) -> None:
-                if record.levelno < logging.ERROR:
-                    return
+            MAX_LOGS = 1000
 
+            def emit(self, record: logging.LogRecord) -> None:
                 try:
                     entry = LogEntry(
                         timestamp=datetime.now(timezone.utc),
@@ -117,35 +116,47 @@ if config.APP_ENV == "production":
                         domain=getattr(record, "domain", None),
                     )
                     logs_collection.insert_one(entry.to_mongo_doc())
+                    self._cleanup_old_logs()
                 except PyMongoError:
-                    logging.getLogger("sport_api").exception(
-                        "Не удалось записать лог в Mongo"
-                    )
+                    # Ошибку при записи логов в MongoDB выводим только в консоль в DEBUG режиме
+                    if config.DEBUG:
+                        logging.getLogger("sport_api").exception(
+                            "Не удалось записать лог в Mongo"
+                        )
+
+            def _cleanup_old_logs(self) -> None:
+                """Удаляет старые логи, оставляя только MAX_LOGS последних."""
+                try:
+                    count = logs_collection.count_documents({})
+                    if count > self.MAX_LOGS:
+                        # Находим timestamp самого старого лога, который нужно сохранить
+                        skip_count = self.MAX_LOGS
+                        oldest_to_keep = list(
+                            logs_collection.find({}, {"timestamp": 1})
+                            .sort("timestamp", -1)
+                            .skip(skip_count)
+                            .limit(1)
+                        )
+                        if oldest_to_keep:
+                            oldest_timestamp = oldest_to_keep[0]["timestamp"]
+                            logs_collection.delete_many({"timestamp": {"$lt": oldest_timestamp}})
+                except PyMongoError:
+                    if config.DEBUG:
+                        logging.getLogger("sport_api").exception(
+                            "Ошибка при удалении старых логов из Mongo"
+                        )
 
         mongo_handler = MongoHandler()
-        mongo_handler.setLevel(logging.ERROR)
+        mongo_handler.setLevel(logging.DEBUG)
         logger.addHandler(mongo_handler)
 
-        logger.info("Логирование в Mongo настроено (production).")
+        if config.DEBUG:
+            logger.info("Логирование в Mongo настроено (production mode).")
 
-    except ExceptionGroup as exc:
-        logger.warning(
-            "Не удалось подключиться к Mongo для логирования. Логи будут выводиться только в stdout."
-        )
+    except Exception as exc:
+        if config.DEBUG:
+            logger.warning(
+                "Не удалось подключиться к Mongo для логирования. "
+                "В production режиме логи будут потеряны."
+            )
 
-def log_app_error(error: AppError, *, exc_info: bool = False) -> None:
-    """
-    Единая точка логирования AppError / UploadError.
-    Передаёт все метаданные из error.meta в extra логгера.
-    """
-    level_name = error.level.upper()
-    log_level = getattr(logging, level_name, logging.ERROR)
-    print(log_level)
-    extra = {"domain": error.domain, **error.meta}
-
-    logger.log(
-        log_level,
-        error.message,
-        exc_info=exc_info,
-        extra=extra,
-    )
