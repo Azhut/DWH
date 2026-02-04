@@ -37,14 +37,26 @@ class ColorFormatter(logging.Formatter):
         color = LEVEL_COLOR_MAP.get(record.levelname, "")
         reset = Style.RESET_ALL
 
-        domain = getattr(record, "domain", None)
-        file_id = getattr(record, "file_id", None)
+        # Извлекаем все поля из extra, кроме служебных
+        extra_fields = {
+            k: v for k, v in record.__dict__.items()
+            if k not in ['args', 'msg', 'levelname', 'levelno', 'pathname', 'filename',
+                         'module', 'lineno', 'funcName', 'created', 'msecs', 'relativeCreated',
+                         'thread', 'threadName', 'process', 'processName', 'exc_info',
+                         'exc_text', 'stack_info', 'message', 'name']
+               and not k.startswith('_')
+        }
+
 
         prefix_parts = []
-        if domain:
-            prefix_parts.append(f"[{domain}]")
-        if file_id:
-            prefix_parts.append(f"[file_id={file_id}]")
+        if 'domain' in extra_fields:
+            prefix_parts.append(f"[{extra_fields.pop('domain')}]")
+
+
+        if extra_fields:
+            meta_str = " ".join(f"{k}={v}" for k, v in extra_fields.items() if v is not None)
+            if meta_str:
+                prefix_parts.append(f"[{meta_str}]")
 
         prefix = " ".join(prefix_parts)
         if prefix:
