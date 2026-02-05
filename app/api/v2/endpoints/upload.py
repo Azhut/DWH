@@ -37,11 +37,9 @@ async def upload_files(
         return await upload_manager.upload_files(files, form_id)
 
     except RequestValidationError as e:
-        # Ошибки валидации запроса → HTTP 400/404/500
         log_and_raise_http(e)
 
     except Exception as e:
-        # Непредвиденная ошибка на уровне endpoint
         error = RequestValidationError(
             message="Внутренняя ошибка сервера при обработке запроса",
             http_status=500,
