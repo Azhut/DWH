@@ -4,6 +4,12 @@ from typing import Any, Dict, Optional
 from fastapi import HTTPException
 from app.core.logger import logger
 
+class FormValidationError(Exception):
+    """Ошибка валидации формы (уровень домена)."""
+    def __init__(self, message: str, form_id: Optional[str] = None):
+        self.message = message
+        self.form_id = form_id
+        super().__init__(message)
 
 class AppError(Exception):
     """

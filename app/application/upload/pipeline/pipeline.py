@@ -10,10 +10,8 @@ from app.core.exceptions import (
 )
 from app.application.upload.pipeline.steps import (
     UploadPipelineStep,
-    ValidateRequestStep,
     ExtractMetadataStep,
     CheckUniquenessStep,
-    LoadFormStep,
     CreateFileModelStep,
     ProcessSheetsStep,
     EnrichFlatDataStep,
@@ -136,7 +134,6 @@ class UploadPipelineRunner:
 
 def build_default_pipeline(
         file_service,
-        form_service,
         sheet_service,
         data_save_service,
 ) -> UploadPipelineRunner:
@@ -145,10 +142,8 @@ def build_default_pipeline(
     Шаги делегируют агрегатам: file, form, sheet.
     """
     steps: List[UploadPipelineStep] = [
-        ValidateRequestStep(),
         ExtractMetadataStep(file_service),
         CheckUniquenessStep(file_service),
-        LoadFormStep(form_service),
         CreateFileModelStep(),
         ProcessSheetsStep(sheet_service),
         EnrichFlatDataStep(),

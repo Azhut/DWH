@@ -1,3 +1,4 @@
+import uvicorn
 from fastapi import FastAPI
 from config.config import config
 from launcher import get_launcher
@@ -39,7 +40,6 @@ if __name__ == "__main__":
     launcher.print_startup_info()
 
 
-    import uvicorn
     uvicorn.run(
         "main:app",
         host=config.API_HOST,
