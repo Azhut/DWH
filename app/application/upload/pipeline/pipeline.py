@@ -96,7 +96,7 @@ class UploadPipelineRunner:
         ctx.error = error.message if hasattr(error, 'message') else str(error)
 
         # Rollback плоских данных, если они были сохранены
-        if ctx.file_model and ctx.file_model.file_id:
+        if ctx.file_model and getattr(ctx.file_model, "file_id", None):
             try:
                 await self.data_save_service.rollback(ctx.file_model, ctx.error)
                 logger.info("Rollback плоских данных выполнен для файла %s", ctx.file_model.file_id)
@@ -115,17 +115,18 @@ class UploadPipelineRunner:
         Сохраняет stub запись файла с информацией об ошибке.
         Это позволяет клиенту видеть, какие файлы нужно загрузить повторно.
         """
-        stub = FileModel.create_stub(
-            file_id=ctx.file.filename,
-            filename=ctx.file.filename,
-            form_id=ctx.form_id,
-            error_message=err_msg,
-            year=ctx.file_info.year if ctx.file_info else None,
-            city=ctx.file_info.city if ctx.file_info else None,
-        )
-        stub.form_id = ctx.form_id
-
         try:
+            stub = FileModel.create_stub(
+                file_id=ctx.file.filename,
+                filename=ctx.file.filename,
+                form_id=ctx.form_id,
+                error_message=err_msg,
+                year=ctx.file_info.year if ctx.file_info else None,
+                city=ctx.file_info.city if ctx.file_info else None,
+            )
+            stub.form_id = ctx.form_id
+
+
             await self.data_save_service.save_file(stub)
             logger.info("Stub запись сохранена для файла %s", ctx.file.filename)
         except Exception:
