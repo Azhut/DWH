@@ -56,10 +56,28 @@ class FileService:
         docs = await self._repo.find(query=query, limit=limit, skip=offset)
         return docs
 
-    def validate_and_extract_metadata(self, file: UploadFile) -> FileInfo:
-        """Валидирует расширение и имя файла, извлекает город и год. Ожидается формат: ГОРОД ГГГГ.расширение."""
-        filename = file.filename or ""
+
+    def validate_and_extract_metadata_from_filename(self, filename: str) -> FileInfo:
+        """
+        Валидирует расширение и имя файла, извлекает город и год.
+        Ожидается формат: ГОРОД ГГГГ.расширение.
+
+        Args:
+            filename: имя файла (например, "МОСКВА 2023.xlsx")
+
+        Returns:
+            FileInfo: метаданные файла
+
+        Raises:
+            HTTPException: если имя файла некорректно
+        """
         logger.debug("Валидация файла %s", filename)
+
+        if not filename:
+            raise HTTPException(
+                status_code=400,
+                detail="Имя файла не может быть пустым"
+            )
 
         if not any(filename.lower().endswith(ext) for ext in VALID_EXTENSIONS):
             raise HTTPException(

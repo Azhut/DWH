@@ -24,6 +24,9 @@ class ProcessSheetsStep:
         if not ctx.form_info or not ctx.file_model:
             raise ValueError("form_info и file_model должны быть установлены перед ProcessSheetsStep")
 
+        if not ctx.file_content:
+            raise ValueError("file_content должен быть установлен перед ProcessSheetsStep")
+
         skip_sheets = ctx.form_info.requisites.get("skip_sheets", []) or []
         logger.info(
             "Начало обработки листов. Тип формы: %s, пропускаемые листы: %s",
@@ -31,8 +34,8 @@ class ProcessSheetsStep:
             skip_sheets,
         )
 
-        # Читаем листы через SheetService (только I/O)
-        xls = await self._sheet_service.read_sheets(ctx.file)
+        # Читаем листы из кешированного содержимого
+        xls = self._sheet_service.read_sheets(ctx.file_content, ctx.file.filename)
         logger.info("Прочитано %d листов из файла %s", len(xls), ctx.file.filename)
 
         sheet_models: List[SheetModel] = []

@@ -1,6 +1,7 @@
 import logging
 from typing import List
 from app.application.upload.pipeline.context import UploadPipelineContext
+from app.application.upload.pipeline.steps.read_file_content import ReadFileContentStep
 from app.core.exceptions import (
     CriticalUploadError,
     NonCriticalUploadError,
@@ -143,6 +144,7 @@ def build_default_pipeline(
     Шаги делегируют агрегатам: file, form, sheet.
     """
     steps: List[UploadPipelineStep] = [
+        ReadFileContentStep(),
         ExtractMetadataStep(file_service),
         CheckUniquenessStep(file_service),
         CreateFileModelStep(),

@@ -11,30 +11,45 @@ from app.domain.sheet.models import SheetModel
 class UploadPipelineContext:
     """
     Контекст обработки одного файла в рамках upload pipeline.
-    
-    Поля для передачи данных между шагами:
-    - file: загружаемый файл
-    - form_id: ID формы
-    - file_info: метаданные файла (год, город)
-    - form_info: информация о форме из БД
-    - file_model: модель файла для сохранения
-    - sheet_models: модели листов
-    - flat_data: плоские данные для сохранения
-    
-    Поля для обработки ошибок:
-    - error: сообщение критической ошибки (если произошла)
-    - failed: флаг критической ошибки
-    - warnings: список некритических ошибок (для отладки)
+
+    ЖИЗНЕННЫЙ ЦИКЛ ДАННЫХ:
+
+    1. Инициализация (endpoint):
+       - file: UploadFile - весь объект FastAPI
+       - form_id: ID формы
+
+    2. ReadFileContentStep (шаг 1):
+       - Читает file → file_content (bytes)
+       - Извлекает filename для дальнейшего использования
+       - После этого шага file больше НЕ используется
+
+    3. ExtractMetadataStep (шаг 2):
+       - Использует только filename → создаёт file_info
+
+    4. CheckUniquenessStep, CreateFileModelStep (шаги 3-4):
+       - Работают с file_info → создают file_model
+
+    5. ProcessSheetsStep (шаг 5):
+       - Использует file_content для чтения Excel
+       - Создаёт sheet_models и flat_data
+
+    6. EnrichFlatDataStep, PersistStep (шаги 6-7):
+       - Работают с финальными данными
+
+    ПРИНЦИП: Данные трансформируются по мере прохождения шагов,
+    старые данные не удаляются для возможности error handling.
     """
 
-    file: UploadFile
     form_id: str
+    file: UploadFile
+    file_content: Optional[bytes] = None  # Содержимое файла в памяти
+    filename: Optional[str] = None  # Имя файла (для последующих шагов)
+    file_info: Optional[FileInfo] = None  # Метаданные: city, year, extension
+    form_info: Optional[FormInfo] = None  # Информация о форме из БД
+    file_model: Optional[FileModel] = None  # Модель файла для сохранения
+    sheet_models: Optional[List[SheetModel]] = None  # Модели листов
+    flat_data: Optional[List[FlatDataRecord]] = None  # Плоские данные
 
-    file_info: Optional[FileInfo] = None
-    form_info: Optional[FormInfo] = None
-    file_model: Optional[FileModel] = None
-    sheet_models: Optional[List[SheetModel]] = None
-    flat_data: Optional[List[FlatDataRecord]] = None
 
     error: Optional[str] = None
     failed: bool = False
