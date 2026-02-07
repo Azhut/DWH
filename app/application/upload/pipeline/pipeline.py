@@ -1,7 +1,7 @@
 import logging
 from typing import List
 from app.application.upload.pipeline.context import UploadPipelineContext
-from app.application.upload.pipeline.steps.read_file_content import ReadFileContentStep
+from app.application.upload.pipeline.steps.ReadFileContentStep import ReadFileContentStep
 from app.core.exceptions import (
     CriticalUploadError,
     NonCriticalUploadError,
