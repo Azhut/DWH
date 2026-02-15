@@ -37,7 +37,9 @@ class ProcessSheetsStep:
 
     def __init__(self, excel_reader: ExcelReader | None = None) -> None:
         self._excel_reader = excel_reader or ExcelReader()
-        self._registry = get_parsing_strategy_registry()
+        # Реестр НЕ инициализируется здесь — он получается лениво в execute().
+        # Причина: ProcessSheetsStep создаётся в build_default_pipeline раньше,
+        # чем UploadManager успевает проинициализировать реестр с sheet_service.
 
     async def execute(self, ctx: UploadPipelineContext) -> None:
         if not ctx.form_info or not ctx.file_model:
@@ -55,6 +57,9 @@ class ProcessSheetsStep:
                 http_status=500,
                 meta={"file_name": getattr(ctx.file, "filename", None)},
             )
+
+
+        registry = get_parsing_strategy_registry()
 
         # 1. Читаем Excel
         try:
@@ -85,15 +90,13 @@ class ProcessSheetsStep:
         # 3. Обрабатываем каждый лист
         for sheet_index, (sheet_name, df) in enumerate(sheets.items()):
 
-            # Стратегия решает, нужно ли обрабатывать этот лист
-            pipeline = self._registry.build_pipeline_for_sheet(
+            pipeline = registry.build_pipeline_for_sheet(
                 form_info=ctx.form_info,
                 sheet_name=sheet_name,
                 sheet_index=sheet_index,
             )
 
             if pipeline is None:
-                # Лист пропущен стратегией (например, в skip_sheets)
                 continue
 
             parsing_ctx = ParsingPipelineContext(
@@ -107,7 +110,6 @@ class ProcessSheetsStep:
             )
 
             # 4. Запускаем parsing pipeline
-            # CriticalParsingError не перехватываем — пробрасываем в UploadPipelineRunner
             try:
                 await pipeline.run_for_sheet(parsing_ctx)
             except CriticalParsingError as e:

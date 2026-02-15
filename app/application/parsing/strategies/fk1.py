@@ -2,8 +2,7 @@
 import logging
 from dataclasses import dataclass
 
-from app.application.parsing.steps.forms.fk1.FK1RoundingStep import FK1RoundingStep
-from app.application.parsing.steps.forms.fk1.ProcessNotesStep import ProcessNotesStep
+
 from app.domain.form.models import FormInfo
 from app.application.parsing.strategies.base import BaseFormParsingStrategy
 from app.application.parsing.steps.base import ParsingPipelineStep
@@ -146,6 +145,8 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
         from app.application.parsing.steps.common.parse_headers import ParseHeadersStep
         from app.application.parsing.steps.common.extract_data import ExtractDataStep
         from app.application.parsing.steps.common.generate_flat_data import GenerateFlatDataStep
+        from app.application.parsing.steps.forms.fk1.FK1RoundingStep import FK1RoundingStep
+        from app.application.parsing.steps.forms.fk1.ProcessNotesStep import ProcessNotesStep
 
 
         config = _SHEET_CONFIGS.get(sheet_name)
