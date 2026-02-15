@@ -18,7 +18,7 @@ class ParsingPipelineContext:
     raw_dataframe: pd.DataFrame
     form_info: FormInfo
     file_year: Optional[int]
-    file_city: Optional[str]
+    file_reporter: Optional[str]
     file_id: Optional[str]
     form_id: Optional[str]
 

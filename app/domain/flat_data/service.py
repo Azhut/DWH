@@ -112,7 +112,7 @@ class FlatDataService:
             if not fname or not values:
                 continue
             field = self._map_filter_name(fname)
-            if field == "city":
+            if field == "reporter":
                 values = [v.upper() if isinstance(v, str) else v for v in values]
             conditions.append({field: {"$in": values}})
         if not conditions:
@@ -157,7 +157,7 @@ class FlatDataService:
             record = FlatDataRecord.from_mongo_doc(doc)
             if (
                 record.year is None
-                or record.city is None
+                or record.reporter is None
                 or record.section is None
                 or record.row is None
                 or record.column is None
@@ -166,5 +166,5 @@ class FlatDataService:
             value = record.value
             if isinstance(value, float):
                 value = None if math.isnan(value) else (int(value) if value == int(value) else round(value, 2))
-            rows.append([record.year, record.city, record.section, record.row, record.column, value])
+            rows.append([record.year, record.reporter, record.section, record.row, record.column, value])
         return rows

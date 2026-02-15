@@ -11,7 +11,7 @@ class MongoIndexManager:
         await self.db.FlatData.create_index(
             [
                 ("year", 1),
-                ("city", 1),
+                ("reporter", 1),
                 ("section", 1),
                 ("row", 1),
                 ("column", 1),
@@ -23,8 +23,8 @@ class MongoIndexManager:
 
         # Индекс для часто используемых фильтров
         await self.db.FlatData.create_index(
-            [("city", 1), ("year", 1)],
-            name="city_year_idx",
+            [("reporter", 1), ("year", 1)],
+            name="reporter_year_idx",
             background=True,
         )
 

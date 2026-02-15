@@ -19,7 +19,7 @@ class GenerateFlatDataStep(ParsingPipelineStep):
             ctx.flat_data_records = build_flat_data_records(
                 ctx.extracted_data,
                 year=ctx.file_year,
-                city=ctx.file_city,
+                reporter=ctx.file_reporter,
                 section=ctx.sheet_name,
                 file_id=ctx.file_id,
                 form_id=ctx.form_id,

@@ -9,7 +9,7 @@ class SheetModel(BaseModel):
     sheet_name: str
     sheet_fullname: str
     year: int
-    city: str
+    reporter: str
     headers: Dict[str, List[str]]
     data: List[Dict[str, Union[str, List[Dict[str, Optional[Union[str, float]]]]]]]
 

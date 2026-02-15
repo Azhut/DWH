@@ -52,7 +52,7 @@ class ProcessSheetsStep:
         # 1. Чтение Excel
         sheets = self._excel_reader.read(
             ctx.file_content,
-            ctx.filename,
+            ctx.file.filename,
         )
 
         sheet_models: List[SheetModel] = []
@@ -86,7 +86,7 @@ class ProcessSheetsStep:
                 raw_dataframe=df,
                 form_info=ctx.form_info,
                 file_year=ctx.file_model.year,
-                file_city=ctx.file_model.city,
+                file_reporter=ctx.file_model.reporter,
                 file_id=ctx.file_model.file_id,
                 form_id=ctx.file_model.form_id,
                 apply_notes=(ctx.form_info.type == FormType.FK_1),
@@ -120,7 +120,7 @@ class ProcessSheetsStep:
                         sheet_name=sheet_name,
                         sheet_fullname=sheet_name,
                         year=ctx.file_model.year,
-                        city=ctx.file_model.city,
+                        reporter=ctx.file_model.reporter,
                         headers=sheet_data.get("headers", {}),
                         data=sheet_data.get("data", []),
                     )

@@ -115,16 +115,11 @@ class UploadPipelineRunner:
         """
         try:
             stub = FileModel.create_stub(
-                file_id=ctx.file.filename,
                 filename=ctx.file.filename,
+                file_info=ctx.file_info,
                 form_id=ctx.form_id,
                 error_message=err_msg,
-                year=ctx.file_info.year if ctx.file_info else None,
-                city=ctx.file_info.city if ctx.file_info else None,
             )
-            stub.form_id = ctx.form_id
-
-
             await self.data_save_service.save_file(stub)
             logger.info("Stub запись сохранена для файла %s", ctx.file.filename)
         except Exception:

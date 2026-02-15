@@ -43,8 +43,7 @@ class UploadPipelineContext:
     form_id: str
     file: UploadFile
     file_content: Optional[bytes] = None  # Содержимое файла в памяти
-    filename: Optional[str] = None  # Имя файла (для последующих шагов)
-    file_info: Optional[FileInfo] = None  # Метаданные: city, year, extension
+    file_info: Optional[FileInfo] = None  # Метаданные: reporter, year, extension
     form_info: Optional[FormInfo] = None  # Информация о форме из БД
     file_model: Optional[FileModel] = None  # Модель файла для сохранения
     sheet_models: Optional[List[SheetModel]] = None  # Модели листов

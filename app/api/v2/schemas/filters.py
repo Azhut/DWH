@@ -24,7 +24,7 @@ class FilterValuesResponse(BaseModel):
 
 
 class FiltersNamesResponse(BaseModel):
-    filters: List[str] = Field(..., description="Доступные фильтры, например ['год', 'город', ...]")
+    filters: List[str] = Field(..., description="Доступные фильтры, например ['год', 'субъект', ...]")
 
 
 class FilteredDataRequest(BaseModel):

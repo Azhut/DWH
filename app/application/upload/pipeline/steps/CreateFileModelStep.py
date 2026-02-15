@@ -19,14 +19,11 @@ class CreateFileModelStep:
 
 
         try:
-            file_model = FileModel.create_new(
-                filename=ctx.file_info.filename,
-                year=ctx.file_info.year,
-                city=ctx.file_info.city,
+            ctx.file_model = FileModel.create_new(
+                filename=ctx.file.filename,
+                file_info=ctx.file_info,
                 form_id=ctx.form_id,
             )
-            file_model.form_id = ctx.form_id
-            ctx.file_model = file_model
         except Exception as e:
             raise CriticalUploadError(
                 message=f"Ошибка создания модели файла: {e}",

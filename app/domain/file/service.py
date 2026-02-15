@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import HTTPException, UploadFile
+from fastapi import HTTPException
 
 from app.domain.file.models import FileModel, FileStatus, FileInfo
 from app.domain.file.repository import FileRepository
@@ -12,7 +12,7 @@ from app.domain.file.repository import FileRepository
 logger = logging.getLogger(__name__)
 
 VALID_EXTENSIONS = (".xlsx", ".xls", ".xlsm")
-CITY_YEAR_PATTERN = re.compile(r"^(.+?)\s+(\d{4}).*\.(xls|xlsx|xlsm)$", re.IGNORECASE)
+REPORTER_YEAR_PATTERN = re.compile(r"^(.+?)\s+(\d{4}).*\.(xls|xlsx|xlsm)$", re.IGNORECASE)
 
 
 class FileService:
@@ -59,8 +59,8 @@ class FileService:
 
     def validate_and_extract_metadata_from_filename(self, filename: str) -> FileInfo:
         """
-        Валидирует расширение и имя файла, извлекает город и год.
-        Ожидается формат: ГОРОД ГГГГ.расширение.
+        Валидирует расширение и имя файла, извлекает субъект и год.
+        Ожидается формат: СУБЪЕКТ ГГГГ.расширение.
 
         Args:
             filename: имя файла (например, "МОСКВА 2023.xlsx")
@@ -85,26 +85,26 @@ class FileService:
                 detail=f"Некорректное расширение файла: {filename}. Допустимые: {list(VALID_EXTENSIONS)}",
             )
 
-        match = CITY_YEAR_PATTERN.match(filename)
+        match = REPORTER_YEAR_PATTERN.match(filename)
         if not match:
             raise HTTPException(
                 status_code=400,
-                detail="Некорректное имя файла. Ожидается: 'ГОРОД ГГГГ.расширение'",
+                detail="Некорректное имя файла. Ожидается: 'СУБЪЕКТ ГГГГ.расширение'",
             )
 
-        city = match.group(1).strip().upper()
+        reporter = match.group(1).strip().upper()
         year = int(match.group(2))
         ext = filename.split(".")[-1].lower() if "." in filename else ""
 
-        if not city:
-            raise HTTPException(status_code=400, detail="Название города не может быть пустым")
+        if not reporter:
+            raise HTTPException(status_code=400, detail="Название субъекта не может быть пустым")
         if year < 1900 or year > 2100:
             raise HTTPException(
                 status_code=400,
                 detail="Недопустимый год. Допустимый диапазон: от 1900 до 2100 года",
             )
 
-        return FileInfo(filename=filename, city=city, year=year, extension=ext)
+        return FileInfo(reporter=reporter, year=year, extension=ext)
 
     async def is_filename_unique(self, filename: str) -> bool:
         """Проверяет, что файл с таким именем ещё не загружался."""

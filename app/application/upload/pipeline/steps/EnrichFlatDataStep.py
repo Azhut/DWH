@@ -9,5 +9,5 @@ class EnrichFlatDataStep:
         for rec in ctx.flat_data:
             rec.file_id = ctx.file_model.file_id
             rec.form = ctx.form_id
-            if rec.city and isinstance(rec.city, str):
-                rec.city = rec.city.upper()
+            if rec.reporter and isinstance(rec.reporter, str):
+                rec.reporter = rec.reporter.upper()

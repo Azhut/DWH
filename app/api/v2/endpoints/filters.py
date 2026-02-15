@@ -16,7 +16,7 @@ from app.domain.form.service import validate_form_id
 router = APIRouter()
 
 # пользовательский набор фильтров (контракт API)
-FILTERS = ["год", "город", "раздел", "строка", "колонка"]
+FILTERS = ["год", "субъект", "раздел", "строка", "колонка"]
 
 
 @router.get("/filters-names", response_model=FiltersNamesResponse)
@@ -89,7 +89,7 @@ async def get_filtered_data(
             form_id
         )
         return FilteredDataResponse(
-            headers=["год", "город", "раздел", "строка", "колонка", "значение"],
+            headers=["год", "субъект", "раздел", "строка", "колонка", "значение"],
             data=data,
             size=len(data),
             max_size=total

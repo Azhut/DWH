@@ -9,13 +9,13 @@ logger = logging.getLogger(__name__)
 
 class ExtractMetadataStep:
     """
-    Извлекает метаданные файла (город, год) из имени файла.
+    Извлекает метаданные файла (субъект, год) из имени файла.
 
     ВХОД:
     - ctx.filename (установлен в ReadFileContentStep)
 
     ВЫХОД:
-    - ctx.file_info (FileInfo с city, year, extension)
+    - ctx.file_info (FileInfo с reporter, year, extension)
 
     ЗАВИСИМОСТЬ:
     - FileService.validate_and_extract_metadata()
@@ -26,10 +26,10 @@ class ExtractMetadataStep:
 
     async def execute(self, ctx: UploadPipelineContext) -> None:
         """
-        Извлекает из имени файла метаданные (city, year и т.п.).
+        Извлекает из имени файла метаданные (reporter, year и т.п.).
         Если не удалось — бросает CriticalUploadError.
         """
-        if not ctx.filename:
+        if not ctx.file.filename:
             raise CriticalUploadError(
                 message="Имя файла не установлено в контексте",
                 domain="upload.extract_metadata",
@@ -39,29 +39,29 @@ class ExtractMetadataStep:
 
         try:
             file_info = self._file_service.validate_and_extract_metadata_from_filename(
-                ctx.filename
+                ctx.file.filename
             )
         except Exception as e:
             raise CriticalUploadError(
                 message=f"Ошибка при извлечении метаданных файла: {e}",
                 domain="upload.extract_metadata",
                 http_status=500,
-                meta={"file_name": ctx.filename, "error": str(e)},
+                meta={"file_name": ctx.file.filename, "error": str(e)},
             ) from e
 
-        if not file_info or not file_info.city or not file_info.year:
+        if not file_info or not file_info.reporter or not file_info.year:
             raise CriticalUploadError(
-                message="Не удалось извлечь город или год из имени файла",
+                message="Не удалось извлечь субъект или год из имени файла",
                 domain="upload.extract_metadata",
                 http_status=400,
-                meta={"file_name": ctx.filename},
+                meta={"file_name": ctx.file.filename},
             )
 
         ctx.file_info = file_info
 
         logger.debug(
-            "Метаданные извлечены: файл='%s', город='%s', год=%d",
-            ctx.filename,
-            file_info.city,
+            "Метаданные извлечены: файл='%s', субъект='%s', год=%d",
+            ctx.file.filename,
+            file_info.reporter,
             file_info.year
         )

@@ -14,7 +14,7 @@ def build_flat_data_records(
     data: ExtractedSheetData,
     *,
     year: Optional[int] = None,
-    city: Optional[str] = None,
+    reporter: Optional[str] = None,
     section: str = "",
     file_id: Optional[str] = None,
     form_id: Optional[str] = None,
@@ -25,11 +25,18 @@ def build_flat_data_records(
 
     Args:
         data: Извлечённые данные листа
-        year, city, section, file_id, form_id: Метаданные для записей
+        year, reporter, section, file_id, form_id: Метаданные для записей
         skip_empty: Пропускать ячейки с пустым/служебным значением
+        :param section:
+        :param year:
+        :param file_id:
+        :param form_id:
+        :param skip_empty:
+        :param data:
+        :param reporter:
     """
     records: List[FlatDataRecord] = []
-    city_upper = (city or "").upper()
+    reporter_upper = (reporter or "").upper()
 
     for col in data.columns:
         col_header = col.column_header
@@ -51,7 +58,7 @@ def build_flat_data_records(
             records.append(
                 FlatDataRecord(
                     year=year,
-                    city=city_upper or None,
+                    reporter=reporter_upper or None,
                     section=section,
                     row=cell.row_header,
                     column=col_header,

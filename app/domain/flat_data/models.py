@@ -5,12 +5,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 # Поля документа в коллекции FlatData (порядок для проекции и таблицы).
-TABLE_FIELDS: List[str] = ["year", "city", "section", "row", "column", "value"]
+TABLE_FIELDS: List[str] = ["year", "reporter", "section", "row", "column", "value"]
 
 # Маппинг имён фильтров API (рус.) -> имена полей в БД.
 FILTER_MAP: Dict[str, str] = {
     "год": "year",
-    "город": "city",
+    "субъект": "reporter",
     "раздел": "section",
     "строка": "row",
     "колонка": "column",
@@ -21,7 +21,7 @@ class FlatDataRecord(BaseModel):
     """Одна запись flat_data (документ в коллекции FlatData)."""
 
     year: Optional[int] = None
-    city: Optional[str] = None
+    reporter: Optional[str] = None
     section: Optional[str] = None
     row: Optional[str] = None
     column: Optional[str] = None
@@ -43,7 +43,7 @@ class FlatDataRecord(BaseModel):
             year = int(year)
         return cls(
             year=year,
-            city=doc.get("city"),
+            reporter=doc.get("reporter"),
             section=doc.get("section"),
             row=doc.get("row"),
             column=doc.get("column"),
