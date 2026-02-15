@@ -1,184 +1,128 @@
-"""Централизованный реестр parsing pipeline для разных типов форм."""
+"""Реестр стратегий parsing pipeline."""
 import logging
-from typing import Callable, Dict, Optional
+from typing import Optional
 
-from app.domain.form.models import FormType
-from app.application.parsing.pipeline import ParsingPipelineRunner, build_parsing_pipeline
+from app.domain.form.models import FormInfo, FormType
+from app.application.parsing.strategies.base import BaseFormParsingStrategy
 
 logger = logging.getLogger(__name__)
 
-# Тип фабрики: без аргументов, возвращает ParsingPipelineRunner
-PipelineBuilder = Callable[[], ParsingPipelineRunner]
 
-
-class ParsingPipelineRegistry:
+class ParsingStrategyRegistry:
     """
-    Централизованный реестр для выбора parsing pipeline по типу формы и имени листа.
+    Реестр стратегий парсинга.
 
-    Регистрирует конфигурации pipeline для разных форм:
-    - 1ФК: фиксированные параметры для каждого листа
-    - 5ФК: автоматическое определение структуры
-    - UNKNOWN: универсальный режим
+    Связывает FormType с конкретной реализацией BaseFormParsingStrategy.
+    Ручные формы регистрируются явно в _register_manual_forms().
+    Для всего остального возвращается AutoFormParsingStrategy по умолчанию.
     """
 
-    def __init__(self) -> None:
-        self._configs: Dict[str, PipelineBuilder] = {}
-        self._init_default_configs()
+    def __init__(self, sheet_service=None) -> None:
+        """
+        Args:
+            sheet_service: SheetService для шагов, требующих доменных операций
+                           (например, FK1RoundingStep). Передаётся в стратегии
+                           ручных форм при регистрации.
+        """
+        self._strategies: dict[FormType, BaseFormParsingStrategy] = {}
+        self._default: Optional[BaseFormParsingStrategy] = None
+        self._sheet_service = sheet_service
+        self._init()
 
-    def _init_default_configs(self) -> None:
-        """Инициализирует конфигурации по умолчанию для известных форм."""
-        # Конфигурация для 1ФК: фиксированные параметры для каждого листа
-        fk1_configs = {
-            "Раздел0": {
-                "header_row_range": (1, 4),
-                "vertical_header_col": 0,
-                "start_data_row": 5,
-            },
-            "Раздел1": {
-                "header_row_range": (1, 4),
-                "vertical_header_col": 0,
-                "start_data_row": 5,
-            },
-            "Раздел2": {
-                "header_row_range": (1, 4),
-                "vertical_header_col": 0,
-                "start_data_row": 5,
-            },
-            "Раздел3": {
-                "header_row_range": (1, 4),
-                "vertical_header_col": 0,
-                "start_data_row": 5,
-            },
-            "Раздел4": {
-                "header_row_range": (1, 4),
-                "vertical_header_col": 0,
-                "start_data_row": 5,
-            },
-            "Раздел5": {
-                "header_row_range": (1, 4),
-                "vertical_header_col": 0,
-                "start_data_row": 5,
-            },
-            "Раздел6": {
-                "header_row_range": (1, 4),
-                "vertical_header_col": 0,
-                "start_data_row": 5,
-            },
-            "Раздел7": {
-                "header_row_range": (1, 4),
-                "vertical_header_col": 0,
-                "start_data_row": 5,
-            },
-        }
+    def _init(self) -> None:
+        self._init_default()
+        self._register_manual_forms()
 
-        # Регистрируем конфигурации
-        for sheet_name, config in fk1_configs.items():
-            # Используем замыкание для фиксации значений
-            def make_builder(sn: str, cfg: dict):
-                return lambda: build_parsing_pipeline(
-                    form_type=FormType.FK_1.value,
-                    sheet_name=sn,
-                    auto_detect_structure=False,
-                    header_row_range=cfg["header_row_range"],
-                    vertical_header_col=cfg["vertical_header_col"],
-                    start_data_row=cfg["start_data_row"],
-                )
+    def _init_default(self) -> None:
+        from app.application.parsing.strategies.auto import AutoFormParsingStrategy
+        self._default = AutoFormParsingStrategy()
+        logger.debug("Стратегия по умолчанию: AutoFormParsingStrategy")
 
-            self.register(
-                form_type=FormType.FK_1,
-                sheet_name=sheet_name,
-                config_builder=make_builder(sheet_name, config),
-            )
+    def _register_manual_forms(self) -> None:
+        """
+        Регистрирует все ручные формы.
 
-        # Конфигурация для 5ФК: автоматическое определение структуры
-        self.register(
-            form_type=FormType.FK_5,
-            sheet_name="*",  # Wildcard для всех листов
-            config_builder=lambda: build_parsing_pipeline(
-                form_type=FormType.FK_5.value,
-                sheet_name="*",
-                auto_detect_structure=True,
-            ),
-        )
-
-        # Конфигурация для UNKNOWN: универсальный режим
-        self.register(
-            form_type=FormType.UNKNOWN,
-            sheet_name="*",
-            config_builder=lambda: build_parsing_pipeline(
-                form_type=FormType.UNKNOWN.value,
-                sheet_name="*",
-                auto_detect_structure=False,
-                header_row_range=(0, 2),
-                vertical_header_col=0,
-                start_data_row=3,
-            ),
-        )
+        Единственное место, где нужно что-то добавить при появлении
+        новой ручной формы (помимо создания файла стратегии).
+        """
+        from app.application.parsing.strategies.fk1 import FK1FormParsingStrategy
+        self.register(FormType.FK_1, FK1FormParsingStrategy(
+            sheet_service=self._sheet_service,
+        ))
+        # Будущие ручные формы:
+        # from app.application.parsing.strategies.fk3 import FK3FormParsingStrategy
+        # self.register(FormType.FK_3, FK3FormParsingStrategy())
 
     def register(
         self,
         form_type: FormType,
-        sheet_name: str,
-        config_builder: PipelineBuilder,
+        strategy: BaseFormParsingStrategy,
     ) -> None:
-        """
-        Регистрирует конфигурацию pipeline для типа формы и листа.
+        self._strategies[form_type] = strategy
+        logger.debug(
+            "Зарегистрирована стратегия %s для формы %s",
+            strategy.__class__.__name__,
+            form_type.value,
+        )
 
-        Args:
-            form_type: Тип формы
-            sheet_name: Название листа или "*" для всех листов
-            config_builder: Функция, создающая ParsingPipelineRunner
-        """
-        key = f"{form_type.value}:{sheet_name}"
-        self._configs[key] = config_builder
-        logger.debug("Зарегистрирован parsing pipeline: %s", key)
-
-    def get_pipeline(
-        self, form_type: FormType, sheet_name: str
-    ) -> Optional[ParsingPipelineRunner]:
-        """
-        Возвращает pipeline для указанного типа формы и листа.
-
-        Args:
-            form_type: Тип формы
-            sheet_name: Название листа
-
-        Returns:
-            ParsingPipelineRunner или None, если конфигурация не найдена
-        """
-        # Сначала ищем точное совпадение
-        specific_key = f"{form_type.value}:{sheet_name}"
-        if specific_key in self._configs:
-            logger.debug("Найден специфичный pipeline для %s", specific_key)
-            return self._configs[specific_key]()
-
-        # Затем ищем wildcard для типа формы
-        wildcard_key = f"{form_type.value}:*"
-        if wildcard_key in self._configs:
-            logger.debug("Используется wildcard pipeline для %s", wildcard_key)
-            return self._configs[wildcard_key]()
-
-        # Fallback: UNKNOWN
-        unknown_key = f"{FormType.UNKNOWN.value}:*"
-        if unknown_key in self._configs:
-            logger.warning(
-                "Используется fallback pipeline (UNKNOWN) для формы %s, листа %s",
+    def get_strategy(self, form_type: FormType) -> BaseFormParsingStrategy:
+        strategy = self._strategies.get(form_type, self._default)
+        if strategy is self._default:
+            logger.debug(
+                "Форма %s: используется стратегия по умолчанию (AutoFormParsingStrategy)",
                 form_type.value,
-                sheet_name,
             )
-            return self._configs[unknown_key]()
+        else:
+            logger.debug(
+                "Форма %s: используется стратегия %s",
+                form_type.value,
+                strategy.__class__.__name__,
+            )
+        return strategy
 
-        logger.error("Не найден pipeline для формы %s, листа %s", form_type.value, sheet_name)
-        return None
+    def build_pipeline_for_sheet(
+        self,
+        form_info: FormInfo,
+        sheet_name: str,
+        sheet_index: int,
+    ):
+        """
+        Точка входа для ProcessSheetsStep.
+        Возвращает ParsingPipelineRunner или None если лист нужно пропустить.
+        """
+        from app.application.parsing.pipeline import ParsingPipelineRunner
+
+        strategy = self.get_strategy(form_info.type)
+
+        if not strategy.should_process_sheet(sheet_name, sheet_index, form_info):
+            logger.debug(
+                "Лист '%s' (индекс %d) пропущен стратегией %s",
+                sheet_name,
+                sheet_index,
+                strategy.__class__.__name__,
+            )
+            return None
+
+        steps = strategy.build_steps_for_sheet(sheet_name, form_info)
+        return ParsingPipelineRunner(steps=steps)
 
 
-# Глобальный экземпляр registry
-_global_registry: Optional[ParsingPipelineRegistry] = None
+# --- Синглтон ---
+
+_registry: Optional[ParsingStrategyRegistry] = None
 
 
-def get_parsing_pipeline_registry() -> ParsingPipelineRegistry:
-    """Возвращает глобальный экземпляр registry."""
-    global _global_registry
-    if _global_registry is None:
-        _global_registry = ParsingPipelineRegistry()
-    return _global_registry
+def get_parsing_strategy_registry(sheet_service=None) -> ParsingStrategyRegistry:
+    """
+    Возвращает глобальный экземпляр реестра.
+
+    При первом вызове создаёт реестр с переданным sheet_service.
+    Последующие вызовы возвращают уже созданный экземпляр.
+
+    Args:
+        sheet_service: Передаётся только при первом вызове (инициализации).
+    """
+    global _registry
+    if _registry is None:
+        _registry = ParsingStrategyRegistry(sheet_service=sheet_service)
+    return _registry

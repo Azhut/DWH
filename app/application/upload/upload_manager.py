@@ -2,6 +2,7 @@ import logging
 from typing import List
 from fastapi import UploadFile
 from app.api.v2.schemas.upload import UploadResponse
+from app.application.parsing.registry import get_parsing_strategy_registry
 from app.application.upload.pipeline import build_default_pipeline
 from app.application.upload.request_validator import RequestValidator
 from app.application.upload.form_loader import FormLoader
@@ -40,12 +41,12 @@ class UploadManager:
         self._form_service = form_service
         self._sheet_service = sheet_service
         self._data_save_service = data_save_service
+        get_parsing_strategy_registry(sheet_service=sheet_service)
 
         self._validator = RequestValidator()
         self._form_loader = FormLoader(form_service=form_service)
         self._pipeline = build_default_pipeline(
             file_service=file_service,
-            sheet_service=sheet_service,
             data_save_service=data_save_service,
         )
         self._file_processor = FileProcessor(pipeline=self._pipeline)
@@ -70,26 +71,20 @@ class UploadManager:
         Returns:
             UploadResponse: Всегда возвращает 200 OK со списком результатов по файлам
         """
-        # ============= Валидация запроса =============
-        # Проверка семантики запроса
-        form_id = self._validator.validate_request(files, form_id)
 
+        form_id = self._validator.validate_request(files, form_id)
         logger.info(
             "Начало обработки %d файл(ов) для формы '%s'",
             len(files),
             form_id,
         )
 
-        # ============= Загрузка формы из БД  =============
-        # Проверка существования формы
         form_info = await self._form_loader.load_form(form_id)
 
-        # ============= Обработка файлов =============
-        # Начало пайплана
         file_responses = []
         for file in files:
             response = await self._file_processor.process_file(file, form_id, form_info)
             file_responses.append(response)
 
-        # ============= Формирование ответа =============
+
         return UploadResponseBuilder.build_response(file_responses)

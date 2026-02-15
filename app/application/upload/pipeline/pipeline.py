@@ -128,7 +128,6 @@ class UploadPipelineRunner:
 
 def build_default_pipeline(
         file_service,
-        sheet_service,
         data_save_service,
 ) -> UploadPipelineRunner:
     """
@@ -140,7 +139,7 @@ def build_default_pipeline(
         ExtractMetadataStep(file_service),
         CheckUniquenessStep(file_service),
         CreateFileModelStep(),
-        ProcessSheetsStep(sheet_service),
+        ProcessSheetsStep(),
         EnrichFlatDataStep(),
         PersistStep(data_save_service),
     ]

@@ -5,15 +5,26 @@ from typing import Dict, List, Optional
 import pandas as pd
 
 from app.domain.flat_data.models import FlatDataRecord
-from app.domain.form.models import FormInfo, FormType
+from app.domain.form.models import FormInfo
 from app.domain.parsing.models import ExtractedSheetData, TableStructure
 
 
 @dataclass
 class ParsingPipelineContext:
-    """Контекст обработки одного листа в рамках parsing pipeline."""
+    """
+    Контекст обработки одного листа в рамках parsing pipeline.
 
-    # Входные данные
+    Нейтральный носитель данных — не знает о конкретных формах.
+    Форма-специфичная логика полностью вынесена в стратегии.
+
+    Жизненный цикл полей:
+    - Входные данные: устанавливаются при создании, не меняются.
+    - Промежуточные результаты: заполняются шагами последовательно.
+    - Финальные результаты: заполняются последними шагами pipeline.
+    - Ошибки/статус: накапливаются по ходу выполнения.
+    """
+
+    # --- Входные данные (устанавливаются при создании) ---
     sheet_name: str
     raw_dataframe: pd.DataFrame
     form_info: FormInfo
@@ -22,11 +33,7 @@ class ParsingPipelineContext:
     file_id: Optional[str]
     form_id: Optional[str]
 
-    # Конфигурация pipeline (зависит от формы)
-    apply_notes: bool = False  # True только для 1ФК
-    deduplicate_columns: bool = False  # True для 5ФК
-
-    # Промежуточные результаты (domain/parsing)
+    # --- Промежуточные результаты (заполняются шагами) ---
     table_structure: Optional[TableStructure] = None
     processed_dataframe: Optional[pd.DataFrame] = None
     header_start_row: Optional[int] = None
@@ -38,20 +45,15 @@ class ParsingPipelineContext:
     extracted_data: Optional[ExtractedSheetData] = None
     parsed_data: Optional[Dict] = None  # legacy-формат для совместимости
 
-    # Финальные результаты
+    # --- Финальные результаты ---
     flat_data_records: List[FlatDataRecord] = field(default_factory=list)
-    sheet_model_data: Optional[Dict] = None  # Данные для SheetModel
+    sheet_model_data: Optional[Dict] = None
 
-    # Ошибки и статус
+    # --- Ошибки и статус ---
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     failed: bool = False
 
-    def add_error(self, message: str) -> None:
-        """Добавляет ошибку в контекст."""
-        self.errors.append(message)
-        self.failed = True
-
     def add_warning(self, message: str) -> None:
-        """Добавляет предупреждение в контекст."""
+        """Добавляет предупреждение. Не останавливает pipeline."""
         self.warnings.append(message)

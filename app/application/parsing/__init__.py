@@ -1,12 +1,14 @@
 """Parsing Pipeline: управляемый pipeline для парсинга листов Excel."""
 from app.application.parsing.context import ParsingPipelineContext
-from app.application.parsing.pipeline import ParsingPipelineRunner, build_parsing_pipeline
-from app.application.parsing.registry import ParsingPipelineRegistry, get_parsing_pipeline_registry
+from app.application.parsing.pipeline import ParsingPipelineRunner
+from app.application.parsing.registry import (
+    ParsingStrategyRegistry,
+    get_parsing_strategy_registry,
+)
 
 __all__ = [
     "ParsingPipelineContext",
     "ParsingPipelineRunner",
-    "build_parsing_pipeline",
-    "ParsingPipelineRegistry",
-    "get_parsing_pipeline_registry",
+    "ParsingStrategyRegistry",
+    "get_parsing_strategy_registry",
 ]
