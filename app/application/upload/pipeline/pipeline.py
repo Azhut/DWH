@@ -62,7 +62,6 @@ class UploadPipelineRunner:
             except NonCriticalUploadError as e:
                 if config.DEBUG:
                     log_app_error(e)
-
                 continue
 
             except NonCriticalParsingError as e:
@@ -96,7 +95,6 @@ class UploadPipelineRunner:
         ctx.failed = True
         ctx.error = error.message if hasattr(error, 'message') else str(error)
 
-        # Rollback плоских данных, если они были сохранены
         if ctx.file_model and getattr(ctx.file_model, "file_id", None):
             try:
                 await self.data_save_service.rollback(ctx.file_model, ctx.error)
@@ -108,7 +106,6 @@ class UploadPipelineRunner:
                     rollback_err,
                 )
 
-        # Сохранение stub файла с информацией об ошибке
         await self._save_stub(ctx, ctx.error)
 
     async def _save_stub(self, ctx: UploadPipelineContext, err_msg: str) -> None:

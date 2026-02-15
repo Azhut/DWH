@@ -71,6 +71,7 @@ class UploadManager:
             UploadResponse: Всегда возвращает 200 OK со списком результатов по файлам
         """
         # ============= Валидация запроса =============
+        # Проверка семантики запроса
         form_id = self._validator.validate_request(files, form_id)
 
         logger.info(
@@ -80,9 +81,11 @@ class UploadManager:
         )
 
         # ============= Загрузка формы из БД  =============
+        # Проверка существования формы
         form_info = await self._form_loader.load_form(form_id)
 
         # ============= Обработка файлов =============
+        # Начало пайплана
         file_responses = []
         for file in files:
             response = await self._file_processor.process_file(file, form_id, form_info)

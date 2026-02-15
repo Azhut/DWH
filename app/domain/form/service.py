@@ -13,7 +13,7 @@ from app.domain.form.repository import FormRepository
 def validate_form_id(form_id: Any) -> str:
     """
     Проверяет, что form_id задан и является непустой строкой.
-    Единое место для всех эндпоинтов.
+    Единое место для всех эндпоинтов. Валидирует только семантику форм, не ходит в БД
     """
     if form_id is None or (isinstance(form_id, str) and not form_id.strip()):
         raise FormValidationError(

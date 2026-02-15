@@ -23,7 +23,6 @@ class ReadFileContentStep:
 
     async def execute(self, ctx: UploadPipelineContext) -> None:
         try:
-            # filename нужен только для логов и мета
             ctx.filename = ctx.file.filename or f"{uuid.uuid4()}.bin"
 
             await ctx.file.seek(0)
