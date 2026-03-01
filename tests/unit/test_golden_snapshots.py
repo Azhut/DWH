@@ -1,4 +1,3 @@
-import asyncio
 import json
 from pathlib import Path
 from io import BytesIO
@@ -32,12 +31,13 @@ class NoOpDataSaveService:
     async def save_file(self, file_model):
         return None
 
+FK1_FORM_ID="eab639f7-78c4-4e08-bd27-756bac5cf571"
 
 TEST_FILES: List[tuple[str, str, str]] = [
     (
         "1fk/АЛАПАЕВСК 2020.xls",
         "АЛАПАЕВСК 2020.expected.json",
-        "eab639f7-78c4-4e08-bd27-756bac5cf571",  # 1ФК
+        FK1_FORM_ID,  # 1ФК
     ),
     # Добавь остальные файлы:
     # ("1fk/ИРБИТ 2023.xls", "ИРБИТ 2023.expected.json", "eab639f7-78c4-4e08-bd27-756bac5cf571"),
