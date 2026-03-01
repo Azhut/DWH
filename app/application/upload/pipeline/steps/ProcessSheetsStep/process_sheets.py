@@ -37,9 +37,7 @@ class ProcessSheetsStep:
 
     def __init__(self, excel_reader: ExcelReader | None = None) -> None:
         self._excel_reader = excel_reader or ExcelReader()
-        # Реестр НЕ инициализируется здесь — он получается лениво в execute().
-        # Причина: ProcessSheetsStep создаётся в build_default_pipeline раньше,
-        # чем UploadManager успевает проинициализировать реестр с sheet_service.
+
 
     async def execute(self, ctx: UploadPipelineContext) -> None:
         if not ctx.form_info or not ctx.file_model:

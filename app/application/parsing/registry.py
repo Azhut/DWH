@@ -107,7 +107,6 @@ class ParsingStrategyRegistry:
         return ParsingPipelineRunner(steps=steps)
 
 
-# --- Синглтон ---
 
 _registry: Optional[ParsingStrategyRegistry] = None
 

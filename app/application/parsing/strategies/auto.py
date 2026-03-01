@@ -56,10 +56,10 @@ class AutoFormParsingStrategy(BaseFormParsingStrategy):
         Стандартный набор шагов для автоматической формы.
         Одинаков для всех листов.
         """
-        from app.application.parsing.steps.common.detect_structure import DetectTableStructureStep
-        from app.application.parsing.steps.common.parse_headers import ParseHeadersStep
-        from app.application.parsing.steps.common.extract_data import ExtractDataStep
-        from app.application.parsing.steps.common.generate_flat_data import GenerateFlatDataStep
+        from app.application.parsing.steps.common.DetectTableStructureStep import DetectTableStructureStep
+        from app.application.parsing.steps.common.ParseHeadersStep import ParseHeadersStep
+        from app.application.parsing.steps.common.ExtractDataStep import ExtractDataStep
+        from app.application.parsing.steps.common.GenerateFlatDataStep import GenerateFlatDataStep
 
         deduplicate_columns: bool = form_info.requisites.get("deduplicate_columns", False)
 

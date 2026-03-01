@@ -94,8 +94,6 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
     """
 
     def __init__(self, sheet_service=None) -> None:
-        # sheet_service нужен FK1RoundingStep.
-        # Может быть None если рaундинг не используется ни на одном листе.
         self._sheet_service = sheet_service
 
     def should_process_sheet(
@@ -141,11 +139,11 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
         Raises:
             CriticalParsingError: если лист не описан в _SHEET_CONFIGS.
         """
-        from app.application.parsing.steps.common.detect_structure import DetectTableStructureStep
-        from app.application.parsing.steps.common.parse_headers import ParseHeadersStep
-        from app.application.parsing.steps.common.extract_data import ExtractDataStep
-        from app.application.parsing.steps.common.generate_flat_data import GenerateFlatDataStep
-        from app.application.parsing.steps.forms.fk1.FK1RoundingStep import FK1RoundingStep
+        from app.application.parsing.steps.common.DetectTableStructureStep import DetectTableStructureStep
+        from app.application.parsing.steps.common.ParseHeadersStep import ParseHeadersStep
+        from app.application.parsing.steps.common.ExtractDataStep import ExtractDataStep
+        from app.application.parsing.steps.common.GenerateFlatDataStep import GenerateFlatDataStep
+        from app.application.parsing.steps.forms.fk1.RoundingStep import FK1RoundingStep
         from app.application.parsing.steps.forms.fk1.ProcessNotesStep import ProcessNotesStep
 
 

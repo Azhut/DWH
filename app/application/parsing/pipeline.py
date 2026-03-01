@@ -55,7 +55,6 @@ class ParsingPipelineRunner:
                 await step.execute(ctx)
 
             except CriticalParsingError as e:
-                # Логируем и пробрасываем — лист (и весь файл) должен упасть
                 log_app_error(e)
                 ctx.errors.append(e.message)
                 logger.error(
@@ -67,7 +66,6 @@ class ParsingPipelineRunner:
                 raise
 
             except NonCriticalParsingError as e:
-                # Логируем и продолжаем — шаг не критичный
                 log_app_error(e)
                 ctx.add_warning(e.message)
                 logger.warning(
@@ -79,7 +77,6 @@ class ParsingPipelineRunner:
                 continue
 
             except Exception as e:
-                # Непредвиденное исключение — оборачиваем и пробрасываем как критическое
                 critical = CriticalParsingError(
                     message=f"Непредвиденная ошибка на шаге '{step_name}': {e}",
                     domain="parsing.pipeline",
