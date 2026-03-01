@@ -1,0 +1,172 @@
+{
+  "meta": {
+    "generated_at": "2026-03-01T15:41:15.099373",
+    "file_name": "АЛАПАЕВСК 2020.xls",
+    "form_id": "eab639f7-78c4-4e08-bd27-756bac5cf571",
+    "description": "Golden Master. Проверь визуально перед коммитом!"
+  },
+  "stats": {
+    "total_sheets": 6,
+    "total_flat_records": 68
+  },
+  "sheets": [
+    {
+      "name": "Раздел2",
+      "headers_count": {
+        "horizontal": 17,
+        "vertical": 22
+      },
+      "first_horizontal": "Коды по ОКЕИ: единица - 642; человек - 792 | N строки",
+      "first_vertical": "1",
+      "data_rows": 17
+    },
+    {
+      "name": "Раздел3",
+      "headers_count": {
+        "horizontal": 13,
+        "vertical": 37
+      },
+      "first_horizontal": "Коды по ОКЕИ: единица - 642; человек - 792 | N строки",
+      "first_vertical": "1",
+      "data_rows": 13
+    },
+    {
+      "name": "Раздел4",
+      "headers_count": {
+        "horizontal": 9,
+        "vertical": 11
+      },
+      "first_horizontal": "Код по ОКЕИ: тысяча рублей - 384 (с одним десятичным знаком) | N строки",
+      "first_vertical": "1",
+      "data_rows": 9
+    },
+    {
+      "name": "Раздел5",
+      "headers_count": {
+        "horizontal": 18,
+        "vertical": 165
+      },
+      "first_horizontal": "Код по ОКЕИ: человек - 792 | N строки",
+      "first_vertical": "1",
+      "data_rows": 18
+    },
+    {
+      "name": "Раздел6",
+      "headers_count": {
+        "horizontal": 8,
+        "vertical": 20
+      },
+      "first_horizontal": "Коды по ОКЕИ: единица - 642; человек – 792; тысяча рублей – 384 (с одним десятичным знаком) | № строки",
+      "first_vertical": "1",
+      "data_rows": 8
+    },
+    {
+      "name": "Раздел7",
+      "headers_count": {
+        "horizontal": 3,
+        "vertical": 11
+      },
+      "first_horizontal": "Код по ОКЕИ: человек - 792 | № строки | 2 | 268",
+      "first_vertical": "в том числе: - мастер спорта",
+      "data_rows": 3
+    }
+  ],
+  "checkpoints": [
+    {
+      "sheet": "Раздел2",
+      "row": "Всего",
+      "column": "Графа 3",
+      "expected": null,
+      "actual": null,
+      "match": false
+    },
+    {
+      "sheet": "Раздел2",
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "expected": null,
+      "actual": null,
+      "match": false
+    },
+    {
+      "sheet": "Раздел3",
+      "row": "Всего",
+      "column": "Графа 3",
+      "expected": null,
+      "actual": null,
+      "match": false
+    },
+    {
+      "sheet": "Раздел3",
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "expected": null,
+      "actual": null,
+      "match": false
+    },
+    {
+      "sheet": "Раздел4",
+      "row": "Всего",
+      "column": "Графа 3",
+      "expected": null,
+      "actual": null,
+      "match": false
+    },
+    {
+      "sheet": "Раздел4",
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "expected": null,
+      "actual": null,
+      "match": false
+    },
+    {
+      "sheet": "Раздел5",
+      "row": "Всего",
+      "column": "Графа 3",
+      "expected": null,
+      "actual": null,
+      "match": false
+    },
+    {
+      "sheet": "Раздел5",
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "expected": null,
+      "actual": null,
+      "match": false
+    },
+    {
+      "sheet": "Раздел6",
+      "row": "Всего",
+      "column": "Графа 3",
+      "expected": null,
+      "actual": null,
+      "match": false
+    },
+    {
+      "sheet": "Раздел6",
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "expected": null,
+      "actual": null,
+      "match": false
+    },
+    {
+      "sheet": "Раздел7",
+      "row": "Всего",
+      "column": "Графа 3",
+      "expected": null,
+      "actual": null,
+      "match": false
+    },
+    {
+      "sheet": "Раздел7",
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "expected": null,
+      "actual": null,
+      "match": false
+    }
+  ]
+}
