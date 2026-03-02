@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-03-01T18:51:48.775061",
+    "generated_at": "2026-03-02T23:10:17.597316",
     "file_name": "АЛАПАЕВСК 2020.xls",
     "form_id": "eab639f7-78c4-4e08-bd27-756bac5cf571",
     "description": "Golden Master. Статистика из ctx.flat_data (как в БД)."
@@ -96,26 +96,114 @@
     {
       "year": 2020,
       "reporter": "АЛАПАЕВСК",
-      "section": "Раздел3",
-      "row": "Площадь спортивных залов (м2)",
-      "column": "Единовременная пропускная способность (человек) | из них в сельской местности",
-      "value": "X"
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
     },
     {
       "year": 2020,
       "reporter": "АЛАПАЕВСК",
-      "section": "Раздел2",
-      "row": "Количество физкультурных и спортивных мероприятий, проведенных организацией самостоятельно в отчетный период",
-      "column": "Справочно",
-      "value": "255.0"
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
     },
     {
       "year": 2020,
       "reporter": "АЛАПАЕВСК",
-      "section": "Раздел2",
-      "row": "общеобразовательные организации",
-      "column": "Численность занимающихся физической культурой и спортом (человек) | из общей численности занимающихся (гр. 4): | в возрасте | 3 - 15лет",
-      "value": 3739
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2020,
+      "reporter": "АЛАПАЕВСК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    },
+    {
+      "year": 2020,
+      "reporter": "АЛАПАЕВСК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2020,
+      "reporter": "АЛАПАЕВСК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    },
+    {
+      "year": 2020,
+      "reporter": "АЛАПАЕВСК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2020,
+      "reporter": "АЛАПАЕВСК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    },
+    {
+      "year": 2020,
+      "reporter": "АЛАПАЕВСК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2020,
+      "reporter": "АЛАПАЕВСК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    },
+    {
+      "year": 2020,
+      "reporter": "АЛАПАЕВСК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2020,
+      "reporter": "АЛАПАЕВСК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    },
+    {
+      "year": 2020,
+      "reporter": "АЛАПАЕВСК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2020,
+      "reporter": "АЛАПАЕВСК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
     }
   ]
 }

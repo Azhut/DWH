@@ -1,0 +1,344 @@
+{
+  "meta": {
+    "generated_at": "2026-03-02T22:53:59.326173",
+    "file_name": "7. 5-ФК 2024 СШОР Аист_гос.xlsm",
+    "form_id": "3b5ca99e-cdc7-4590-b4d7-b9d6d95ebc69",
+    "description": "Golden Master. Статистика из ctx.flat_data (как в БД)."
+  },
+  "stats": {
+    "year": 2024,
+    "reporter": "7. 5-ФК",
+    "total_flat_records": 9284,
+    "total_sheets": 12,
+    "by_section": {
+      "Раздел 1": 4,
+      "Раздел 2": 1823,
+      "Раздел 3": 36,
+      "Раздел 4": 3120,
+      "Раздел 5": 1504,
+      "Раздел 6": 42,
+      "Раздел 7": 62,
+      "Раздел 8": 1816,
+      "Раздел 9": 86,
+      "Раздел 10": 345,
+      "Раздел 11": 296,
+      "Раздел 12": 150
+    }
+  },
+  "sheets": [
+    {
+      "name": "Раздел 1",
+      "flat_records_count": 4,
+      "headers_count": {
+        "horizontal": 8,
+        "vertical": 1
+      },
+      "first_horizontal": "Ведомственная принадлежность",
+      "first_vertical": "ОСН"
+    },
+    {
+      "name": "Раздел 2",
+      "flat_records_count": 1823,
+      "headers_count": {
+        "horizontal": 31,
+        "vertical": 291
+      },
+      "first_horizontal": "",
+      "first_vertical": "Авиамодельный спорт"
+    },
+    {
+      "name": "Раздел 3",
+      "flat_records_count": 36,
+      "headers_count": {
+        "horizontal": 36,
+        "vertical": 1
+      },
+      "first_horizontal": "",
+      "first_vertical": "66"
+    },
+    {
+      "name": "Раздел 4",
+      "flat_records_count": 3120,
+      "headers_count": {
+        "horizontal": 30,
+        "vertical": 291
+      },
+      "first_horizontal": "",
+      "first_vertical": "Авиамодельный спорт"
+    },
+    {
+      "name": "Раздел 5",
+      "flat_records_count": 1504,
+      "headers_count": {
+        "horizontal": 21,
+        "vertical": 291
+      },
+      "first_horizontal": "",
+      "first_vertical": "Авиамодельный спорт"
+    },
+    {
+      "name": "Раздел 6",
+      "flat_records_count": 42,
+      "headers_count": {
+        "horizontal": 44,
+        "vertical": 1
+      },
+      "first_horizontal": "",
+      "first_vertical": "66"
+    },
+    {
+      "name": "Раздел 7",
+      "flat_records_count": 62,
+      "headers_count": {
+        "horizontal": 64,
+        "vertical": 1
+      },
+      "first_horizontal": "",
+      "first_vertical": "66"
+    },
+    {
+      "name": "Раздел 8",
+      "flat_records_count": 1816,
+      "headers_count": {
+        "horizontal": 30,
+        "vertical": 291
+      },
+      "first_horizontal": "",
+      "first_vertical": "Авиамодельный спорт"
+    },
+    {
+      "name": "Раздел 9",
+      "flat_records_count": 86,
+      "headers_count": {
+        "horizontal": 17,
+        "vertical": 14
+      },
+      "first_horizontal": "",
+      "first_vertical": "Директор (руководитель)"
+    },
+    {
+      "name": "Раздел 10",
+      "flat_records_count": 345,
+      "headers_count": {
+        "horizontal": 25,
+        "vertical": 41
+      },
+      "first_horizontal": "",
+      "first_vertical": "Стадионы с трибунами – всего"
+    },
+    {
+      "name": "Раздел 11",
+      "flat_records_count": 296,
+      "headers_count": {
+        "horizontal": 40,
+        "vertical": 16
+      },
+      "first_horizontal": "",
+      "first_vertical": "Директор"
+    },
+    {
+      "name": "Раздел 12",
+      "flat_records_count": 150,
+      "headers_count": {
+        "horizontal": 18,
+        "vertical": 26
+      },
+      "first_horizontal": "",
+      "first_vertical": "Всего расходов"
+    }
+  ],
+  "checkpoints": [
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Всего",
+      "column": "Графа 3",
+      "value": null
+    },
+    {
+      "year": 2024,
+      "reporter": "7. 5-ФК",
+      "section": null,
+      "row": "Алапаевск",
+      "column": "Графа 1",
+      "value": null
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 """Базовый контракт стратегии парсинга формы."""
+import re
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
@@ -6,6 +7,23 @@ from app.domain.form.models import FormInfo
 
 if TYPE_CHECKING:
     from app.application.parsing.steps.base import ParsingPipelineStep
+
+
+def normalize_sheet_name(sheet_name: str) -> str:
+    """
+    Нормализует имя листа к каноническому виду: "РазделN".
+
+    Примеры:
+        "Раздел 4"  -> "Раздел4"
+        "раздел4"   -> "Раздел4"
+        "РАЗДЕЛ 4"  -> "Раздел4"
+        "РазДеЛ  4" -> "Раздел4"
+        "Р 8-12"    -> "Р 8-12"  (не матчится — возвращается as-is)
+    """
+    match = re.match(r'^\s*раздел\s*(\d+)\s*$', sheet_name.strip(), re.IGNORECASE)
+    if match:
+        return f"Раздел{match.group(1)}"
+    return sheet_name
 
 
 class BaseFormParsingStrategy(ABC):
@@ -37,7 +55,7 @@ class BaseFormParsingStrategy(ABC):
         Определяет, нужно ли обрабатывать данный лист.
 
         Args:
-            sheet_name: Название листа из Excel файла.
+            sheet_name: Название листа из Excel файла (оригинальное).
             sheet_index: Порядковый индекс листа (0-based).
             form_info: Информация о форме, включая реквизиты.
 
@@ -60,7 +78,7 @@ class BaseFormParsingStrategy(ABC):
         Шаги создаются с нужными параметрами через конструктор.
 
         Args:
-            sheet_name: Название листа.
+            sheet_name: Название листа (оригинальное).
             form_info: Информация о форме.
 
         Returns:

@@ -2,9 +2,8 @@
 import logging
 from dataclasses import dataclass
 
-
 from app.domain.form.models import FormInfo
-from app.application.parsing.strategies.base import BaseFormParsingStrategy
+from app.application.parsing.strategies.base import BaseFormParsingStrategy, normalize_sheet_name
 from app.application.parsing.steps.base import ParsingPipelineStep
 from app.core.exceptions import CriticalParsingError
 
@@ -25,7 +24,8 @@ class _SheetConfig:
 
 
 # Конфигурация всех листов формы 1ФК.
-# Ключ — точное имя листа в Excel файле.
+# Ключ — нормализованное имя листа: "РазделN" (без пробела, с заглавной Р).
+# normalize_sheet_name() приводит любое входящее имя к этому виду перед поиском.
 _SHEET_CONFIGS: dict[str, _SheetConfig] = {
     "Раздел0": _SheetConfig(
         header_row_range=(2, 4),
@@ -86,8 +86,14 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
     - Фиксированные параметры структуры для каждого листа (_SHEET_CONFIGS).
     - Уникальный шаг ProcessNotesStep — только для этой формы.
     - Шаг RoundingStep применяется только к листам с apply_rounding=True.
-    - Листы, не описанные в _SHEET_CONFIGS, вызывают CriticalParsingError.
-    - Пропуск листов: только через skip_sheets в реквизитах (как у авто-форм).
+    - Листы, не найденные в _SHEET_CONFIGS после нормализации, пропускаются
+      (в отличие от старого поведения — CriticalParsingError).
+    - Пропуск листов: невалидное имя + skip_sheets в реквизитах.
+
+    Нормализация имён:
+        "Раздел 4", "раздел4", "РАЗДЕЛ 4" — всё маппится на "Раздел4".
+        normalize_sheet_name() из base.py используется в обоих методах,
+        чтобы оригинальное имя никогда не попадало в _SHEET_CONFIGS напрямую.
 
     Для добавления нового листа: добавить запись в _SHEET_CONFIGS.
     Для изменения параметров листа: изменить запись в _SHEET_CONFIGS.
@@ -103,19 +109,15 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
         form_info: FormInfo,
     ) -> bool:
         """
-        Пропускает листы по реквизиту skip_sheets.
-        Листы не из _SHEET_CONFIGS не пропускаются здесь — они упадут
-        с CriticalParsingError в build_steps_for_sheet, что является
-        корректным поведением (неизвестный лист = ошибка конфигурации).
+        Пропускает лист если:
+        - нормализованное имя не найдено в _SHEET_CONFIGS (служебные листы, макросы и т.п.)
+        - индекс листа указан в реквизите skip_sheets.
         """
-        skip_sheets: list = form_info.requisites.get("skip_sheets", []) or []
+        if normalize_sheet_name(sheet_name) not in _SHEET_CONFIGS:
+            return False
 
+        skip_sheets: list = form_info.requisites.get("skip_sheets", []) or []
         if sheet_index in skip_sheets:
-            logger.debug(
-                "Лист '%s' (индекс %d) пропущен по реквизиту skip_sheets (1ФК)",
-                sheet_name,
-                sheet_index,
-            )
             return False
 
         return True
@@ -128,6 +130,9 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
         """
         Собирает шаги для конкретного листа 1ФК.
 
+        Имя листа нормализуется перед поиском в _SHEET_CONFIGS —
+        "Раздел 4", "раздел4" и "РАЗДЕЛ4" дадут одинаковый результат.
+
         Порядок шагов:
         1. DetectTableStructureStep — фиксированные параметры из _SHEET_CONFIGS
         2. FK1RoundingStep          — только если apply_rounding=True для листа
@@ -137,7 +142,9 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
         6. GenerateFlatDataStep
 
         Raises:
-            CriticalParsingError: если лист не описан в _SHEET_CONFIGS.
+            CriticalParsingError: если лист прошёл should_process_sheet,
+                                  но конфиг всё равно не найден (не должно
+                                  случаться в нормальном потоке).
         """
         from app.application.parsing.steps.common.DetectTableStructureStep import DetectTableStructureStep
         from app.application.parsing.steps.common.ParseHeadersStep import ParseHeadersStep
@@ -146,16 +153,19 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
         from app.application.parsing.steps.forms.fk1.RoundingStep import FK1RoundingStep
         from app.application.parsing.steps.forms.fk1.ProcessNotesStep import ProcessNotesStep
 
-
-        config = _SHEET_CONFIGS.get(sheet_name)
+        normalized = normalize_sheet_name(sheet_name)
+        config = _SHEET_CONFIGS.get(normalized)
 
         if config is None:
+            # Защитная ветка: в норме недостижима, так как should_process_sheet
+            # уже отфильтровал неизвестные листы.
             raise CriticalParsingError(
-                f"Лист '{sheet_name}' не описан в конфигурации формы 1ФК. "
-                f"Известные листы: {list(_SHEET_CONFIGS.keys())}",
+                f"Лист '{sheet_name}' (нормализован: '{normalized}') не описан "
+                f"в конфигурации формы 1ФК. Известные листы: {list(_SHEET_CONFIGS.keys())}",
                 domain="parsing.strategies.fk1",
                 meta={
                     "sheet_name": sheet_name,
+                    "normalized_sheet_name": normalized,
                     "form_id": form_info.id,
                     "known_sheets": list(_SHEET_CONFIGS.keys()),
                 },
@@ -187,8 +197,9 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
         ])
 
         logger.debug(
-            "1ФК: собран pipeline для листа '%s' (%d шагов, rounding=%s)",
+            "1ФК: собран pipeline для листа '%s' (нормализован: '%s', %d шагов, rounding=%s)",
             sheet_name,
+            normalized,
             len(steps),
             config.apply_rounding,
         )
