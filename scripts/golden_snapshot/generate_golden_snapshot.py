@@ -25,7 +25,7 @@ from app.core.dependencies import (
 
 
 # Путь к тестовому файлу (относительно корня проекта)
-TEST_FILE_PATH = Path("../../tests/fixtures/1fk/АЛАПАЕВСК 2020.xls")
+TEST_FILE_PATH = Path("../../tests/fixtures/5fk/7. 5-ФК 2024 СШОР Аист_гос.xlsm")
 
 # ID формы
 FORM_ID = FORM_ID
@@ -34,7 +34,7 @@ FORM_ID = FORM_ID
 OUTPUT_EXCEL_PATH = Path(__file__).parent / "visual_report.xlsx"
 
 # JSON-снапшот для автотестов (относительно корня проекта)
-OUTPUT_SNAPSHOT_PATH = Path("../../tests/fixtures/1fk_snapshots/АЛАПАЕВСК 2020.expected.json")
+OUTPUT_SNAPSHOT_PATH = Path("../../tests/fixtures/1fk_snapshots/СШОР Аист_гос 2024.expected.json")
 
 # Контрольные точки: какие ячейки проверять
 # expected_value=None означает "проверить, что значение найдено (любое)"
