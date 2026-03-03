@@ -1,3 +1,4 @@
+
 """Стратегия парсинга для ручной формы 1ФК."""
 import logging
 from dataclasses import dataclass
@@ -25,56 +26,15 @@ class _SheetConfig:
 
 # Конфигурация всех листов формы 1ФК.
 # Ключ — нормализованное имя листа: "РазделN" (без пробела, с заглавной Р).
-# normalize_sheet_name() приводит любое входящее имя к этому виду перед поиском.
 _SHEET_CONFIGS: dict[str, _SheetConfig] = {
-    "Раздел0": _SheetConfig(
-        header_row_range=(2, 4),
-        vertical_header_col=0,
-        data_start_row=6,
-        apply_rounding=False,
-    ),
-    "Раздел1": _SheetConfig(
-        header_row_range=(2, 4),
-        vertical_header_col=0,
-        data_start_row=6,
-        apply_rounding=True,
-    ),
-    "Раздел2": _SheetConfig(
-        header_row_range=(2, 5),
-        vertical_header_col=0,
-        data_start_row=7,
-        apply_rounding=True,
-    ),
-    "Раздел3": _SheetConfig(
-        header_row_range=(2, 4),
-        vertical_header_col=0,
-        data_start_row=6,
-        apply_rounding=True,
-    ),
-    "Раздел4": _SheetConfig(
-        header_row_range=(2, 5),
-        vertical_header_col=0,
-        data_start_row=7,
-        apply_rounding=True,
-    ),
-    "Раздел5": _SheetConfig(
-        header_row_range=(2, 5),
-        vertical_header_col=0,
-        data_start_row=7,
-        apply_rounding=True,
-    ),
-    "Раздел6": _SheetConfig(
-        header_row_range=(2, 5),
-        vertical_header_col=0,
-        data_start_row=7,
-        apply_rounding=True,
-    ),
-    "Раздел7": _SheetConfig(
-        header_row_range=(2, 2),
-        vertical_header_col=0,
-        data_start_row=4,
-        apply_rounding=True,
-    ),
+    "Раздел0": _SheetConfig(header_row_range=(2, 4), vertical_header_col=0, data_start_row=6),
+    "Раздел1": _SheetConfig(header_row_range=(2, 4), vertical_header_col=0, data_start_row=6, apply_rounding=True),
+    "Раздел2": _SheetConfig(header_row_range=(2, 5), vertical_header_col=0, data_start_row=7, apply_rounding=True),
+    "Раздел3": _SheetConfig(header_row_range=(2, 4), vertical_header_col=0, data_start_row=6, apply_rounding=True),
+    "Раздел4": _SheetConfig(header_row_range=(2, 5), vertical_header_col=0, data_start_row=7, apply_rounding=True),
+    "Раздел5": _SheetConfig(header_row_range=(2, 5), vertical_header_col=0, data_start_row=7, apply_rounding=True),
+    "Раздел6": _SheetConfig(header_row_range=(2, 5), vertical_header_col=0, data_start_row=7, apply_rounding=True),
+    "Раздел7": _SheetConfig(header_row_range=(2, 2), vertical_header_col=0, data_start_row=4, apply_rounding=True),
 }
 
 
@@ -84,19 +44,12 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
 
     Характеристики:
     - Фиксированные параметры структуры для каждого листа (_SHEET_CONFIGS).
+    - Нормализация имён: normalize_sheet_name() из base.py передаётся
+      в DetectTableStructureStep через normalize_fn — стратегия владеет логикой,
+      шаг её исполняет.
     - Уникальный шаг ProcessNotesStep — только для этой формы.
     - Шаг RoundingStep применяется только к листам с apply_rounding=True.
-    - Листы, не найденные в _SHEET_CONFIGS после нормализации, пропускаются
-      (в отличие от старого поведения — CriticalParsingError).
-    - Пропуск листов: невалидное имя + skip_sheets в реквизитах.
-
-    Нормализация имён:
-        "Раздел 4", "раздел4", "РАЗДЕЛ 4" — всё маппится на "Раздел4".
-        normalize_sheet_name() из base.py используется в обоих методах,
-        чтобы оригинальное имя никогда не попадало в _SHEET_CONFIGS напрямую.
-
-    Для добавления нового листа: добавить запись в _SHEET_CONFIGS.
-    Для изменения параметров листа: изменить запись в _SHEET_CONFIGS.
+    - Листы, не найденные в _SHEET_CONFIGS после нормализации, пропускаются.
     """
 
     def __init__(self, sheet_service=None) -> None:
@@ -108,11 +61,6 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
         sheet_index: int,
         form_info: FormInfo,
     ) -> bool:
-        """
-        Пропускает лист если:
-        - нормализованное имя не найдено в _SHEET_CONFIGS (служебные листы, макросы и т.п.)
-        - индекс листа указан в реквизите skip_sheets.
-        """
         if normalize_sheet_name(sheet_name) not in _SHEET_CONFIGS:
             return False
 
@@ -130,21 +78,16 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
         """
         Собирает шаги для конкретного листа 1ФК.
 
-        Имя листа нормализуется перед поиском в _SHEET_CONFIGS —
-        "Раздел 4", "раздел4" и "РАЗДЕЛ4" дадут одинаковый результат.
+        normalize_sheet_name передаётся в DetectTableStructureStep как normalize_fn —
+        именно там происходит запись нормализованного имени в sheet_model.sheet_name.
 
         Порядок шагов:
-        1. DetectTableStructureStep — фиксированные параметры из _SHEET_CONFIGS
-        2. FK1RoundingStep          — только если apply_rounding=True для листа
+        1. DetectTableStructureStep — фиксированные параметры + нормализация имени
+        2. FK1RoundingStep          — только если apply_rounding=True
         3. ProcessNotesStep         — специфично для 1ФК, всегда присутствует
         4. ParseHeadersStep
         5. ExtractDataStep
         6. GenerateFlatDataStep
-
-        Raises:
-            CriticalParsingError: если лист прошёл should_process_sheet,
-                                  но конфиг всё равно не найден (не должно
-                                  случаться в нормальном потоке).
         """
         from app.application.parsing.steps.common.DetectTableStructureStep import DetectTableStructureStep
         from app.application.parsing.steps.common.ParseHeadersStep import ParseHeadersStep
@@ -157,8 +100,6 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
         config = _SHEET_CONFIGS.get(normalized)
 
         if config is None:
-            # Защитная ветка: в норме недостижима, так как should_process_sheet
-            # уже отфильтровал неизвестные листы.
             raise CriticalParsingError(
                 f"Лист '{sheet_name}' (нормализован: '{normalized}') не описан "
                 f"в конфигурации формы 1ФК. Известные листы: {list(_SHEET_CONFIGS.keys())}",
@@ -176,6 +117,7 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
                 fixed_header_range=config.header_row_range,
                 fixed_vertical_col=config.vertical_header_col,
                 fixed_data_start_row=config.data_start_row,
+                normalize_fn=normalize_sheet_name,  # стратегия передаёт свою логику
             ),
         ]
 

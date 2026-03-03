@@ -4,7 +4,7 @@
 
 Использование:
     1. Отредактируй TEST_FILE_PATH, FORM_ID ниже
-    3. Проверь visual_report.xlsx и .expected.json
+    2. Проверь visual_report.xlsx и .expected.json
 """
 from pathlib import Path
 from tests import FORM_ID
@@ -19,21 +19,15 @@ from app.application.upload.pipeline import build_default_pipeline, UploadPipeli
 from app.core.dependencies import (
     get_file_service,
     get_form_service,
-    get_sheet_service
+    get_sheet_service,
+    get_data_save_service,
 )
 
 
-
-TEST_FILE_PATH = Path("../../tests/fixtures/5fk/7. 5-ФК 2024 СШОР Аист_гос.xlsm")
-# TEST_FILE_PATH = Path("../../tests/fixtures/1fk/АЛАПАЕВСК 2020.xls")
-
+TEST_FILE_PATH = Path("../../tests/fixtures/1fk/АЛАПАЕВСК 2020.xls")
 FORM_ID = FORM_ID
-
 OUTPUT_EXCEL_PATH = Path(__file__).parent / "visual_report.xlsx"
-
-OUTPUT_SNAPSHOT_PATH = Path("../../tests/fixtures/1fk_snapshots/СШОР Аист_гос 2024.expected.json")
-# OUTPUT_SNAPSHOT_PATH = Path("../../tests/fixtures/1fk_snapshots/АЛАПАЕВСК 2020.expected.json")
-
+OUTPUT_SNAPSHOT_PATH = Path("../../tests/fixtures/1fk_snapshots/АЛАПАЕВСК 2020.expected.json")
 
 CHECKPOINTS: List[Dict[str, Any]] = [
     {
@@ -42,7 +36,7 @@ CHECKPOINTS: List[Dict[str, Any]] = [
         "section": "Раздел3",
         "row": "Площадь спортивных залов (м2)",
         "column": "Единовременная пропускная способность (человек) | из них в сельской местности",
-        "value": "X"
+        "value": "X",
     },
     {
         "year": 2020,
@@ -50,7 +44,7 @@ CHECKPOINTS: List[Dict[str, Any]] = [
         "section": "Раздел2",
         "row": "Количество физкультурных и спортивных мероприятий, проведенных организацией самостоятельно в отчетный период",
         "column": "Справочно",
-        "value": "255.0"
+        "value": "255.0",
     },
     {
         "year": 2020,
@@ -58,16 +52,12 @@ CHECKPOINTS: List[Dict[str, Any]] = [
         "section": "Раздел2",
         "row": "общеобразовательные организации",
         "column": "Численность занимающихся физической культурой и спортом (человек) | из общей численности занимающихся (гр. 4): | в возрасте | 3 - 15лет",
-        "value": 3739
-    }
+        "value": 3739,
+    },
 ]
 
 
 async def run_pipeline_simulation(file_path: Path, form_id: str) -> UploadPipelineContext:
-    """
-    Запускает файл через реальный UploadPipeline.
-    Возвращает контекст с результатами парсинга.
-    """
     print(f"🚀 Запуск pipeline для файла: {file_path.name}")
 
     with open(file_path, "rb") as f:
@@ -83,19 +73,7 @@ async def run_pipeline_simulation(file_path: Path, form_id: str) -> UploadPipeli
     form_info = await form_service.get_form_or_raise(form_id)
 
     file_service = get_file_service()
-    # Для генератора снапшотов используем NoOp сервис сохранения,
-    # чтобы не вносить данные в БД при локальном запуске.
-    class NoOpDataSaveService:
-        async def process_and_save_all(self, file_model, flat_data=None):
-            return None
-
-        async def rollback(self, file_model, error: str):
-            return None
-
-        async def save_file(self, file_model):
-            return None
-
-    data_save_service = NoOpDataSaveService()
+    data_save_service = get_data_save_service()
     sheet_service = get_sheet_service()
 
     get_parsing_strategy_registry(sheet_service=sheet_service)
@@ -120,10 +98,6 @@ async def run_pipeline_simulation(file_path: Path, form_id: str) -> UploadPipeli
 
 
 def generate_visual_report(ctx: UploadPipelineContext, output_path: Path) -> None:
-    """
-    Создаёт Excel-файл для ручной проверки.
-    Статистика считается из ctx.flat_data (как в БД).
-    """
     print(f"📊 Генерация визуального отчета: {output_path}")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -134,33 +108,25 @@ def generate_visual_report(ctx: UploadPipelineContext, output_path: Path) -> Non
         write_multiindex_excel,
     )
 
-    # === ОБЩАЯ СТАТИСТИКА ПО ФАЙЛУ ===
-    flat_data = ctx.flat_data or []
+    flat_data = ctx.flat_data  # property — агрегация из ctx.sheets
     total_records = len(flat_data)
 
-    # Группировка по листам (section)
     by_section: Dict[str, int] = {}
     for rec in flat_data:
         section = rec.section or "unknown"
         by_section[section] = by_section.get(section, 0) + 1
 
-    # Общая статистика по значениям
     numeric_values = [rec.value for rec in flat_data if isinstance(rec.value, (int, float))]
     numeric_sum = sum(numeric_values) if numeric_values else 0
     numeric_count = len(numeric_values)
     empty_count = sum(1 for rec in flat_data if rec.value is None or rec.value == "")
 
     with pd.ExcelWriter(output_path, engine="openpyxl") as writer:  # type: ignore
-        # === Вкладка 0: ОБЩАЯ СТАТИСТИКА ПО ФАЙЛУ ===
+        # Вкладка 0: общая статистика
         overall_stats = {
             "Метрика": [
-                "Всего записей",
-                "Заполнено",
-                "Пустых",
-                "% заполненности",
-                "Сумма числовых",
-                "Среднее числовое",
-                "Количество листов",
+                "Всего записей", "Заполнено", "Пустых", "% заполненности",
+                "Сумма числовых", "Среднее числовое", "Количество листов",
             ],
             "Значение": [
                 total_records,
@@ -174,56 +140,59 @@ def generate_visual_report(ctx: UploadPipelineContext, output_path: Path) -> Non
         }
         pd.DataFrame(overall_stats).to_excel(writer, sheet_name="Общая_статистика", index=False)
 
-        # === Вкладка 1: Статистика по листам ===
+        # Вкладка 1: статистика по листам
         section_stats = [
             {"Лист": section, "Записей": count}
             for section, count in sorted(by_section.items())
         ]
         pd.DataFrame(section_stats).to_excel(writer, sheet_name="По_листам", index=False)
 
-        # === Вкладки по каждому листу ===
-        if ctx.sheet_models:
-            for sheet in ctx.sheet_models:
-                sheet_name_clean = sheet.sheet_name[:30].replace(":", "_").replace("/", "_")
+        # Вкладки по каждому листу — используем ctx.sheets (List[SheetModel])
+        for sheet in ctx.sheets:
+            sheet_name_clean = (sheet.sheet_name or sheet.sheet_fullname)[:30].replace(":", "_").replace("/", "_")
 
-                sheet_data = {
-                    "headers": sheet.headers if isinstance(sheet.headers, dict) else {
-                        "horizontal": [], "vertical": [],
-                    },
-                    "data": sheet.data if isinstance(sheet.data, list) else [],
-                }
+            # Строим sheet_data в формате, который ожидает table_builder
+            sheet_data = {
+                "headers": {
+                    "horizontal": sheet.horizontal_headers,
+                    "vertical": sheet.vertical_headers,
+                },
+                "data": [
+                    {
+                        "column_header": rec.column,
+                        "values": [{"row_header": rec.row, "value": rec.value}],
+                    }
+                    for rec in sheet.flat_data_records
+                ],
+            }
 
-                # Лист: Многоуровневая таблица
-                try:
-                    pivot_df, n_levels = build_multiindex_dataframe(sheet_data, max_rows=100, max_cols=50)
-                    temp_path = output_path.parent / f"_temp_{sheet_name_clean}.xlsx"
-                    write_multiindex_excel(pivot_df, str(temp_path), sheet_name=f"{sheet_name_clean}_Таблица")
-                    temp_df = pd.read_excel(temp_path, sheet_name=0)
-                    temp_df.to_excel(writer, sheet_name=f"{sheet_name_clean}_Таблица", index=False)
-                    temp_path.unlink()
-                    print(
-                        f"  ✅ {sheet_name_clean}_Таблица: {pivot_df.shape[0]} × {pivot_df.shape[1]} ({n_levels} уровней)")
-                except Exception as e:
-                    print(f"  ⚠️ Не удалось создать таблицу для {sheet_name_clean}: {e}")
+            try:
+                pivot_df, n_levels = build_multiindex_dataframe(sheet_data, max_rows=100, max_cols=50)
+                temp_path = output_path.parent / f"_temp_{sheet_name_clean}.xlsx"
+                write_multiindex_excel(pivot_df, str(temp_path), sheet_name=f"{sheet_name_clean}_Таблица")
+                temp_df = pd.read_excel(temp_path, sheet_name=0)
+                temp_df.to_excel(writer, sheet_name=f"{sheet_name_clean}_Таблица", index=False)
+                temp_path.unlink()
+                print(f"  ✅ {sheet_name_clean}_Таблица: {pivot_df.shape[0]} × {pivot_df.shape[1]} ({n_levels} уровней)")
+            except Exception as e:
+                print(f"  ⚠️ Не удалось создать таблицу для {sheet_name_clean}: {e}")
 
-                # Лист: Статистика
-                try:
-                    summary_df = build_summary_table(sheet_data)
-                    summary_df.to_excel(writer, sheet_name=f"{sheet_name_clean}_Статистика", index=False)
-                    print(f"  ✅ {sheet_name_clean}_Статистика: сохранено")
-                except Exception as e:
-                    print(f"  ⚠️ Не удалось создать статистику для {sheet_name_clean}: {e}")
+            try:
+                summary_df = build_summary_table(sheet_data)
+                summary_df.to_excel(writer, sheet_name=f"{sheet_name_clean}_Статистика", index=False)
+                print(f"  ✅ {sheet_name_clean}_Статистика: сохранено")
+            except Exception as e:
+                print(f"  ⚠️ Не удалось создать статистику для {sheet_name_clean}: {e}")
 
-                # Лист: Плоские данные
-                try:
-                    flat_df = build_flat_data_preview(sheet_data, max_rows=200)
-                    if not flat_df.empty:
-                        flat_df.to_excel(writer, sheet_name=f"{sheet_name_clean}_Данные", index=False)
-                        print(f"  ✅ {sheet_name_clean}_Данные: {len(flat_df)} записей")
-                    else:
-                        print(f"  ⚠️ {sheet_name_clean}_Данные: пустой лист")
-                except Exception as e:
-                    print(f"  ⚠️ Не удалось создать данные для {sheet_name_clean}: {e}")
+            try:
+                flat_df = build_flat_data_preview(sheet_data, max_rows=200)
+                if not flat_df.empty:
+                    flat_df.to_excel(writer, sheet_name=f"{sheet_name_clean}_Данные", index=False)
+                    print(f"  ✅ {sheet_name_clean}_Данные: {len(flat_df)} записей")
+                else:
+                    print(f"  ⚠️ {sheet_name_clean}_Данные: пустой лист")
+            except Exception as e:
+                print(f"  ⚠️ Не удалось создать данные для {sheet_name_clean}: {e}")
 
     print(f"✅ Отчёт сохранён: {output_path}")
     print(f"📊 Всего записей (flat_data): {total_records}")
@@ -234,25 +203,17 @@ def generate_snapshot(
         output_path: Path,
         checkpoints: List[Dict[str, Any]],
 ) -> None:
-    """
-    Создаёт JSON-снапшот для автотестов.
-    Статистика считается из ctx.flat_data (как в БД).
-    Checkpoints хранят только ожидаемые значения (без actual/match).
-    """
     print(f"📸 Генерация JSON-снапшота: {output_path}")
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     from datetime import datetime
 
-    # === СТАТИСТИКА ИЗ flat_data (как в БД) ===
-    flat_data = ctx.flat_data or []
+    flat_data = ctx.flat_data  # property — агрегация из ctx.sheets
     total_records = len(flat_data)
 
-    # Извлекаем year и reporter из первой записи
     year = flat_data[0].year if flat_data and flat_data[0].year else None
     reporter = flat_data[0].reporter if flat_data and flat_data[0].reporter else None
 
-    # Группировка по листам (section)
     by_section: Dict[str, int] = {}
     for rec in flat_data:
         section = rec.section or "unknown"
@@ -276,49 +237,39 @@ def generate_snapshot(
         "checkpoints": [],
     }
 
-    # === Детали по листам (из sheet_models для структуры) ===
-    if ctx.sheet_models:
-        for sheet in ctx.sheet_models:
-            sheet_info = {
-                "name": sheet.sheet_name,
-                "flat_records_count": by_section.get(sheet.sheet_name, 0),  # Из flat_data
-                "headers_count": {
-                    "horizontal": len(sheet.headers.get("horizontal", [])),
-                    "vertical": len(sheet.headers.get("vertical", [])),
-                },
-                # Оставляем для справки, но не проверяем в тесте
-                "first_horizontal": (
-                    sheet.headers.get("horizontal", [""])[0]
-                    if sheet.headers.get("horizontal") else ""
-                ),
-                "first_vertical": (
-                    sheet.headers.get("vertical", [""])[0]
-                    if sheet.headers.get("vertical") else ""
-                ),
-            }
-            snapshot["sheets"].append(sheet_info)
+    # Детали по листам — из ctx.sheets (List[SheetModel])
+    for sheet in ctx.sheets:
+        sheet_name = sheet.sheet_name or sheet.sheet_fullname
+        sheet_info = {
+            "name": sheet_name,
+            "flat_records_count": by_section.get(sheet_name, 0),
+            "headers_count": {
+                "horizontal": len(sheet.horizontal_headers),
+                "vertical": len(sheet.vertical_headers),
+            },
+            "first_horizontal": sheet.horizontal_headers[0] if sheet.horizontal_headers else "",
+            "first_vertical": sheet.vertical_headers[0] if sheet.vertical_headers else "",
+        }
+        snapshot["sheets"].append(sheet_info)
 
-            # === Контрольные точки ===
-            # Храним только ожидаемые значения (как в БД)
-            for cp in checkpoints:
-                found = None
-                for rec in flat_data:
-                    # Сравниваем по section (sheet_name), row, column
-                    if (rec.section == cp.get("sheet") and
-                            rec.row == cp["row"] and
-                            rec.column == cp["column"]):
-                        found = rec.value
-                        break
+    # Контрольные точки
+    for cp in checkpoints:
+        found = None
+        for rec in flat_data:
+            if (rec.section == cp.get("section") and
+                    rec.row == cp["row"] and
+                    rec.column == cp["column"]):
+                found = rec.value
+                break
 
-                # Сохраняем в формате, близком к FlatDataRecord (без file_id и form)
-                snapshot["checkpoints"].append({
-                    "year": year,
-                    "reporter": reporter,
-                    "section": cp.get("sheet"),
-                    "row": cp["row"],
-                    "column": cp["column"],
-                    "value": found,  # Только ожидаемое значение
-                })
+        snapshot["checkpoints"].append({
+            "year": year,
+            "reporter": reporter,
+            "section": cp.get("section"),
+            "row": cp["row"],
+            "column": cp["column"],
+            "value": found,
+        })
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(snapshot, f, ensure_ascii=False, indent=2)
@@ -332,7 +283,6 @@ async def main():
         print("💡 Проверь путь и запусти скрипт из корня проекта")
         return
 
-    # 1. Запуск pipeline
     ctx = await run_pipeline_simulation(TEST_FILE_PATH, FORM_ID)
 
     if ctx.failed:
@@ -340,10 +290,7 @@ async def main():
         print("Исправь ошибки парсинга перед генерацией снапшота!")
         return
 
-    # 2. Генерация Excel для ручной проверки
     generate_visual_report(ctx, OUTPUT_EXCEL_PATH)
-
-    # 3. Генерация снапшота (без паузы)
     generate_snapshot(ctx, OUTPUT_SNAPSHOT_PATH, CHECKPOINTS)
 
     print("\n" + "=" * 70)

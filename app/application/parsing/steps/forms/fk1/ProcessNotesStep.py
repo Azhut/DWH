@@ -1,3 +1,4 @@
+
 """Шаг: обработка примечаний (только для 1ФК)."""
 import logging
 
@@ -39,3 +40,4 @@ class ProcessNotesStep(BaseParsingStep):
                 domain="parsing.steps.fk1.process_notes",
                 meta={"sheet_name": ctx.sheet_name},
             )
+

@@ -22,6 +22,8 @@ class AutoFormParsingStrategy(BaseFormParsingStrategy):
     - Один и тот же набор шагов для всех листов файла.
     - Конфигурация читается из form_info.requisites — новый код не нужен.
     - Является стратегией по умолчанию в реестре.
+    - Нормализация имён листов: не применяется (sheet_name = sheet_fullname as-is),
+      так как автоформы не имеют фиксированной схемы листов.
 
     Реквизиты формы (form_info.requisites):
     - skip_sheets: list[int] — индексы листов, которые нужно пропустить.
@@ -57,6 +59,9 @@ class AutoFormParsingStrategy(BaseFormParsingStrategy):
         """
         Стандартный набор шагов для автоматической формы.
         Одинаков для всех листов.
+
+        normalize_fn не передаётся в DetectTableStructureStep —
+        для автоформ sheet_name = sheet_fullname (имена не нормализуются).
         """
         from app.application.parsing.steps.common.DetectTableStructureStep import DetectTableStructureStep
         from app.application.parsing.steps.common.ParseHeadersStep import ParseHeadersStep
@@ -66,7 +71,7 @@ class AutoFormParsingStrategy(BaseFormParsingStrategy):
         deduplicate_columns: bool = form_info.requisites.get("deduplicate_columns", False)
 
         return [
-            DetectTableStructureStep(auto_detect=True),
+            DetectTableStructureStep(auto_detect=True),  # normalize_fn=None -> as-is
             ParseHeadersStep(),
             ExtractDataStep(deduplicate_columns=deduplicate_columns),
             GenerateFlatDataStep(),

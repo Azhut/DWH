@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
+
 from fastapi import UploadFile
+
 from app.domain.file.models import FileInfo, FileModel
 from app.domain.flat_data.models import FlatDataRecord
 from app.domain.form.models import FormInfo
@@ -15,41 +17,50 @@ class UploadPipelineContext:
     ЖИЗНЕННЫЙ ЦИКЛ ДАННЫХ:
 
     1. Инициализация (endpoint):
-       - file: UploadFile - весь объект FastAPI
+       - file: UploadFile — весь объект FastAPI
        - form_id: ID формы
+       - form_info: информация о форме (загружается до pipeline)
 
     2. ReadFileContentStep (шаг 1):
        - Читает file → file_content (bytes)
-       - Извлекает filename для дальнейшего использования
        - После этого шага file больше НЕ используется
 
     3. ExtractMetadataStep (шаг 2):
-       - Использует только filename → создаёт file_info
+       - filename → file_info
 
     4. CheckUniquenessStep, CreateFileModelStep (шаги 3-4):
-       - Работают с file_info → создают file_model
+       - file_info → file_model
 
     5. ProcessSheetsStep (шаг 5):
-       - Использует file_content для чтения Excel
-       - Создаёт sheet_models и flat_data
+       - file_content → запускает parsing pipeline для каждого листа
+       - Результат: sheets (список SheetModel с заполненными данными)
 
     6. EnrichFlatDataStep, PersistStep (шаги 6-7):
-       - Работают с финальными данными
+       - Работают с flat_data (агрегация из sheets) и file_model
 
-    ПРИНЦИП: Данные трансформируются по мере прохождения шагов,
-    старые данные не удаляются для возможности error handling.
+    ЕДИНСТВЕННЫЙ ИСТОЧНИК ПРАВДЫ:
+    - sheets — список SheetModel с результатами парсинга каждого листа
+    - flat_data — производное (property), агрегация flat_data_records из всех листов
     """
 
     form_id: str
     file: UploadFile
-    file_content: Optional[bytes] = None  # Содержимое файла в памяти
-    file_info: Optional[FileInfo] = None  # Метаданные: reporter, year, extension
-    form_info: Optional[FormInfo] = None  # Информация о форме из БД
-    file_model: Optional[FileModel] = None  # Модель файла для сохранения
-    sheet_models: Optional[List[SheetModel]] = None  # Модели листов
-    flat_data: Optional[List[FlatDataRecord]] = None  # Плоские данные
-
+    form_info: Optional[FormInfo] = None       # информация о форме из БД
+    file_content: Optional[bytes] = None       # содержимое файла в памяти
+    file_info: Optional[FileInfo] = None       # метаданные: reporter, year, extension
+    file_model: Optional[FileModel] = None     # модель файла для сохранения
+    sheets: List[SheetModel] = field(default_factory=list)  # результаты парсинга листов
 
     error: Optional[str] = None
     failed: bool = False
     warnings: List[str] = field(default_factory=list)
+
+    @property
+    def flat_data(self) -> List[FlatDataRecord]:
+        """
+        Агрегация всех FlatDataRecord из всех листов.
+
+        Единственный источник flat_data — SheetModel.flat_data_records.
+        Не хранится отдельно, всегда вычисляется из sheets.
+        """
+        return [record for sheet in self.sheets for record in sheet.flat_data_records]

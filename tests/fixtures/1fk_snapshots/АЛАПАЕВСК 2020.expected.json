@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-03-02T23:10:17.597316",
+    "generated_at": "2026-03-03T23:45:24.327518",
     "file_name": "АЛАПАЕВСК 2020.xls",
     "form_id": "eab639f7-78c4-4e08-bd27-756bac5cf571",
     "description": "Golden Master. Статистика из ctx.flat_data (как в БД)."
@@ -8,22 +8,22 @@
   "stats": {
     "year": 2020,
     "reporter": "АЛАПАЕВСК",
-    "total_flat_records": 1192,
+    "total_flat_records": 4178,
     "total_sheets": 7,
     "by_section": {
-      "Раздел1": 82,
-      "Раздел2": 195,
-      "Раздел3": 219,
-      "Раздел4": 52,
-      "Раздел5": 585,
-      "Раздел6": 44,
-      "Раздел7": 15
+      "Раздел1": 180,
+      "Раздел2": 322,
+      "Раздел3": 468,
+      "Раздел4": 68,
+      "Раздел5": 2952,
+      "Раздел6": 152,
+      "Раздел7": 36
     }
   },
   "sheets": [
     {
       "name": "Раздел1",
-      "flat_records_count": 82,
+      "flat_records_count": 180,
       "headers_count": {
         "horizontal": 12,
         "vertical": 15
@@ -33,7 +33,7 @@
     },
     {
       "name": "Раздел2",
-      "flat_records_count": 195,
+      "flat_records_count": 322,
       "headers_count": {
         "horizontal": 17,
         "vertical": 21
@@ -43,7 +43,7 @@
     },
     {
       "name": "Раздел3",
-      "flat_records_count": 219,
+      "flat_records_count": 468,
       "headers_count": {
         "horizontal": 13,
         "vertical": 36
@@ -53,7 +53,7 @@
     },
     {
       "name": "Раздел4",
-      "flat_records_count": 52,
+      "flat_records_count": 68,
       "headers_count": {
         "horizontal": 9,
         "vertical": 10
@@ -63,7 +63,7 @@
     },
     {
       "name": "Раздел5",
-      "flat_records_count": 585,
+      "flat_records_count": 2952,
       "headers_count": {
         "horizontal": 18,
         "vertical": 164
@@ -73,7 +73,7 @@
     },
     {
       "name": "Раздел6",
-      "flat_records_count": 44,
+      "flat_records_count": 152,
       "headers_count": {
         "horizontal": 8,
         "vertical": 19
@@ -83,7 +83,7 @@
     },
     {
       "name": "Раздел7",
-      "flat_records_count": 15,
+      "flat_records_count": 36,
       "headers_count": {
         "horizontal": 3,
         "vertical": 12
@@ -96,114 +96,26 @@
     {
       "year": 2020,
       "reporter": "АЛАПАЕВСК",
-      "section": null,
-      "row": "Всего",
-      "column": "Графа 3",
-      "value": null
+      "section": "Раздел3",
+      "row": "Площадь спортивных залов (м2)",
+      "column": "Единовременная пропускная способность (человек) | из них в сельской местности",
+      "value": "X"
     },
     {
       "year": 2020,
       "reporter": "АЛАПАЕВСК",
-      "section": null,
-      "row": "Алапаевск",
-      "column": "Графа 1",
-      "value": null
+      "section": "Раздел2",
+      "row": "Количество физкультурных и спортивных мероприятий, проведенных организацией самостоятельно в отчетный период",
+      "column": "Справочно",
+      "value": "255.0"
     },
     {
       "year": 2020,
       "reporter": "АЛАПАЕВСК",
-      "section": null,
-      "row": "Всего",
-      "column": "Графа 3",
-      "value": null
-    },
-    {
-      "year": 2020,
-      "reporter": "АЛАПАЕВСК",
-      "section": null,
-      "row": "Алапаевск",
-      "column": "Графа 1",
-      "value": null
-    },
-    {
-      "year": 2020,
-      "reporter": "АЛАПАЕВСК",
-      "section": null,
-      "row": "Всего",
-      "column": "Графа 3",
-      "value": null
-    },
-    {
-      "year": 2020,
-      "reporter": "АЛАПАЕВСК",
-      "section": null,
-      "row": "Алапаевск",
-      "column": "Графа 1",
-      "value": null
-    },
-    {
-      "year": 2020,
-      "reporter": "АЛАПАЕВСК",
-      "section": null,
-      "row": "Всего",
-      "column": "Графа 3",
-      "value": null
-    },
-    {
-      "year": 2020,
-      "reporter": "АЛАПАЕВСК",
-      "section": null,
-      "row": "Алапаевск",
-      "column": "Графа 1",
-      "value": null
-    },
-    {
-      "year": 2020,
-      "reporter": "АЛАПАЕВСК",
-      "section": null,
-      "row": "Всего",
-      "column": "Графа 3",
-      "value": null
-    },
-    {
-      "year": 2020,
-      "reporter": "АЛАПАЕВСК",
-      "section": null,
-      "row": "Алапаевск",
-      "column": "Графа 1",
-      "value": null
-    },
-    {
-      "year": 2020,
-      "reporter": "АЛАПАЕВСК",
-      "section": null,
-      "row": "Всего",
-      "column": "Графа 3",
-      "value": null
-    },
-    {
-      "year": 2020,
-      "reporter": "АЛАПАЕВСК",
-      "section": null,
-      "row": "Алапаевск",
-      "column": "Графа 1",
-      "value": null
-    },
-    {
-      "year": 2020,
-      "reporter": "АЛАПАЕВСК",
-      "section": null,
-      "row": "Всего",
-      "column": "Графа 3",
-      "value": null
-    },
-    {
-      "year": 2020,
-      "reporter": "АЛАПАЕВСК",
-      "section": null,
-      "row": "Алапаевск",
-      "column": "Графа 1",
-      "value": null
+      "section": "Раздел2",
+      "row": "общеобразовательные организации",
+      "column": "Численность занимающихся физической культурой и спортом (человек) | из общей численности занимающихся (гр. 4): | в возрасте | 3 - 15лет",
+      "value": 3739
     }
   ]
 }

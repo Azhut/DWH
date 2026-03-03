@@ -11,7 +11,6 @@ from app.core.dependencies import (
     get_file_service,
     get_form_service,
     get_sheet_service,
-
 )
 from app.application.parsing.registry import get_parsing_strategy_registry
 from app.domain.flat_data.models import FlatDataRecord
@@ -31,22 +30,18 @@ class NoOpDataSaveService:
     async def save_file(self, file_model):
         return None
 
-FK1_FORM_ID="eab639f7-78c4-4e08-bd27-756bac5cf571"
+FK1_FORM_ID = "eab639f7-78c4-4e08-bd27-756bac5cf571"
 
 TEST_FILES: List[tuple[str, str, str]] = [
     (
         "1fk/АЛАПАЕВСК 2020.xls",
         "АЛАПАЕВСК 2020.expected.json",
-        FK1_FORM_ID,  # 1ФК
+        FK1_FORM_ID,
     ),
-    # Добавь остальные файлы:
-    # ("1fk/ИРБИТ 2023.xls", "ИРБИТ 2023.expected.json", "eab639f7-78c4-4e08-bd27-756bac5cf571"),
 ]
 
 
 def load_snapshot(snapshot_name: str) -> dict:
-    """Возвращает JSON из fixtures; пропускает тест, если не найден.
-    """
     snapshot_path = SNAPSHOTS_DIR / snapshot_name
     if not snapshot_path.exists():
         pytest.skip(
@@ -57,14 +52,7 @@ def load_snapshot(snapshot_name: str) -> dict:
         return json.load(f)
 
 
-async def run_parsing_pipeline(
-    file_path: Path,
-    form_id: str
-) -> UploadPipelineContext:
-    """
-    Запускает pipeline и возвращает контекст.
-    НЕ сохраняет в БД — только парсинг в памяти.
-    """
+async def run_parsing_pipeline(file_path: Path, form_id: str) -> UploadPipelineContext:
     with open(file_path, "rb") as f:
         content = f.read()
 
@@ -99,7 +87,6 @@ async def run_parsing_pipeline(
 
 
 def count_by_section(flat_data: List[FlatDataRecord]) -> Dict[str, int]:
-    """Группирует записи по section."""
     by_section: Dict[str, int] = {}
     for rec in flat_data:
         section = rec.section or "unknown"
@@ -111,9 +98,8 @@ def find_checkpoint_value(
     flat_data: List[FlatDataRecord],
     section: str,
     row: str,
-    column: str
+    column: str,
 ) -> Optional[Any]:
-    """Ищет значение контрольной точки."""
     for rec in flat_data:
         if rec.section == section and rec.row == row and rec.column == column:
             return rec.value
@@ -141,13 +127,11 @@ def check_sheet(name: str, exp_h: int, exp_v: int, act_h: int, act_v: int):
 
 
 def check_checkpoint(section: str, row: str, column: str, expected: Any, actual: Any):
-    """Log a checkpoint comparison in tabular form and assert."""
     exp_col = Fore.GREEN + repr(expected) + Style.RESET_ALL
     act_color = Fore.CYAN if expected == actual else Fore.RED
     act_col = act_color + repr(actual) + Style.RESET_ALL
     name = f"cp[{section}/{row}/{column}]"
     print(f"   {name:30} expected={exp_col:<15} actual={act_col}")
-    # no assertion if expected is None, only presence check
     if expected is None:
         assert actual is not None, f"{name}: значение не найдено"
     else:
@@ -155,9 +139,6 @@ def check_checkpoint(section: str, row: str, column: str, expected: Any, actual:
 
 
 class TestGoldenSnapshots:
-    """
-    Snapshot тесты для парсинга.
-    """
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("file_name,snapshot_name,form_id", TEST_FILES)
@@ -167,9 +148,6 @@ class TestGoldenSnapshots:
             snapshot_name: str,
             form_id: str,
     ):
-        """
-        Тест: результаты парсинга файла должны совпадать с эталоном.
-        """
         file_path = FIXTURES_DIR / file_name
         expected = load_snapshot(snapshot_name)
 
@@ -179,7 +157,7 @@ class TestGoldenSnapshots:
         ctx = await run_parsing_pipeline(file_path, form_id)
         assert not ctx.failed, f"Pipeline упал: {ctx.error}"
 
-        flat_data = ctx.flat_data or []
+        flat_data = ctx.flat_data  # property — агрегация из ctx.sheets
 
         # 1. year
         actual_year = flat_data[0].year if flat_data else None
@@ -190,41 +168,30 @@ class TestGoldenSnapshots:
         check("reporter", expected["stats"]["reporter"], actual_reporter)
 
         # 3. total_flat_records
-        actual_total = len(flat_data)
-        check("total_flat_records", expected["stats"]["total_flat_records"], actual_total)
+        check("total_flat_records", expected["stats"]["total_flat_records"], len(flat_data))
 
         # 4. total_sheets
         by_section = count_by_section(flat_data)
-        actual_sheets = len(by_section)
-        check("total_sheets", expected["stats"]["total_sheets"], actual_sheets)
+        check("total_sheets", expected["stats"]["total_sheets"], len(by_section))
 
         # 5. by_section
         for section, count in expected["stats"]["by_section"].items():
-            actual_count = by_section.get(section, 0)
-            check(f"by_section[{section}]", count, actual_count)
+            check(f"by_section[{section}]", count, by_section.get(section, 0))
 
         # 6. sheets (headers_count)
         for expected_sheet in expected["sheets"]:
             actual_sheet = next(
-                (
-                    s for s in ctx.sheet_models
-                    if s.sheet_name == expected_sheet["name"]
-                ),
+                (s for s in ctx.sheets if s.sheet_name == expected_sheet["name"]),
                 None,
             )
-            assert actual_sheet is not None, (
-                f"Лист {expected_sheet['name']} не найден"
-            )
-
-            actual_h = len(actual_sheet.headers.get("horizontal", []))
-            actual_v = len(actual_sheet.headers.get("vertical", []))
+            assert actual_sheet is not None, f"Лист {expected_sheet['name']} не найден"
 
             check_sheet(
-                expected_sheet['name'],
+                expected_sheet["name"],
                 expected_sheet["headers_count"]["horizontal"],
                 expected_sheet["headers_count"]["vertical"],
-                actual_h,
-                actual_v,
+                len(actual_sheet.horizontal_headers),
+                len(actual_sheet.vertical_headers),
             )
 
         # 7. checkpoints
@@ -233,7 +200,7 @@ class TestGoldenSnapshots:
                 flat_data,
                 cp["section"],
                 cp["row"],
-                cp["column"]
+                cp["column"],
             )
             check_checkpoint(
                 cp["section"], cp["row"], cp["column"], cp.get("value"), actual_value

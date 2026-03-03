@@ -1,3 +1,4 @@
+
 """Шаг обработки листов Excel через parsing pipeline."""
 import logging
 from typing import List
@@ -6,11 +7,7 @@ from app.application.parsing.context import ParsingPipelineContext
 from app.application.parsing.registry import get_parsing_strategy_registry
 from app.application.upload.pipeline.context import UploadPipelineContext
 from app.application.upload.pipeline.steps.ProcessSheetsStep.excel_reader import ExcelReader
-from app.core.exceptions import (
-    CriticalParsingError,
-    CriticalUploadError,
-)
-from app.domain.flat_data.models import FlatDataRecord
+from app.core.exceptions import CriticalParsingError, CriticalUploadError
 from app.domain.sheet.models import SheetModel
 
 logger = logging.getLogger(__name__)
@@ -22,14 +19,11 @@ class ProcessSheetsStep:
 
     Ответственность:
     - Прочитать Excel файл через ExcelReader.
-    - Для каждого листа: спросить стратегию, запустить pipeline.
-    - Собрать SheetModel и flat_data только после успеха всех листов.
-
-    Не содержит никакой форма-специфичной логики — она полностью
-    инкапсулирована в стратегиях (AutoFormParsingStrategy, FK1FormParsingStrategy и др.)
+    - Для каждого листа: создать SheetModel, спросить стратегию, запустить pipeline.
+    - Собрать заполненные SheetModel только после успеха всех листов.
 
     Инвариант целостности:
-    Данные накапливаются в локальных переменных и записываются в ctx
+    SheetModel'ы накапливаются в локальном списке и записываются в ctx.sheets
     только после успешной обработки ВСЕХ листов. Если хотя бы один лист
     падает с CriticalParsingError — ctx остаётся пустым, rollback
     в UploadPipelineRunner работает с чистым состоянием.
@@ -37,7 +31,6 @@ class ProcessSheetsStep:
 
     def __init__(self, excel_reader: ExcelReader | None = None) -> None:
         self._excel_reader = excel_reader or ExcelReader()
-
 
     async def execute(self, ctx: UploadPipelineContext) -> None:
         if not ctx.form_info or not ctx.file_model:
@@ -56,15 +49,11 @@ class ProcessSheetsStep:
                 meta={"file_name": getattr(ctx.file, "filename", None)},
             )
 
-
         registry = get_parsing_strategy_registry()
 
         # 1. Читаем Excel
         try:
-            sheets = self._excel_reader.read(
-                ctx.file_content,
-                ctx.file.filename,
-            )
+            sheets = self._excel_reader.read(ctx.file_content, ctx.file.filename)
         except Exception as e:
             raise CriticalUploadError(
                 message=f"Не удалось прочитать Excel файл '{ctx.file.filename}': {e}",
@@ -81,9 +70,8 @@ class ProcessSheetsStep:
             len(sheets),
         )
 
-        # 2. Локальные аккумуляторы — в ctx попадут только после успеха всех листов
-        local_sheet_models: List[SheetModel] = []
-        local_flat_data: List[FlatDataRecord] = []
+        # 2. Локальный аккумулятор — в ctx попадёт только после успеха всех листов
+        local_sheets: List[SheetModel] = []
 
         # 3. Обрабатываем каждый лист
         for sheet_index, (sheet_name, df) in enumerate(sheets.items()):
@@ -97,14 +85,13 @@ class ProcessSheetsStep:
             if pipeline is None:
                 continue
 
+
+            sheet_model = SheetModel(sheet_fullname=sheet_name)
+
             parsing_ctx = ParsingPipelineContext(
-                sheet_name=sheet_name,
+                sheet_model=sheet_model,
                 raw_dataframe=df,
                 form_info=ctx.form_info,
-                file_year=ctx.file_model.year,
-                file_reporter=ctx.file_model.reporter,
-                file_id=ctx.file_model.file_id,
-                form_id=ctx.file_model.form_id,
             )
 
             # 4. Запускаем parsing pipeline
@@ -125,39 +112,26 @@ class ProcessSheetsStep:
                     },
                 ) from e
 
-            # 5. Успех листа — собираем SheetModel
-            sheet_data = parsing_ctx.sheet_model_data or parsing_ctx.parsed_data
-            if sheet_data:
-                local_sheet_models.append(
-                    SheetModel(
-                        file_id=ctx.file_model.file_id,
-                        sheet_name=sheet_name,
-                        sheet_fullname=sheet_name,
-                        year=ctx.file_model.year,
-                        reporter=ctx.file_model.reporter,
-                        headers=sheet_data.get("headers", {}),
-                        data=sheet_data.get("data", []),
-                    )
-                )
-
-            local_flat_data.extend(parsing_ctx.flat_data_records)
+            # 5. Успех листа — sheet_model заполнен pipeline'ом
+            local_sheets.append(sheet_model)
 
             logger.debug(
                 "Лист '%s' обработан: flat_data=%d, предупреждений=%d",
-                sheet_name,
-                len(parsing_ctx.flat_data_records),
-                len(parsing_ctx.warnings),
+                sheet_model.sheet_name or sheet_name,
+                len(sheet_model.flat_data_records),
+                len(sheet_model.warnings),
             )
 
-        # 6. Все листы успешны — записываем результаты в ctx
-        ctx.sheet_models = local_sheet_models
-        ctx.flat_data = local_flat_data
-        ctx.file_model.size = len(local_sheet_models)
-        ctx.file_model.sheets = [s.sheet_name for s in local_sheet_models]
+        # 6. Все листы успешны — записываем в ctx
+        ctx.sheets = local_sheets
+        ctx.file_model.size = len(local_sheets)
+        ctx.file_model.sheets = [
+            s.sheet_name or s.sheet_fullname for s in local_sheets
+        ]
 
         logger.info(
             "Обработка листов завершена. Файл: '%s', листов: %d, flat_data: %d",
             ctx.file.filename,
-            len(local_sheet_models),
-            len(local_flat_data),
+            len(local_sheets),
+            len(ctx.flat_data),
         )

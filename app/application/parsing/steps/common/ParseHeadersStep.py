@@ -14,7 +14,7 @@ class ParseHeadersStep(BaseParsingStep):
     Парсит горизонтальные и вертикальные заголовки по структуре из контекста.
 
     Требует: ctx.table_structure — должен быть заполнен DetectTableStructureStep.
-    Записывает: ctx.horizontal_headers, ctx.vertical_headers.
+    Записывает: ctx.sheet_model.horizontal_headers, ctx.sheet_model.vertical_headers.
     """
 
     async def execute(self, ctx: ParsingPipelineContext) -> None:
@@ -38,8 +38,9 @@ class ParseHeadersStep(BaseParsingStep):
                 show_traceback=True,
             ) from e
 
-        ctx.horizontal_headers = result.horizontal
-        ctx.vertical_headers = result.vertical
+        # Финальные результаты — в sheet_model (единственный источник правды)
+        ctx.sheet_model.horizontal_headers = result.horizontal
+        ctx.sheet_model.vertical_headers = result.vertical
 
         logger.debug(
             "Заголовки для листа '%s': горизонтальных=%d, вертикальных=%d",

@@ -69,7 +69,6 @@ class FileProcessor:
                     "Файл '%s' успешно обработан. Тип формы: %s, листов: %d, записей: %d",
                     file.filename,
                     form_type,
-                    len(ctx.sheet_models or []),
                     len(ctx.flat_data or []),
                 )
 

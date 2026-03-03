@@ -18,7 +18,7 @@ def build_flat_data_records(
     section: str = "",
     file_id: Optional[str] = None,
     form_id: Optional[str] = None,
-    skip_empty: bool = True,
+    skip_empty: bool = False,
 ) -> List[FlatDataRecord]:
     """
     Строит список FlatDataRecord из извлечённых данных.
@@ -42,10 +42,10 @@ def build_flat_data_records(
         col_header = col.column_header
         for cell in col.values:
             value = cell.value
+            if value == SERVICE_EMPTY or value == LEGACY_SERVICE_EMPTY:
+                continue
             if skip_empty:
                 if value is None:
-                    continue
-                if value == SERVICE_EMPTY or value == LEGACY_SERVICE_EMPTY:
                     continue
                 if isinstance(value, float) and math.isnan(value):
                     continue

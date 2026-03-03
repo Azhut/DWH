@@ -10,7 +10,6 @@ from app.domain.parsing.models import (
     CellValue,
     ExtractedColumn,
     ExtractedSheetData,
-    SheetParseResult,
     SERVICE_EMPTY,
 )
 from app.domain.parsing.structure_detection import (
@@ -30,7 +29,6 @@ __all__ = [
     "CellValue",
     "ExtractedColumn",
     "ExtractedSheetData",
-    "SheetParseResult",
     "SERVICE_EMPTY",
     "detect_table_structure",
     "StructureDetectionStrategy",

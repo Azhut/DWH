@@ -1,3 +1,4 @@
+
 """Шаг: генерация FlatDataRecord через domain/parsing."""
 import logging
 
@@ -14,7 +15,7 @@ class GenerateFlatDataStep(BaseParsingStep):
     Строит список FlatDataRecord из извлечённых данных.
 
     Требует: ctx.extracted_data — должен быть заполнен ExtractDataStep.
-    Записывает: ctx.flat_data_records.
+    Записывает: ctx.sheet_model.flat_data_records (единственный источник правды).
 
     Отсутствие extracted_data — NonCriticalParsingError: лист пуст,
     но это не повод останавливать весь файл.
@@ -30,14 +31,10 @@ class GenerateFlatDataStep(BaseParsingStep):
             )
 
         try:
-            ctx.flat_data_records = build_flat_data_records(
+            ctx.sheet_model.flat_data_records = build_flat_data_records(
                 ctx.extracted_data,
-                year=ctx.file_year,
-                reporter=ctx.file_reporter,
                 section=ctx.sheet_name,
-                file_id=ctx.file_id,
-                form_id=ctx.form_id,
-                skip_empty=True,
+                skip_empty=False,
             )
         except Exception as e:
             raise CriticalParsingError(
@@ -49,6 +46,6 @@ class GenerateFlatDataStep(BaseParsingStep):
 
         logger.debug(
             "Сгенерировано %d записей flat_data для листа '%s'",
-            len(ctx.flat_data_records),
+            len(ctx.sheet_model.flat_data_records),
             ctx.sheet_name,
         )

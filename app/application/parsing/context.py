@@ -1,12 +1,12 @@
 """Контекст parsing pipeline: передаётся между шагами парсинга одного листа."""
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import pandas as pd
 
-from app.domain.flat_data.models import FlatDataRecord
 from app.domain.form.models import FormInfo
 from app.domain.parsing.models import ExtractedSheetData, TableStructure
+from app.domain.sheet.models import SheetModel
 
 
 @dataclass
@@ -14,46 +14,49 @@ class ParsingPipelineContext:
     """
     Контекст обработки одного листа в рамках parsing pipeline.
 
-    Нейтральный носитель данных — не знает о конкретных формах.
-    Форма-специфичная логика полностью вынесена в стратегии.
+    Два уровня данных:
+    - Рабочие/промежуточные: живут только здесь, нужны шагам в процессе парсинга,
+      отбрасываются после завершения pipeline.
+    - Финальные результаты: пишутся в sheet_model — единственный источник правды
+      о результатах парсинга листа. После завершения pipeline ProcessSheetsStep
+      забирает sheet_model и больше не смотрит в ctx.
 
-    Жизненный цикл полей:
-    - Входные данные: устанавливаются при создании, не меняются.
-    - Промежуточные результаты: заполняются шагами последовательно.
-    - Финальные результаты: заполняются последними шагами pipeline.
-    - Ошибки/статус: накапливаются по ходу выполнения.
+    ЕДИНСТВЕННЫЙ ИСТОЧНИК ПРАВДЫ:
+    - sheet_model.sheet_name           — нормализованное имя листа
+    - sheet_model.horizontal_headers   — горизонтальные заголовки
+    - sheet_model.vertical_headers     — вертикальные заголовки
+    - sheet_model.flat_data_records    — плоские данные
+    - sheet_model.warnings / .errors   — диагностика
+
+    Нейтральный носитель — не знает о конкретных формах.
     """
 
-    # --- Входные данные (устанавливаются при создании) ---
-    sheet_name: str
+    # --- Входные данные (устанавливаются при создании, не меняются) ---
+    sheet_model: SheetModel
     raw_dataframe: pd.DataFrame
     form_info: FormInfo
-    file_year: Optional[int]
-    file_reporter: Optional[str]
-    file_id: Optional[str]
-    form_id: Optional[str]
 
-    # --- Промежуточные результаты (заполняются шагами) ---
+
+    # --- Рабочие/промежуточные данные шагов ---
     table_structure: Optional[TableStructure] = None
     processed_dataframe: Optional[pd.DataFrame] = None
-    header_start_row: Optional[int] = None
-    header_end_row: Optional[int] = None
-    data_start_row: Optional[int] = None
-    vertical_header_column: Optional[int] = None
-    horizontal_headers: List[str] = field(default_factory=list)
-    vertical_headers: List[str] = field(default_factory=list)
     extracted_data: Optional[ExtractedSheetData] = None
-    parsed_data: Optional[Dict] = None  # legacy-формат для совместимости
 
-    # --- Финальные результаты ---
-    flat_data_records: List[FlatDataRecord] = field(default_factory=list)
-    sheet_model_data: Optional[Dict] = None
-
-    # --- Ошибки и статус ---
+    # --- Ошибки и статус pipeline ---
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     failed: bool = False
 
+    @property
+    def sheet_name(self) -> str:
+        """
+        Имя листа для использования в шагах и логах.
+        До DetectTableStructureStep возвращает оригинальное имя (sheet_fullname).
+        После — нормализованное (sheet_name из sheet_model).
+        """
+        return self.sheet_model.sheet_name or self.sheet_model.sheet_fullname
+
     def add_warning(self, message: str) -> None:
-        """Добавляет предупреждение. Не останавливает pipeline."""
+        """Добавляет предупреждение в ctx и в sheet_model. Не останавливает pipeline."""
         self.warnings.append(message)
+        self.sheet_model.warnings.append(message)

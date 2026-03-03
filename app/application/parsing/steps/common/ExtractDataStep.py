@@ -1,3 +1,4 @@
+
 """Шаг: извлечение данных через domain/parsing."""
 import logging
 
@@ -13,13 +14,13 @@ class ExtractDataStep(BaseParsingStep):
     """
     Извлекает структурированные данные по структуре и заголовкам.
 
-    Требует: ctx.table_structure, ctx.horizontal_headers, ctx.vertical_headers.
-    Записывает: ctx.extracted_data, ctx.parsed_data, ctx.sheet_model_data.
+    Требует: ctx.table_structure, ctx.sheet_model.horizontal_headers,
+             ctx.sheet_model.vertical_headers.
+    Записывает: ctx.extracted_data (промежуточное, для GenerateFlatDataStep).
 
     Args:
         deduplicate_columns: Дедупликация колонок при извлечении.
-            Передаётся через конструктор стратегией формы,
-            а не читается из контекста.
+            Передаётся через конструктор стратегией формы.
     """
 
     def __init__(self, deduplicate_columns: bool = False) -> None:
@@ -33,22 +34,22 @@ class ExtractDataStep(BaseParsingStep):
                 meta={"sheet_name": ctx.sheet_name},
             )
 
-        if not ctx.horizontal_headers or not ctx.vertical_headers:
+        if not ctx.sheet_model.horizontal_headers or not ctx.sheet_model.vertical_headers:
             raise CriticalParsingError(
                 f"ExtractDataStep: заголовки не заполнены для листа '{ctx.sheet_name}'. "
                 "ParseHeadersStep должен выполняться перед ExtractDataStep.",
                 domain="parsing.steps.extract_data",
                 meta={
                     "sheet_name": ctx.sheet_name,
-                    "horizontal_headers_count": len(ctx.horizontal_headers),
-                    "vertical_headers_count": len(ctx.vertical_headers),
+                    "horizontal_headers_count": len(ctx.sheet_model.horizontal_headers),
+                    "vertical_headers_count": len(ctx.sheet_model.vertical_headers),
                 },
             )
 
         df = ctx.processed_dataframe if ctx.processed_dataframe is not None else ctx.raw_dataframe
         headers = ParsedHeaders(
-            horizontal=ctx.horizontal_headers,
-            vertical=ctx.vertical_headers,
+            horizontal=ctx.sheet_model.horizontal_headers,
+            vertical=ctx.sheet_model.vertical_headers,
         )
 
         try:
@@ -67,19 +68,8 @@ class ExtractDataStep(BaseParsingStep):
                 show_traceback=True,
             ) from e
 
+        # Промежуточный результат — только в ctx, не в sheet_model
         ctx.extracted_data = extracted
-        ctx.parsed_data = {
-            "headers": {
-                "horizontal": ctx.horizontal_headers,
-                "vertical": ctx.vertical_headers,
-            },
-            "data": extracted.to_legacy_format(),
-            "form_type": ctx.form_info.type.value,
-        }
-        ctx.sheet_model_data = {
-            "headers": ctx.parsed_data["headers"],
-            "data": ctx.parsed_data["data"],
-        }
 
         logger.debug(
             "Извлечены данные для листа '%s': колонок=%d",
