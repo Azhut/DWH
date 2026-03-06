@@ -20,7 +20,6 @@ from app.core.dependencies import (
     get_file_service,
     get_form_service,
     get_sheet_service,
-    get_data_save_service,
 )
 
 
@@ -28,6 +27,8 @@ TEST_FILE_PATH = Path("../../tests/fixtures/1fk/АЛАПАЕВСК 2020.xls")
 FORM_ID = FORM_ID
 OUTPUT_EXCEL_PATH = Path(__file__).parent / "visual_report.xlsx"
 OUTPUT_SNAPSHOT_PATH = Path("../../tests/fixtures/1fk_snapshots/АЛАПАЕВСК 2020.expected.json")
+
+
 
 CHECKPOINTS: List[Dict[str, Any]] = [
     {
@@ -54,7 +55,28 @@ CHECKPOINTS: List[Dict[str, Any]] = [
         "column": "Численность занимающихся физической культурой и спортом (человек) | из общей численности занимающихся (гр. 4): | в возрасте | 3 - 15лет",
         "value": 3739,
     },
+    {
+        "year": 2020,
+        "reporter": "АЛАПАЕВСК",
+        "section": "Раздел7",
+        "row": "Присвоено спортивных разрядов",
+        "column": "Всего",
+        "value": 49,
+    }
 ]
+
+
+
+class NoOpDataSaveService:
+    async def process_and_save_all(self, file_model, flat_data=None):
+        return None
+
+    async def rollback(self, file_model, error: str):
+        return None
+
+    async def save_file(self, file_model):
+        return None
+
 
 
 async def run_pipeline_simulation(file_path: Path, form_id: str) -> UploadPipelineContext:
@@ -73,7 +95,7 @@ async def run_pipeline_simulation(file_path: Path, form_id: str) -> UploadPipeli
     form_info = await form_service.get_form_or_raise(form_id)
 
     file_service = get_file_service()
-    data_save_service = get_data_save_service()
+    data_save_service = NoOpDataSaveService()
     sheet_service = get_sheet_service()
 
     get_parsing_strategy_registry(sheet_service=sheet_service)
@@ -167,7 +189,7 @@ def generate_visual_report(ctx: UploadPipelineContext, output_path: Path) -> Non
             }
 
             try:
-                pivot_df, n_levels = build_multiindex_dataframe(sheet_data, max_rows=100, max_cols=50)
+                pivot_df, n_levels = build_multiindex_dataframe(sheet_data, max_rows=10000, max_cols=10000)
                 temp_path = output_path.parent / f"_temp_{sheet_name_clean}.xlsx"
                 write_multiindex_excel(pivot_df, str(temp_path), sheet_name=f"{sheet_name_clean}_Таблица")
                 temp_df = pd.read_excel(temp_path, sheet_name=0)

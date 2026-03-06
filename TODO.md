@@ -57,3 +57,7 @@ get_parsing_strategy_registry(sheet_service=sheet_service)
 - [ ] Вынести build_default_pipeline из upload_manager в file_processor где используется Pipeline
 - [ ] Проверить размер файла почему так создается 
 - [ ] Поправить генерацию снепшота
+- [ ] странная ошибка {AttributeError}AttributeError("'UploadPipelineContext' object has no attribute 'extracted_data'")
+- [ ] в снепшоте есть странная штука с количество заголвоков на каждом листе. Надо бы проверить
+- [x] Добавить проверку на дубликаты заголвоков
+- [x] Добавить обрезку df если после заголвоков есть nan 

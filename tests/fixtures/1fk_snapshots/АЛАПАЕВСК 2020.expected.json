@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-03-03T23:45:24.327518",
+    "generated_at": "2026-03-07T02:23:45.036623",
     "file_name": "АЛАПАЕВСК 2020.xls",
     "form_id": "eab639f7-78c4-4e08-bd27-756bac5cf571",
     "description": "Golden Master. Статистика из ctx.flat_data (как в БД)."
@@ -8,7 +8,7 @@
   "stats": {
     "year": 2020,
     "reporter": "АЛАПАЕВСК",
-    "total_flat_records": 4178,
+    "total_flat_records": 4166,
     "total_sheets": 7,
     "by_section": {
       "Раздел1": 180,
@@ -17,7 +17,7 @@
       "Раздел4": 68,
       "Раздел5": 2952,
       "Раздел6": 152,
-      "Раздел7": 36
+      "Раздел7": 24
     }
   },
   "sheets": [
@@ -83,9 +83,9 @@
     },
     {
       "name": "Раздел7",
-      "flat_records_count": 36,
+      "flat_records_count": 24,
       "headers_count": {
-        "horizontal": 3,
+        "horizontal": 2,
         "vertical": 12
       },
       "first_horizontal": "№ строки",
@@ -116,6 +116,14 @@
       "row": "общеобразовательные организации",
       "column": "Численность занимающихся физической культурой и спортом (человек) | из общей численности занимающихся (гр. 4): | в возрасте | 3 - 15лет",
       "value": 3739
+    },
+    {
+      "year": 2020,
+      "reporter": "АЛАПАЕВСК",
+      "section": "Раздел7",
+      "row": "Присвоено спортивных разрядов",
+      "column": "Всего",
+      "value": 49
     }
   ]
 }

@@ -26,7 +26,7 @@ class ProcessNotesStep(BaseParsingStep):
         try:
             from app.domain.parsing import process_notes_1fk
             ctx.processed_dataframe = process_notes_1fk(
-                ctx.raw_dataframe,
+                ctx.processed_dataframe,
                 _FK1_HEADER_ROWS_COUNT,
             )
             logger.debug(
