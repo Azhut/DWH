@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import UploadFile
 
@@ -11,45 +11,18 @@ from app.domain.sheet.models import SheetModel
 
 @dataclass
 class UploadPipelineContext:
-    """
-    Контекст обработки одного файла в рамках upload pipeline.
-
-    ЖИЗНЕННЫЙ ЦИКЛ ДАННЫХ:
-
-    1. Инициализация (endpoint):
-       - file: UploadFile — весь объект FastAPI
-       - form_id: ID формы
-       - form_info: информация о форме (загружается до pipeline)
-
-    2. ReadFileContentStep (шаг 1):
-       - Читает file → file_content (bytes)
-       - После этого шага file больше НЕ используется
-
-    3. ExtractMetadataStep (шаг 2):
-       - filename → file_info
-
-    4. CheckUniquenessStep, CreateFileModelStep (шаги 3-4):
-       - file_info → file_model
-
-    5. ProcessSheetsStep (шаг 5):
-       - file_content → запускает parsing pipeline для каждого листа
-       - Результат: sheets (список SheetModel с заполненными данными)
-
-    6. EnrichFlatDataStep, PersistStep (шаги 6-7):
-       - Работают с flat_data (агрегация из sheets) и file_model
-
-    ЕДИНСТВЕННЫЙ ИСТОЧНИК ПРАВДЫ:
-    - sheets — список SheetModel с результатами парсинга каждого листа
-    - flat_data — производное (property), агрегация flat_data_records из всех листов
-    """
+    """Context for processing one uploaded file through the upload pipeline."""
 
     form_id: str
+    form_info: FormInfo
     file: UploadFile
-    form_info: Optional[FormInfo] = None       # информация о форме из БД
-    file_content: Optional[bytes] = None       # содержимое файла в памяти
-    file_info: Optional[FileInfo] = None       # метаданные: reporter, year, extension
-    file_model: Optional[FileModel] = None     # модель файла для сохранения
-    sheets: List[SheetModel] = field(default_factory=list)  # результаты парсинга листов
+    filename: str
+
+    file_content: Optional[bytes] = None
+    file_info: Optional[FileInfo] = None
+    file_model: Optional[FileModel] = None
+    workbook_sheets: Dict[str, Any] = field(default_factory=dict)
+    sheets: List[SheetModel] = field(default_factory=list)
 
     error: Optional[str] = None
     failed: bool = False
@@ -57,10 +30,5 @@ class UploadPipelineContext:
 
     @property
     def flat_data(self) -> List[FlatDataRecord]:
-        """
-        Агрегация всех FlatDataRecord из всех листов.
-
-        Единственный источник flat_data — SheetModel.flat_data_records.
-        Не хранится отдельно, всегда вычисляется из sheets.
-        """
+        """Aggregate FlatDataRecord items from all parsed sheets."""
         return [record for sheet in self.sheets for record in sheet.flat_data_records]

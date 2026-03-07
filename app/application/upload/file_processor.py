@@ -1,23 +1,20 @@
-"""Обработка одного файла через upload pipeline."""
+"""Process one uploaded file through upload pipeline."""
+
 import logging
+
 from fastapi import UploadFile
+
 from app.api.v2.schemas.files import FileResponse
 from app.application.upload.pipeline import UploadPipelineContext, UploadPipelineRunner
+from app.core.exceptions import CriticalUploadError, log_app_error
 from app.domain.file.models import FileStatus
 from app.domain.form.models import FormInfo
-from app.core.exceptions import CriticalUploadError, log_app_error, DuplicateFileError
 
 logger = logging.getLogger(__name__)
 
+
 class FileProcessor:
-    """
-    Обрабатывает один файл через upload pipeline.
-    Отвечает за:
-    - Создание контекста с готовой формой
-    - Запуск pipeline
-    - Обработку ошибок
-    - Формирование результата
-    """
+    """Runs upload pipeline for a single file and maps result to API response."""
 
     def __init__(self, pipeline: UploadPipelineRunner):
         self._pipeline = pipeline
@@ -26,24 +23,14 @@ class FileProcessor:
         self,
         file: UploadFile,
         form_id: str,
-        form_info: FormInfo
+        form_info: FormInfo,
     ) -> FileResponse:
-        """
-        Обрабатывает один файл через pipeline.
-
-        Args:
-            file: Загруженный файл
-            form_id: ID формы
-            form_info: Информация о форме
-
-        Returns:
-            FileResponse с результатом обработки
-        """
-        logger.info("Обработка файла: '%s'", file.filename)
-
+        filename = (file.filename or "").strip()
+        logger.info("Processing file: '%s'", filename)
 
         ctx = UploadPipelineContext(
             file=file,
+            filename=filename,
             form_id=form_id,
             form_info=form_info,
         )
@@ -52,45 +39,35 @@ class FileProcessor:
             await self._pipeline.run_for_file(ctx)
 
             if ctx.failed:
-                response = FileResponse(
-                    filename=file.filename,
+                return FileResponse(
+                    filename=ctx.filename,
                     status=FileStatus.FAILED,
-                    error=ctx.error or "Неизвестная ошибка",
-                )
-            else:
-                response = FileResponse(
-                    filename=file.filename,
-                    status=FileStatus.SUCCESS,
-                    error="",
+                    error=ctx.error or "Unknown upload error",
                 )
 
-                form_type = getattr(getattr(ctx.form_info, "type", None), "value", "?")
-                logger.info(
-                    "Файл '%s' успешно обработан. Тип формы: %s, листов: %d, записей: %d",
-                    file.filename,
-                    form_type,
-                    len(ctx.flat_data or []),
-                )
-
-            return response
-        except DuplicateFileError as e:
-            log_app_error(e)
-            return FileResponse(
-                filename=file.filename,
-                status=FileStatus.FAILED,
-                error=e.message,
+            form_type = getattr(getattr(ctx.form_info, "type", None), "value", "?")
+            logger.info(
+                "File '%s' processed successfully. form_type=%s, sheets=%d, records=%d",
+                ctx.filename,
+                form_type,
+                len(ctx.sheets),
+                len(ctx.flat_data),
             )
-        except Exception as e:
+            return FileResponse(
+                filename=ctx.filename,
+                status=FileStatus.SUCCESS,
+                error="",
+            )
+        except Exception as exc:
             error = CriticalUploadError(
-                message=f"Внутренняя ошибка обработки файла: {str(e)}",
+                message=f"Internal file processing error: {exc}",
                 domain="upload.file_processor",
                 http_status=500,
-                meta={"file_name": file.filename, "form_id": form_id, "error": str(e)},
+                meta={"file_name": ctx.filename, "form_id": form_id, "error": str(exc)},
             )
             log_app_error(error, exc_info=True)
-
             return FileResponse(
-                filename=file.filename,
+                filename=ctx.filename,
                 status=FileStatus.FAILED,
                 error=error.message,
             )

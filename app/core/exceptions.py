@@ -5,15 +5,22 @@ from fastapi import HTTPException
 from app.core.logger import logger
 
 class FormValidationError(Exception):
-    """Ошибка валидации формы (уровень домена)."""
+    """РћС€РёР±РєР° РІР°Р»РёРґР°С†РёРё С„РѕСЂРјС‹ (СѓСЂРѕРІРµРЅСЊ РґРѕРјРµРЅР°)."""
     def __init__(self, message: str, form_id: Optional[str] = None):
         self.message = message
         self.form_id = form_id
         super().__init__(message)
 
+class FileValidationError(Exception):
+    """?????? ????????? ?????/?????????? ????? (??????? ??????)."""
+    def __init__(self, message: str, filename: Optional[str] = None):
+        self.message = message
+        self.filename = filename
+        super().__init__(message)
+
 class AppError(Exception):
     """
-    Базовая ошибка приложения.
+    Р‘Р°Р·РѕРІР°СЏ РѕС€РёР±РєР° РїСЂРёР»РѕР¶РµРЅРёСЏ.
     """
 
     def __init__(
@@ -23,7 +30,7 @@ class AppError(Exception):
         level: str = "error",                 # debug | info | warning | error | critical
         domain: str = "general",              # file | flat_data | form | sheet | upload | parsing | etc
         http_status: Optional[int] = None,
-        meta: Optional[Dict[str, Any]] = None, # произвольный технический контекст
+        meta: Optional[Dict[str, Any]] = None, # РїСЂРѕРёР·РІРѕР»СЊРЅС‹Р№ С‚РµС…РЅРёС‡РµСЃРєРёР№ РєРѕРЅС‚РµРєСЃС‚
         show_traceback: bool = False
     ):
         self.message = message
@@ -39,8 +46,8 @@ class AppError(Exception):
 
 class RequestValidationError(AppError):
     """
-    Ошибка валидации запроса — прерывает весь handler, возвращает HTTP 400/404/500.
-    Примеры: отсутствие form_id, пустой список файлов, несуществующая форма, проблемы с БД.
+    РћС€РёР±РєР° РІР°Р»РёРґР°С†РёРё Р·Р°РїСЂРѕСЃР° вЂ” РїСЂРµСЂС‹РІР°РµС‚ РІРµСЃСЊ handler, РІРѕР·РІСЂР°С‰Р°РµС‚ HTTP 400/404/500.
+    РџСЂРёРјРµСЂС‹: РѕС‚СЃСѓС‚СЃС‚РІРёРµ form_id, РїСѓСЃС‚РѕР№ СЃРїРёСЃРѕРє С„Р°Р№Р»РѕРІ, РЅРµСЃСѓС‰РµСЃС‚РІСѓСЋС‰Р°СЏ С„РѕСЂРјР°, РїСЂРѕР±Р»РµРјС‹ СЃ Р‘Р”.
     """
     def __init__(
         self,
@@ -62,14 +69,14 @@ class RequestValidationError(AppError):
 # ============= Upload Errors =============
 
 class UploadError(AppError):
-    """Базовая ошибка загрузки файла."""
+    """Р‘Р°Р·РѕРІР°СЏ РѕС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё С„Р°Р№Р»Р°."""
     pass
 
 
 class CriticalUploadError(UploadError):
     """
-    Критическая ошибка загрузки — останавливает пайплайн файла, делает rollback.
-    Примеры: валидация, уникальность, отсутствие формы, ошибка сохранения.
+    РљСЂРёС‚РёС‡РµСЃРєР°СЏ РѕС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё вЂ” РѕСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ РїР°Р№РїР»Р°Р№РЅ С„Р°Р№Р»Р°, РґРµР»Р°РµС‚ rollback.
+    РџСЂРёРјРµСЂС‹: РІР°Р»РёРґР°С†РёСЏ, СѓРЅРёРєР°Р»СЊРЅРѕСЃС‚СЊ, РѕС‚СЃСѓС‚СЃС‚РІРёРµ С„РѕСЂРјС‹, РѕС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ.
     """
     def __init__(
         self,
@@ -92,8 +99,8 @@ class CriticalUploadError(UploadError):
 
 class NonCriticalUploadError(UploadError):
     """
-    Некритическая ошибка загрузки — логируется в DEBUG режиме, пайплайн продолжает работу.
-    Используется для отладки. Примеры: предупреждения о качестве данных.
+    РќРµРєСЂРёС‚РёС‡РµСЃРєР°СЏ РѕС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё вЂ” Р»РѕРіРёСЂСѓРµС‚СЃСЏ РІ DEBUG СЂРµР¶РёРјРµ, РїР°Р№РїР»Р°Р№РЅ РїСЂРѕРґРѕР»Р¶Р°РµС‚ СЂР°Р±РѕС‚Сѓ.
+    РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РґР»СЏ РѕС‚Р»Р°РґРєРё. РџСЂРёРјРµСЂС‹: РїСЂРµРґСѓРїСЂРµР¶РґРµРЅРёСЏ Рѕ РєР°С‡РµСЃС‚РІРµ РґР°РЅРЅС‹С….
     """
     def __init__(
         self,
@@ -113,9 +120,9 @@ class NonCriticalUploadError(UploadError):
         )
 class DuplicateFileError(UploadError):
     """
-    Файл уже успешно загружен (дубликат).
-    Не является критической ошибкой — stub не создаётся,
-    просто возвращаем ошибку в ответе клиенту.
+    Р¤Р°Р№Р» СѓР¶Рµ СѓСЃРїРµС€РЅРѕ Р·Р°РіСЂСѓР¶РµРЅ (РґСѓР±Р»РёРєР°С‚).
+    РќРµ СЏРІР»СЏРµС‚СЃСЏ РєСЂРёС‚РёС‡РµСЃРєРѕР№ РѕС€РёР±РєРѕР№ вЂ” stub РЅРµ СЃРѕР·РґР°С‘С‚СЃСЏ,
+    РїСЂРѕСЃС‚Рѕ РІРѕР·РІСЂР°С‰Р°РµРј РѕС€РёР±РєСѓ РІ РѕС‚РІРµС‚Рµ РєР»РёРµРЅС‚Сѓ.
     """
     def __init__(
         self,
@@ -127,7 +134,7 @@ class DuplicateFileError(UploadError):
     ):
         super().__init__(
             message=message,
-            level="warning",  # Не error, так как это валидация, а не сбой
+            level="warning",  # РќРµ error, С‚Р°Рє РєР°Рє СЌС‚Рѕ РІР°Р»РёРґР°С†РёСЏ, Р° РЅРµ СЃР±РѕР№
             domain=domain,
             http_status=http_status,
             meta=meta,
@@ -136,14 +143,14 @@ class DuplicateFileError(UploadError):
 # ============= Parsing Errors =============
 
 class ParsingError(AppError):
-    """Базовая ошибка парсинга листа."""
+    """Р‘Р°Р·РѕРІР°СЏ РѕС€РёР±РєР° РїР°СЂСЃРёРЅРіР° Р»РёСЃС‚Р°."""
     pass
 
 
 class CriticalParsingError(ParsingError):
     """
-    Критическая ошибка парсинга — останавливает обработку листа и всего файла.
-    Примеры: структура таблицы, заголовки, невалидные данные.
+    РљСЂРёС‚РёС‡РµСЃРєР°СЏ РѕС€РёР±РєР° РїР°СЂСЃРёРЅРіР° вЂ” РѕСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ РѕР±СЂР°Р±РѕС‚РєСѓ Р»РёСЃС‚Р° Рё РІСЃРµРіРѕ С„Р°Р№Р»Р°.
+    РџСЂРёРјРµСЂС‹: СЃС‚СЂСѓРєС‚СѓСЂР° С‚Р°Р±Р»РёС†С‹, Р·Р°РіРѕР»РѕРІРєРё, РЅРµРІР°Р»РёРґРЅС‹Рµ РґР°РЅРЅС‹Рµ.
     """
     def __init__(
         self,
@@ -166,8 +173,8 @@ class CriticalParsingError(ParsingError):
 
 class NonCriticalParsingError(ParsingError):
     """
-    Некритическая ошибка парсинга — логируется в DEBUG режиме, продолжаем обработку.
-    Используется для отладки. Примеры: примечания, округление, предупреждения.
+    РќРµРєСЂРёС‚РёС‡РµСЃРєР°СЏ РѕС€РёР±РєР° РїР°СЂСЃРёРЅРіР° вЂ” Р»РѕРіРёСЂСѓРµС‚СЃСЏ РІ DEBUG СЂРµР¶РёРјРµ, РїСЂРѕРґРѕР»Р¶Р°РµРј РѕР±СЂР°Р±РѕС‚РєСѓ.
+    РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РґР»СЏ РѕС‚Р»Р°РґРєРё. РџСЂРёРјРµСЂС‹: РїСЂРёРјРµС‡Р°РЅРёСЏ, РѕРєСЂСѓРіР»РµРЅРёРµ, РїСЂРµРґСѓРїСЂРµР¶РґРµРЅРёСЏ.
     """
     def __init__(
         self,
@@ -189,7 +196,7 @@ class NonCriticalParsingError(ParsingError):
 
 def to_http_exception(error: AppError) -> HTTPException:
     """
-    Преобразование AppError в HTTPException.
+    РџСЂРµРѕР±СЂР°Р·РѕРІР°РЅРёРµ AppError РІ HTTPException.
     """
 
     if error.http_status is not None:
@@ -212,8 +219,8 @@ def to_http_exception(error: AppError) -> HTTPException:
 
 def log_app_error(error: AppError, *, exc_info: Optional[bool] = None) -> None:
     """
-    Единая точка логирования ошибок приложения.
-    Передаёт все метаданные из error.meta в extra логгера.
+    Р•РґРёРЅР°СЏ С‚РѕС‡РєР° Р»РѕРіРёСЂРѕРІР°РЅРёСЏ РѕС€РёР±РѕРє РїСЂРёР»РѕР¶РµРЅРёСЏ.
+    РџРµСЂРµРґР°С‘С‚ РІСЃРµ РјРµС‚Р°РґР°РЅРЅС‹Рµ РёР· error.meta РІ extra Р»РѕРіРіРµСЂР°.
     """
     level_name = error.level.upper()
     log_level = getattr(logging, level_name, logging.ERROR)
@@ -225,8 +232,8 @@ def log_app_error(error: AppError, *, exc_info: Optional[bool] = None) -> None:
 
 def log_and_raise_http(error: AppError) -> None:
     """
-    Логирует ошибку и выбрасывает соответствующий HTTPException.
-    Используется для ошибок уровня запроса (RequestValidationError).
+    Р›РѕРіРёСЂСѓРµС‚ РѕС€РёР±РєСѓ Рё РІС‹Р±СЂР°СЃС‹РІР°РµС‚ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёР№ HTTPException.
+    РСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РґР»СЏ РѕС€РёР±РѕРє СѓСЂРѕРІРЅСЏ Р·Р°РїСЂРѕСЃР° (RequestValidationError).
     """
     log_app_error(error, exc_info=True)
     raise to_http_exception(error)

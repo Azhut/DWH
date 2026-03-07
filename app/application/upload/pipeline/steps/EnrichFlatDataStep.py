@@ -1,19 +1,30 @@
 from app.application.upload.pipeline.context import UploadPipelineContext
+from app.core.exceptions import CriticalUploadError
 
 
 class EnrichFlatDataStep:
-    """Шаг: обогащение flat_data метаданными файла.
-
-    Единственное место, где file_id, form, year и reporter
-    попадают в FlatDataRecord. GenerateFlatDataStep намеренно
-    не заполняет эти поля — он знает только о структуре листа.
-    """
+    """Enrich flat_data records with file-level metadata."""
 
     async def execute(self, ctx: UploadPipelineContext) -> None:
-        if not ctx.sheets or not ctx.file_model or not ctx.form_info:
-            return
+        if not ctx.file_model:
+            raise CriticalUploadError(
+                message="file_model is not set before EnrichFlatDataStep",
+                domain="upload.enrich_flat_data",
+                http_status=500,
+                meta={"file_name": ctx.filename},
+            )
+
+        if not ctx.sheets:
+            raise CriticalUploadError(
+                message="No parsed sheets found before data enrichment",
+                domain="upload.enrich_flat_data",
+                http_status=400,
+                meta={"file_name": ctx.filename},
+            )
+
+        reporter = (ctx.file_model.reporter or "").upper()
         for rec in ctx.flat_data:
             rec.file_id = ctx.file_model.file_id
             rec.form = ctx.form_id
             rec.year = ctx.file_model.year
-            rec.reporter = (ctx.file_model.reporter or "").upper()
+            rec.reporter = reporter

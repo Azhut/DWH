@@ -1,50 +1,42 @@
 from typing import List
+
 from fastapi import UploadFile
-from app.core.exceptions import RequestValidationError, FormValidationError
+
+from app.core.exceptions import FormValidationError, RequestValidationError
 from app.domain.form import validate_form_id
 
 
 class RequestValidator:
-    """
-    Валидатор запроса загрузки файлов.
-    Проверяет:
-    - Формат form_id (не пустой, строка)
-    - Наличие файлов в запросе
-    """
+    """Request-level validation for upload endpoint."""
 
     @staticmethod
-    def validate_request(
-            files: List[UploadFile],
-            form_id: str
-    ) -> str:
-        """
-        Валидация входных данных запроса.
-
-        Args:
-            files: Список загруженных файлов
-            form_id: ID формы из запроса
-
-        Returns:
-            Очищенный form_id
-
-        Raises:
-            RequestValidationError: При любой ошибке валидации
-        """
+    def validate_request(files: List[UploadFile], form_id: str) -> str:
         try:
             form_id = validate_form_id(form_id)
-        except FormValidationError as e:
+        except FormValidationError as exc:
             raise RequestValidationError(
-                message=e.message,
+                message=exc.message,
                 http_status=400,
                 domain="form.validation",
-                meta={"form_id": e.form_id}
+                meta={"form_id": exc.form_id},
+            ) from exc
+
+        if not files:
+            raise RequestValidationError(
+                message="No files were provided for upload",
+                http_status=400,
+                domain="upload.request",
+                meta={"form_id": form_id},
             )
 
-        if not files or len(files) == 0:
-            raise RequestValidationError(
-                message="Не предоставлены файлы для загрузки",
-                http_status=400,
-                meta={"form_id": form_id}
-            )
+        for index, file in enumerate(files):
+            filename = (getattr(file, "filename", None) or "").strip()
+            if not filename:
+                raise RequestValidationError(
+                    message=f"File at index {index} has empty filename",
+                    http_status=400,
+                    domain="upload.request",
+                    meta={"form_id": form_id, "file_index": index},
+                )
 
         return form_id.strip()

@@ -1,12 +1,11 @@
-﻿"""File aggregate service."""
+"""File aggregate service."""
 
 import logging
 import re
 from datetime import datetime
 from typing import List, Optional
 
-from fastapi import HTTPException
-
+from app.core.exceptions import FileValidationError
 from app.domain.file.models import FileInfo, FileModel, FileStatus
 from app.domain.file.repository import FileRepository
 
@@ -21,19 +20,19 @@ def validate_and_extract_metadata_from_filename(filename: str) -> FileInfo:
     logger.debug("Validating file name: %s", filename)
 
     if not filename:
-        raise HTTPException(status_code=400, detail="File name cannot be empty")
+        raise FileValidationError("File name cannot be empty", filename=filename)
 
     if not any(filename.lower().endswith(ext) for ext in VALID_EXTENSIONS):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid file extension: {filename}. Allowed: {list(VALID_EXTENSIONS)}",
+        raise FileValidationError(
+            f"Invalid file extension: {filename}. Allowed: {list(VALID_EXTENSIONS)}",
+            filename=filename,
         )
 
     match = REPORTER_YEAR_PATTERN.match(filename)
     if not match:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid file name format. Expected: 'REPORTER YYYY.extension'",
+        raise FileValidationError(
+            "Invalid file name format. Expected: 'REPORTER YYYY.extension'",
+            filename=filename,
         )
 
     reporter = match.group(1).strip().upper()
@@ -41,12 +40,9 @@ def validate_and_extract_metadata_from_filename(filename: str) -> FileInfo:
     ext = filename.split(".")[-1].lower() if "." in filename else ""
 
     if not reporter:
-        raise HTTPException(status_code=400, detail="Reporter cannot be empty")
+        raise FileValidationError("Reporter cannot be empty", filename=filename)
     if year < 1900 or year > 2100:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid year. Allowed range: 1900..2100",
-        )
+        raise FileValidationError("Invalid year. Allowed range: 1900..2100", filename=filename)
 
     return FileInfo(reporter=reporter, year=year, extension=ext)
 

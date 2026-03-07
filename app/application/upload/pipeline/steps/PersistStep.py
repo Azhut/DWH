@@ -4,22 +4,28 @@ from app.core.exceptions import CriticalUploadError
 
 
 class PersistStep:
-    """Шаг: сохранение файла и flat_data через координатор DataSaveService."""
+    """Persist file and flat_data via DataSaveService."""
+
     def __init__(self, data_save_service: DataSaveService):
         self.data_save_service = data_save_service
 
     async def execute(self, ctx: UploadPipelineContext) -> None:
-        """
-        Делегирует фактическое сохранение в DataSaveService.
-        Любая ошибка здесь считается критической для файла — переводим в CriticalUploadError.
-        """
-        try:
-            await self.data_save_service.process_and_save_all(ctx.file_model, ctx.flat_data)
-        except Exception as e:
+        if not ctx.file_model:
             raise CriticalUploadError(
-                message=f"Ошибка при сохранении данных файла: {e}",
+                message="file_model is not set before PersistStep",
                 domain="upload.persist",
                 http_status=500,
-                meta={"file_name": getattr(ctx.file, "filename", None), "error": str(e)},
+                meta={"file_name": ctx.filename},
             )
 
+        try:
+            await self.data_save_service.process_and_save_all(ctx.file_model, ctx.flat_data)
+        except CriticalUploadError:
+            raise
+        except Exception as exc:
+            raise CriticalUploadError(
+                message=f"Failed to persist uploaded data: {exc}",
+                domain="upload.persist",
+                http_status=500,
+                meta={"file_name": ctx.filename, "error": str(exc)},
+            ) from exc

@@ -1,4 +1,4 @@
-﻿"""Step: acquire or reuse file record for upload lifecycle."""
+"""Step: acquire or reuse file record for upload lifecycle."""
 
 import logging
 from datetime import datetime
@@ -12,49 +12,52 @@ logger = logging.getLogger(__name__)
 
 
 class AcquireFileRecordStep:
-    """Acquire a single file record and move it to PROCESSING state."""
+    """Acquire a file record and move it to PROCESSING state."""
 
     def __init__(self, file_service: FileService):
         self._file_service = file_service
 
     async def execute(self, ctx: UploadPipelineContext) -> None:
-        filename = getattr(ctx.file, "filename", None)
-        if not filename:
+        if not ctx.filename:
             raise CriticalUploadError(
-                message="File name is not set in upload context",
+                message="Filename is not set in upload context",
                 domain="upload.acquire_file_record",
                 http_status=500,
-                meta={"context_state": "filename is None"},
+                meta={"context_state": "filename is empty"},
             )
 
         try:
             existing_success = await self._file_service.get_by_filename_and_status(
-                filename,
+                ctx.filename,
                 FileStatus.SUCCESS,
                 ctx.form_id,
             )
             if existing_success:
                 raise DuplicateFileError(
-                    message=f"File '{filename}' has already been uploaded successfully.",
+                    message=f"File '{ctx.filename}' has already been uploaded successfully.",
                     domain="upload.acquire_file_record",
                     http_status=409,
                     meta={
-                        "file_name": filename,
+                        "file_name": ctx.filename,
                         "form_id": ctx.form_id,
                         "existing_file_id": existing_success.file_id,
                     },
                 )
 
-            file_model = await self._file_service.get_by_filename(filename, ctx.form_id)
+            file_model = await self._file_service.get_by_filename(ctx.filename, ctx.form_id)
             if not file_model:
                 file_model = FileModel.create_processing(
-                    filename=filename,
+                    filename=ctx.filename,
                     form_id=ctx.form_id,
                 )
 
             file_model.form_id = ctx.form_id
+            file_model.year = None
+            file_model.reporter = None
             file_model.status = FileStatus.PROCESSING
             file_model.error = None
+            file_model.sheets = []
+            file_model.size = 0
             file_model.updated_at = datetime.now()
 
             await self._file_service.update_or_create(file_model)
@@ -62,7 +65,7 @@ class AcquireFileRecordStep:
             logger.debug(
                 "Acquired file record file_id=%s for filename=%s form_id=%s",
                 file_model.file_id,
-                filename,
+                ctx.filename,
                 ctx.form_id,
             )
 
@@ -74,7 +77,7 @@ class AcquireFileRecordStep:
                 domain="upload.acquire_file_record",
                 http_status=500,
                 meta={
-                    "file_name": filename,
+                    "file_name": ctx.filename,
                     "form_id": ctx.form_id,
                     "error": str(exc),
                 },

@@ -1,23 +1,23 @@
-"""Шаги upload pipeline."""
-from .BaseUploadPipelineStep import UploadPipelineStep
-from .ReadFileContentStep import ReadFileContentStep
-from .ExtractMetadataStep import ExtractMetadataStep
-from .CheckUniquenessStep import CheckUniquenessStep
-from .CreateFileModelStep import CreateFileModelStep
-from .ProcessSheetsStep import ProcessSheetsStep
-from .EnrichFlatDataStep import EnrichFlatDataStep
-from .PersistStep import PersistStep
+"""Upload pipeline steps."""
 
+from .AcquireFileRecordStep import AcquireFileRecordStep
+from .BaseUploadPipelineStep import UploadPipelineStep
+from .EnrichFlatDataStep import EnrichFlatDataStep
+from .ExtractMetadataStep import ExtractMetadataStep
+from .FinalizeFileModelStep import FinalizeFileModelStep
+from .PersistStep import PersistStep
+from .ProcessSheetsStep import ProcessSheetsStep
+from .ReadFileContentStep import ReadFileContentStep
+from .ReadWorkbookStep import ReadWorkbookStep
 
 __all__ = [
     "UploadPipelineStep",
     "ReadFileContentStep",
     "ExtractMetadataStep",
-    "CheckUniquenessStep",
-    "CreateFileModelStep",
+    "AcquireFileRecordStep",
+    "ReadWorkbookStep",
     "ProcessSheetsStep",
+    "FinalizeFileModelStep",
     "EnrichFlatDataStep",
     "PersistStep",
 ]
-
-

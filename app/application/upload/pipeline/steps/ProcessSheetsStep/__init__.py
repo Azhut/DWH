@@ -1,6 +1,6 @@
 """Обработка листов Excel через parsing pipeline."""
-from .process_sheets import ProcessSheetsStep
-from .excel_reader import ExcelReader
+from .ProcessSheetsStep import ProcessSheetsStep
+from .ExcelReader import ExcelReader
 
 __all__ = [
     "ProcessSheetsStep",

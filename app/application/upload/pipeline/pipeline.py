@@ -1,16 +1,17 @@
-﻿import logging
+import logging
 from typing import List
 
+from app.application.parsing.registry import ParsingStrategyRegistry
 from app.application.upload.pipeline.context import UploadPipelineContext
 from app.application.upload.pipeline.steps.AcquireFileRecordStep import AcquireFileRecordStep
 from app.application.upload.pipeline.steps.BaseUploadPipelineStep import UploadPipelineStep
 from app.application.upload.pipeline.steps.EnrichFlatDataStep import EnrichFlatDataStep
 from app.application.upload.pipeline.steps.ExtractMetadataStep import ExtractMetadataStep
+from app.application.upload.pipeline.steps.FinalizeFileModelStep import FinalizeFileModelStep
 from app.application.upload.pipeline.steps.PersistStep import PersistStep
 from app.application.upload.pipeline.steps.ProcessSheetsStep import ProcessSheetsStep
 from app.application.upload.pipeline.steps.ReadFileContentStep import ReadFileContentStep
-from app.application.upload.pipeline.steps.SyncFileMetadataStep import SyncFileMetadataStep
-from app.application.parsing.registry import ParsingStrategyRegistry
+from app.application.upload.pipeline.steps.ReadWorkbookStep import ReadWorkbookStep
 from app.core.exceptions import (
     CriticalParsingError,
     CriticalUploadError,
@@ -19,7 +20,6 @@ from app.core.exceptions import (
     NonCriticalUploadError,
     log_app_error,
 )
-from config import config
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +48,8 @@ class UploadPipelineRunner:
                 return
 
             except (NonCriticalUploadError, NonCriticalParsingError) as error:
-                if config.DEBUG:
-                    log_app_error(error)
+                ctx.warnings.append(error.message)
+                log_app_error(error)
                 continue
 
             except Exception as exc:
@@ -59,23 +59,24 @@ class UploadPipelineRunner:
                     http_status=500,
                     meta={
                         "step": step.__class__.__name__,
-                        "file_name": getattr(ctx.file, "filename", None),
+                        "file_name": ctx.filename,
                         "error": str(exc),
                     },
+                    show_traceback=True,
                 )
                 log_app_error(error, exc_info=True)
                 await self._handle_critical_error(ctx, error)
                 return
 
     async def _handle_critical_error(self, ctx: UploadPipelineContext, error: Exception) -> None:
-        """Mark context as failed and rollback the single acquired file record."""
+        """Mark context as failed and rollback acquired file record when possible."""
         ctx.failed = True
         ctx.error = error.message if hasattr(error, "message") else str(error)
 
         if not ctx.file_model or not getattr(ctx.file_model, "file_id", None):
             logger.error(
                 "Critical error for '%s', but file record was not acquired; failed state in DB was not persisted",
-                getattr(ctx.file, "filename", None),
+                ctx.filename,
             )
             return
 
@@ -100,8 +101,9 @@ def build_default_pipeline(
         AcquireFileRecordStep(file_service),
         ReadFileContentStep(),
         ExtractMetadataStep(file_service),
-        SyncFileMetadataStep(),
+        ReadWorkbookStep(),
         ProcessSheetsStep(parsing_registry=parsing_registry),
+        FinalizeFileModelStep(),
         EnrichFlatDataStep(),
         PersistStep(data_save_service),
     ]
