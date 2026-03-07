@@ -4,7 +4,7 @@ import logging
 from typing import List
 
 from app.application.parsing.context import ParsingPipelineContext
-from app.application.parsing.registry import get_parsing_strategy_registry
+from app.application.parsing.registry import ParsingStrategyRegistry
 from app.application.upload.pipeline.context import UploadPipelineContext
 from app.application.upload.pipeline.steps.ProcessSheetsStep.excel_reader import ExcelReader
 from app.core.exceptions import CriticalParsingError, CriticalUploadError
@@ -29,8 +29,13 @@ class ProcessSheetsStep:
     в UploadPipelineRunner работает с чистым состоянием.
     """
 
-    def __init__(self, excel_reader: ExcelReader | None = None) -> None:
+    def __init__(
+        self,
+        excel_reader: ExcelReader | None = None,
+        parsing_registry: ParsingStrategyRegistry | None = None,
+    ) -> None:
         self._excel_reader = excel_reader or ExcelReader()
+        self._parsing_registry = parsing_registry
 
     async def execute(self, ctx: UploadPipelineContext) -> None:
         if not ctx.form_info or not ctx.file_model:
@@ -49,7 +54,11 @@ class ProcessSheetsStep:
                 meta={"file_name": getattr(ctx.file, "filename", None)},
             )
 
-        registry = get_parsing_strategy_registry()
+        if self._parsing_registry is None:
+            from app.application.parsing.registry import get_parsing_strategy_registry
+            self._parsing_registry = get_parsing_strategy_registry()
+
+
 
         # 1. Читаем Excel
         try:
@@ -76,7 +85,7 @@ class ProcessSheetsStep:
         # 3. Обрабатываем каждый лист
         for sheet_index, (sheet_name, df) in enumerate(sheets.items()):
 
-            pipeline = registry.build_pipeline_for_sheet(
+            pipeline = self._parsing_registry.build_pipeline_for_sheet(
                 form_info=ctx.form_info,
                 sheet_name=sheet_name,
                 sheet_index=sheet_index,

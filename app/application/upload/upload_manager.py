@@ -2,7 +2,6 @@ import logging
 from typing import List
 from fastapi import UploadFile
 from app.api.v2.schemas.upload import UploadResponse
-from app.application.parsing.registry import get_parsing_strategy_registry
 from app.application.upload.pipeline import build_default_pipeline
 from app.application.upload.request_validator import RequestValidator
 from app.application.upload.form_loader import FormLoader
@@ -11,7 +10,8 @@ from app.application.upload.response_builder import UploadResponseBuilder
 from app.application.data import DataSaveService
 from app.domain.file.service import FileService
 from app.domain.form.service import FormService
-from app.domain.sheet.service import SheetService
+from app.application.parsing.registry import ParsingStrategyRegistry
+
 
 logger = logging.getLogger(__name__)
 
@@ -34,20 +34,19 @@ class UploadManager:
         self,
         file_service: FileService,
         form_service: FormService,
-        sheet_service: SheetService,
         data_save_service: DataSaveService,
+        parsing_registry: ParsingStrategyRegistry | None = None,
     ):
         self._file_service = file_service
         self._form_service = form_service
-        self._sheet_service = sheet_service
         self._data_save_service = data_save_service
-        get_parsing_strategy_registry(sheet_service=sheet_service)
 
         self._validator = RequestValidator()
         self._form_loader = FormLoader(form_service=form_service)
         self._pipeline = build_default_pipeline(
             file_service=file_service,
             data_save_service=data_save_service,
+            parsing_registry=parsing_registry,
         )
         self._file_processor = FileProcessor(pipeline=self._pipeline)
 

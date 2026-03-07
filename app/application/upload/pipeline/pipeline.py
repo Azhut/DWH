@@ -10,6 +10,7 @@ from app.application.upload.pipeline.steps.PersistStep import PersistStep
 from app.application.upload.pipeline.steps.ProcessSheetsStep import ProcessSheetsStep
 from app.application.upload.pipeline.steps.ReadFileContentStep import ReadFileContentStep
 from app.application.upload.pipeline.steps.SyncFileMetadataStep import SyncFileMetadataStep
+from app.application.parsing.registry import ParsingStrategyRegistry
 from app.core.exceptions import (
     CriticalParsingError,
     CriticalUploadError,
@@ -92,6 +93,7 @@ class UploadPipelineRunner:
 def build_default_pipeline(
     file_service,
     data_save_service,
+    parsing_registry: ParsingStrategyRegistry | None = None,
 ) -> UploadPipelineRunner:
     """Build default upload pipeline."""
     steps: List[UploadPipelineStep] = [
@@ -99,7 +101,7 @@ def build_default_pipeline(
         ReadFileContentStep(),
         ExtractMetadataStep(file_service),
         SyncFileMetadataStep(),
-        ProcessSheetsStep(),
+        ProcessSheetsStep(parsing_registry=parsing_registry),
         EnrichFlatDataStep(),
         PersistStep(data_save_service),
     ]

@@ -73,7 +73,7 @@ class FileProcessor:
                 )
 
             return response
-        except DuplicateFileError as e:  # ← Явная обработка
+        except DuplicateFileError as e:
             log_app_error(e)
             return FileResponse(
                 filename=file.filename,

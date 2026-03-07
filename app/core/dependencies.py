@@ -18,7 +18,7 @@ from app.application.data import (
     DataRetrievalService,
     DataSaveService,
 )
-
+from app.application.parsing.registry import get_parsing_strategy_registry
 
 @lru_cache
 def get_database() -> AsyncIOMotorDatabase:
@@ -98,9 +98,10 @@ def get_data_retrieval_service() -> DataRetrievalService:
 
 @lru_cache
 def get_upload_manager() -> UploadManager:
+    from app.application.parsing.registry import get_parsing_strategy_registry
     return UploadManager(
         file_service=get_file_service(),
         form_service=get_form_service(),
-        sheet_service=get_sheet_service(),
         data_save_service=get_data_save_service(),
+        parsing_registry=get_parsing_strategy_registry(),
     )

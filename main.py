@@ -29,6 +29,8 @@ def create_app() -> FastAPI:
     @app.on_event("startup")
     async def _create_db_indexes() -> None:
         await create_indexes()
+        from app.application.parsing.registry import get_parsing_strategy_registry
+        get_parsing_strategy_registry()
 
     app.include_router(upload_router, prefix="/api/v2", tags=["upload"])
     app.include_router(filters_router, prefix="/api/v2", tags=["filters"])

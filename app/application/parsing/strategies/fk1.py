@@ -52,8 +52,6 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
     - Листы, не найденные в _SHEET_CONFIGS после нормализации, пропускаются.
     """
 
-    def __init__(self, sheet_service=None) -> None:
-        self._sheet_service = sheet_service
 
     def should_process_sheet(
         self,
@@ -122,14 +120,7 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
         ]
 
         if config.apply_rounding:
-            if self._sheet_service is None:
-                raise CriticalParsingError(
-                    f"FK1FormParsingStrategy: sheet_service не передан, "
-                    f"но лист '{sheet_name}' требует RoundingStep.",
-                    domain="parsing.strategies.fk1",
-                    meta={"sheet_name": sheet_name},
-                )
-            steps.append(FK1RoundingStep(sheet_service=self._sheet_service))
+            steps.append(FK1RoundingStep())
 
         steps.extend([
             ProcessNotesStep(),
