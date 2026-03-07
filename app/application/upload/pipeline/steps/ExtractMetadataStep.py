@@ -1,4 +1,4 @@
-"""Step: extract metadata from filename."""
+﻿"""Шаг: извлечь метаданные из имени файла."""
 
 import logging
 
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class ExtractMetadataStep:
-    """Extract reporter/year metadata from context filename."""
+    """Извлекает метаданные reporter/year из имени файла в контексте."""
 
     def __init__(self, file_service: FileService):
         self._file_service = file_service

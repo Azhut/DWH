@@ -1,4 +1,5 @@
-"""Базовый репозиторий для работы с коллекциями MongoDB."""
+﻿"""Базовый репозиторий для работы с MongoDB-коллекциями доменного слоя."""
+
 from typing import Any, Dict, List, Optional
 
 from motor.motor_asyncio import AsyncIOMotorCollection

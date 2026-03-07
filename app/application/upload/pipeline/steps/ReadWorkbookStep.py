@@ -1,12 +1,12 @@
-﻿"""Step: read workbook sheets from in-memory file content."""
+﻿"""Шаг: прочитать листы книги из содержимого файла в памяти."""
 
 from app.application.upload.pipeline.context import UploadPipelineContext
-from app.application.upload.pipeline.steps.ProcessSheetsStep.ExcelReader import ExcelReader
+from app.application.upload.pipeline.readers import ExcelReader
 from app.core.exceptions import CriticalUploadError
 
 
 class ReadWorkbookStep:
-    """Convert file bytes into workbook sheets dict."""
+    """Преобразует байты файла в словарь листов рабочей книги."""
 
     def __init__(self, excel_reader: ExcelReader | None = None) -> None:
         self._excel_reader = excel_reader or ExcelReader()

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Универсальное извлечение данных из листа по структуре и заголовкам.
 Поддерживает простой режим (1ФК) и режим с дедупликацией колонок (5ФК).
 """
@@ -15,7 +15,7 @@ from app.domain.parsing.models import (
     TableStructure,
 )
 from app.domain.parsing.structure_detection import _is_empty_or_nan, _is_numeric_value
-from app.parsers.header_fixer import fix_header
+from app.domain.parsing.header_fixer import fix_header
 
 logger = logging.getLogger(__name__)
 
@@ -111,3 +111,4 @@ def _extract_with_column_dedup(
         columns.append(ExtractedColumn(column_header=col_name.strip(), values=values))
 
     return ExtractedSheetData(columns=columns)
+

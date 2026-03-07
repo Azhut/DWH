@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 
 from app.application.upload.pipeline.context import UploadPipelineContext
 from app.core.exceptions import CriticalUploadError
@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class ReadFileContentStep:
-    """Read uploaded stream once and cache bytes in context."""
+    """Один раз читает загруженный поток и кэширует байты в контексте."""
 
     async def execute(self, ctx: UploadPipelineContext) -> None:
         try:

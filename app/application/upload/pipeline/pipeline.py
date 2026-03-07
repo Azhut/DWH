@@ -1,4 +1,4 @@
-import logging
+﻿import logging
 from typing import List
 
 from app.application.parsing.registry import ParsingStrategyRegistry
@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class UploadPipelineRunner:
-    """Run upload steps and map all failures into context state."""
+    """Запускает шаги загрузки и отображает все ошибки в состояние контекста."""
 
     def __init__(self, steps: List[UploadPipelineStep], data_save_service):
         self.steps = steps
@@ -69,7 +69,7 @@ class UploadPipelineRunner:
                 return
 
     async def _handle_critical_error(self, ctx: UploadPipelineContext, error: Exception) -> None:
-        """Mark context as failed and rollback acquired file record when possible."""
+        """Помечает контекст как неуспешный и делает rollback записи файла, если возможно."""
         ctx.failed = True
         ctx.error = error.message if hasattr(error, "message") else str(error)
 
@@ -96,7 +96,7 @@ def build_default_pipeline(
     data_save_service,
     parsing_registry: ParsingStrategyRegistry | None = None,
 ) -> UploadPipelineRunner:
-    """Build default upload pipeline."""
+    """Собирает upload pipeline по умолчанию."""
     steps: List[UploadPipelineStep] = [
         AcquireFileRecordStep(file_service),
         ReadFileContentStep(),

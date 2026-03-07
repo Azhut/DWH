@@ -1,10 +1,10 @@
-from app.application.data import DataSaveService
+﻿from app.application.data import DataSaveService
 from app.application.upload.pipeline.context import UploadPipelineContext
 from app.core.exceptions import CriticalUploadError
 
 
 class PersistStep:
-    """Persist file and flat_data via DataSaveService."""
+    """Сохраняет файл и flat_data через DataSaveService."""
 
     def __init__(self, data_save_service: DataSaveService):
         self.data_save_service = data_save_service

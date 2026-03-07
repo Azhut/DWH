@@ -1,11 +1,11 @@
-"""Step: finalize file model metadata after sheet parsing."""
+﻿"""Шаг: финализировать метаданные file_model после парсинга листов."""
 
 from app.application.upload.pipeline.context import UploadPipelineContext
 from app.core.exceptions import CriticalUploadError
 
 
 class FinalizeFileModelStep:
-    """Populate parsed sheet metadata into file model."""
+    """Заполняет file_model метаданными распарсенных листов."""
 
     async def execute(self, ctx: UploadPipelineContext) -> None:
         if not ctx.file_model:

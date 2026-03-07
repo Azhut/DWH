@@ -1,4 +1,4 @@
-"""Step for parsing workbook sheets through parsing pipelines."""
+﻿"""Шаг парсинга листов рабочей книги через parsing-pipeline."""
 
 import logging
 from typing import Optional
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class ProcessSheetsStep:
-    """Parse workbook sheets and store parsed SheetModel list in context."""
+    """Парсит листы рабочей книги и сохраняет список SheetModel в контекст."""
 
     def __init__(self, parsing_registry: ParsingStrategyRegistry | None = None) -> None:
         self._parsing_registry = parsing_registry

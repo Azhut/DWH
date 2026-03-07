@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+﻿from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from fastapi import UploadFile
@@ -11,7 +11,7 @@ from app.domain.sheet.models import SheetModel
 
 @dataclass
 class UploadPipelineContext:
-    """Context for processing one uploaded file through the upload pipeline."""
+    """Контекст обработки одного загруженного файла в upload pipeline."""
 
     form_id: str
     form_info: FormInfo
@@ -30,5 +30,5 @@ class UploadPipelineContext:
 
     @property
     def flat_data(self) -> List[FlatDataRecord]:
-        """Aggregate FlatDataRecord items from all parsed sheets."""
+        """Собирает все FlatDataRecord из распарсенных листов."""
         return [record for sheet in self.sheets for record in sheet.flat_data_records]

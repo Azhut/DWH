@@ -1,4 +1,4 @@
-"""Step: acquire or reuse file record for upload lifecycle."""
+﻿"""Шаг: получить или переиспользовать запись файла для жизненного цикла загрузки."""
 
 import logging
 from datetime import datetime
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class AcquireFileRecordStep:
-    """Acquire a file record and move it to PROCESSING state."""
+    """Получает запись файла и переводит её в статус PROCESSING."""
 
     def __init__(self, file_service: FileService):
         self._file_service = file_service

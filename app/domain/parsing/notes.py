@@ -1,4 +1,4 @@
-"""
+﻿"""
 Обработка примечаний (Справочно) в листах. Применяется только к форме 1ФК.
 """
 import logging
@@ -21,9 +21,10 @@ def process_notes_1fk(sheet: pd.DataFrame, header_rows_count: int) -> pd.DataFra
         DataFrame с развёрнутыми примечаниями в виде строк или исходный sheet при ошибке
     """
     try:
-        from app.parsers.notes_processor import NotesProcessor
+        from app.domain.parsing.notes_processor import NotesProcessor
 
         return NotesProcessor.process_notes(sheet, raw_quantity=header_rows_count)
     except Exception as e:
         logger.warning("Не удалось обработать примечания (1ФК): %s", e)
         return sheet
+

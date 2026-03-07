@@ -1,4 +1,5 @@
-"""Upload pipeline: оркестратор и шаги."""
+﻿"""Пайплайн загрузки: оркестратор и шаги."""
+
 from .context import UploadPipelineContext
 from .pipeline import UploadPipelineRunner, build_default_pipeline
 
@@ -8,3 +9,4 @@ __all__ = [
     "UploadPipelineRunner",
     "build_default_pipeline",
 ]
+

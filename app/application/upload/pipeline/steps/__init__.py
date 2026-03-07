@@ -1,4 +1,4 @@
-"""Upload pipeline steps."""
+﻿"""Шаги upload pipeline."""
 
 from .AcquireFileRecordStep import AcquireFileRecordStep
 from .BaseUploadPipelineStep import UploadPipelineStep

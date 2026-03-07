@@ -1,4 +1,4 @@
-"""
+﻿"""
 Универсальная сборка FlatDataRecord из извлечённых данных листа.
 """
 import math
@@ -7,7 +7,7 @@ from typing import List, Optional
 from app.domain.flat_data.models import FlatDataRecord
 from app.domain.parsing.models import ExtractedSheetData, SERVICE_EMPTY
 
-from app.parsers.notes_processor import _SERVICE_EMPTY as LEGACY_SERVICE_EMPTY  # совместимость
+from app.domain.parsing.notes_processor import _SERVICE_EMPTY as LEGACY_SERVICE_EMPTY
 
 
 def build_flat_data_records(
@@ -68,3 +68,4 @@ def build_flat_data_records(
                 )
             )
     return records
+

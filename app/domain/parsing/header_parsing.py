@@ -1,4 +1,4 @@
-"""
+﻿"""
 Универсальный парсинг заголовков листа (горизонтальные и вертикальные).
 Общая логика из BaseSheetParser; используется для 1ФК и 5ФК.
 """
@@ -8,7 +8,7 @@ from typing import List, Tuple
 import pandas as pd
 
 from app.domain.parsing.models import ParsedHeaders, TableStructure
-from app.parsers.header_fixer import fix_header, finalize_header_fixing
+from app.domain.parsing.header_fixer import fix_header, finalize_header_fixing
 
 logger = logging.getLogger(__name__)
 
@@ -78,3 +78,4 @@ def parse_headers(sheet: pd.DataFrame, structure: TableStructure) -> ParsedHeade
 
     finalize_header_fixing()
     return ParsedHeaders(horizontal=horizontal, vertical=vertical)
+

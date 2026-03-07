@@ -1,9 +1,9 @@
-from app.application.upload.pipeline.context import UploadPipelineContext
+﻿from app.application.upload.pipeline.context import UploadPipelineContext
 from app.core.exceptions import CriticalUploadError
 
 
 class EnrichFlatDataStep:
-    """Enrich flat_data records with file-level metadata."""
+    """Обогащает flat_data-записи метаданными файла."""
 
     async def execute(self, ctx: UploadPipelineContext) -> None:
         if not ctx.file_model:

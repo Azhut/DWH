@@ -1,6 +1,6 @@
-import logging
-from typing import Dict
+﻿import logging
 from io import BytesIO
+from typing import Dict
 
 import pandas as pd
 
@@ -8,17 +8,15 @@ logger = logging.getLogger(__name__)
 
 
 class ExcelReader:
-    """
-    Application-level reader Excel файлов.
-    """
+    """Читатель Excel-файлов на уровне application."""
 
     def read(self, content: bytes, filename: str) -> Dict[str, pd.DataFrame]:
         """
         Читает все листы Excel из байтов в памяти через pandas + calamine.
 
         Args:
-            content: содержимое Excel файла в байтах (из ctx.file_content)
-            filename: имя файла для логирования (из ctx.filename)
+            content: Содержимое Excel-файла в байтах (из ctx.file_content)
+            filename: Имя файла для логирования (из ctx.filename)
 
         Returns:
             Dict[str, pd.DataFrame]: {имя_листа: DataFrame без заголовков}
@@ -29,8 +27,8 @@ class ExcelReader:
 
         Notes:
             - Использует engine='calamine' (поддерживает .xls, .xlsx, .xlsm)
-            - header=None - заголовки парсит parsing pipeline
-            - dtype=object - отключена автотипизация pandas
+            - header=None: заголовки парсит parsing pipeline
+            - dtype=object: отключена автотипизация pandas
         """
         if not content:
             raise ValueError(f"Пустое содержимое файла '{filename}'")
@@ -87,7 +85,6 @@ class ExcelReader:
 
         return result
 
-
     def _validate_excel_format(self, content: bytes, filename: str) -> None:
         """
         Проверяет, что файл действительно в формате Excel по magic bytes.
@@ -97,8 +94,8 @@ class ExcelReader:
         - .xlsx/.xlsm: 50 4B 03 04 (ZIP)
 
         Args:
-            content: содержимое файла в байтах
-            filename: имя файла для сообщений об ошибках
+            content: Содержимое файла в байтах
+            filename: Имя файла для сообщений об ошибках
 
         Raises:
             ValueError: если формат файла некорректен
@@ -113,25 +110,25 @@ class ExcelReader:
         magic = content[:4]
 
         # .xls (старый формат OLE2)
-        if magic == b'\xD0\xCF\x11\xE0':
+        if magic == b"\xD0\xCF\x11\xE0":
             logger.debug("Обнаружен .xls (OLE2) формат для файла %s", filename)
             return
 
         # .xlsx/.xlsm (ZIP формат)
-        if magic == b'PK\x03\x04':
+        if magic == b"PK\x03\x04":
             logger.debug("Обнаружен .xlsx/.xlsm (ZIP) формат для файла %s", filename)
             return
 
-        # HTML замаскированный под Excel (частая проблема)
-        if content[:5].lower() == b'<html' or content[:4].lower() == b'<!do':
+        # HTML, замаскированный под Excel (частая проблема)
+        if content[:5].lower() == b"<html" or content[:4].lower() == b"<!do":
             raise ValueError(
                 f"Файл '{filename}' является HTML, а не Excel файлом. "
                 f"Возможно, это экспорт из веб-приложения."
             )
 
-        # Неизвестный формат - предупреждение, но не блокируем
+        # Неизвестный формат: предупреждение, но не блокируем
         logger.warning(
             "Файл '%s' имеет неожиданную сигнатуру: %s. Пробуем прочитать через calamine...",
             filename,
-            magic.hex()
+            magic.hex(),
         )
