@@ -7,8 +7,10 @@ logger = logging.getLogger(__name__)
 
 
 class CreateFileModelStep:
-    """Шаг: создание FileModel через модель агрегата File."""
     async def execute(self, ctx: UploadPipelineContext) -> None:
+        if ctx.file_model is not None:
+            return
+
         if not ctx.file_info:
             raise CriticalUploadError(
                 message="Не удалось создать модель файла: отсутствуют метаданные (file_info)",
@@ -16,7 +18,6 @@ class CreateFileModelStep:
                 http_status=500,
                 meta={"file_name": getattr(ctx.file, "filename", None)},
             )
-
 
         try:
             ctx.file_model = FileModel.create_new(

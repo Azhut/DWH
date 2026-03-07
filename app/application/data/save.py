@@ -1,5 +1,6 @@
 """Координатор сохранения файла и flat_data (сценарий upload). Использует агрегаты file, flat_data, log."""
 import logging
+from datetime import datetime
 from typing import List, Optional
 
 from app.core.exceptions import log_and_raise_http
@@ -74,6 +75,7 @@ class DataSaveService:
 
         file_model.status = FileStatus.FAILED
         file_model.error = error
+        file_model.updated_at = datetime.now()
         try:
             await self._file_service.update_or_create(file_model)
         except Exception as e:

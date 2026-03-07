@@ -111,7 +111,27 @@ class NonCriticalUploadError(UploadError):
             meta=meta,
             show_traceback=show_traceback
         )
-
+class DuplicateFileError(UploadError):
+    """
+    Файл уже успешно загружен (дубликат).
+    Не является критической ошибкой — stub не создаётся,
+    просто возвращаем ошибку в ответе клиенту.
+    """
+    def __init__(
+        self,
+        message: str,
+        *,
+        domain: str = "upload.duplicate",
+        http_status: int = 409,
+        meta: Optional[Dict[str, Any]] = None,
+    ):
+        super().__init__(
+            message=message,
+            level="warning",  # Не error, так как это валидация, а не сбой
+            domain=domain,
+            http_status=http_status,
+            meta=meta,
+        )
 
 # ============= Parsing Errors =============
 

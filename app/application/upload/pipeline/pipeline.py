@@ -1,84 +1,65 @@
-import logging
+﻿import logging
 from typing import List
+
 from app.application.upload.pipeline.context import UploadPipelineContext
+from app.application.upload.pipeline.steps.AcquireFileRecordStep import AcquireFileRecordStep
+from app.application.upload.pipeline.steps.BaseUploadPipelineStep import UploadPipelineStep
+from app.application.upload.pipeline.steps.EnrichFlatDataStep import EnrichFlatDataStep
+from app.application.upload.pipeline.steps.ExtractMetadataStep import ExtractMetadataStep
+from app.application.upload.pipeline.steps.PersistStep import PersistStep
+from app.application.upload.pipeline.steps.ProcessSheetsStep import ProcessSheetsStep
 from app.application.upload.pipeline.steps.ReadFileContentStep import ReadFileContentStep
+from app.application.upload.pipeline.steps.SyncFileMetadataStep import SyncFileMetadataStep
 from app.core.exceptions import (
-    CriticalUploadError,
-    NonCriticalUploadError,
     CriticalParsingError,
+    CriticalUploadError,
+    DuplicateFileError,
     NonCriticalParsingError,
-    log_app_error
+    NonCriticalUploadError,
+    log_app_error,
 )
-from app.application.upload.pipeline.steps import (
-    UploadPipelineStep,
-    ExtractMetadataStep,
-    CheckUniquenessStep,
-    CreateFileModelStep,
-    ProcessSheetsStep,
-    EnrichFlatDataStep,
-    PersistStep,
-)
-from app.domain.file import FileModel
 from config import config
 
 logger = logging.getLogger(__name__)
 
 
 class UploadPipelineRunner:
-    """
-    Оркестратор upload pipeline: запускает шаги для каждого файла, обрабатывает ошибки.
-
-    Обработка ошибок:
-    - CriticalUploadError / CriticalParsingError: останавливает pipeline, делает rollback, сохраняет stub
-    - NonCriticalUploadError / NonCriticalParsingError: логирует в DEBUG режиме, продолжает выполнение
-    - Exception: обрабатывается как критическая ошибка
-
-    Никогда не выбрасывает ошибки наружу — все ошибки сохраняются в контексте.
-    """
+    """Run upload steps and map all failures into context state."""
 
     def __init__(self, steps: List[UploadPipelineStep], data_save_service):
         self.steps = steps
         self.data_save_service = data_save_service
 
     async def run_for_file(self, ctx: UploadPipelineContext) -> None:
-        """
-        Запускает все шаги пайплайна для одного файла.
-        """
-
-        for step_idx, step in enumerate(self.steps):
+        for step in self.steps:
             try:
                 await step.execute(ctx)
 
-            except CriticalUploadError as e:
-                log_app_error(e)
-                await self._handle_critical_error(ctx, e)
+            except (CriticalUploadError, CriticalParsingError) as error:
+                log_app_error(error)
+                await self._handle_critical_error(ctx, error)
                 return
 
-            except CriticalParsingError as e:
-                log_app_error(e)
-                await self._handle_critical_error(ctx, e)
+            except DuplicateFileError as error:
+                log_app_error(error)
+                ctx.failed = True
+                ctx.error = error.message
                 return
 
-            except NonCriticalUploadError as e:
+            except (NonCriticalUploadError, NonCriticalParsingError) as error:
                 if config.DEBUG:
-                    log_app_error(e)
+                    log_app_error(error)
                 continue
 
-            except NonCriticalParsingError as e:
-                if config.DEBUG:
-                    log_app_error(e)
-                continue
-
-            except Exception as e:
-
+            except Exception as exc:
                 error = CriticalUploadError(
-                    message=f"Непредвиденная ошибка на шаге {step.__class__.__name__}: {str(e)}",
+                    message=f"Unexpected pipeline error on step {step.__class__.__name__}: {exc}",
                     domain="upload.pipeline",
                     http_status=500,
                     meta={
                         "step": step.__class__.__name__,
-                        "file_name": ctx.file.filename,
-                        "error": str(e),
+                        "file_name": getattr(ctx.file, "filename", None),
+                        "error": str(exc),
                     },
                 )
                 log_app_error(error, exc_info=True)
@@ -86,59 +67,38 @@ class UploadPipelineRunner:
                 return
 
     async def _handle_critical_error(self, ctx: UploadPipelineContext, error: Exception) -> None:
-        """
-        Обрабатывает критическую ошибку:
-        1. Помечает контекст как failed
-        2. Делает rollback плоских данных (если были сохранены)
-        3. Сохраняет stub файл с информацией об ошибке
-        """
+        """Mark context as failed and rollback the single acquired file record."""
         ctx.failed = True
-        ctx.error = error.message if hasattr(error, 'message') else str(error)
+        ctx.error = error.message if hasattr(error, "message") else str(error)
 
-        if ctx.file_model and getattr(ctx.file_model, "file_id", None):
-            try:
-                await self.data_save_service.rollback(ctx.file_model, ctx.error)
-                logger.info("Rollback плоских данных выполнен для файла %s", ctx.file_model.file_id)
-            except Exception as rollback_err:
-                logger.error(
-                    "Ошибка при rollback для файла %s: %s",
-                    ctx.file_model.file_id,
-                    rollback_err,
-                )
-
-        await self._save_stub(ctx, ctx.error)
-
-    async def _save_stub(self, ctx: UploadPipelineContext, err_msg: str) -> None:
-        """
-        Сохраняет stub запись файла с информацией об ошибке.
-        Это позволяет клиенту видеть, какие файлы нужно загрузить повторно.
-        """
-        try:
-            stub = FileModel.create_stub(
-                filename=ctx.file.filename,
-                file_info=ctx.file_info,
-                form_id=ctx.form_id,
-                error_message=err_msg,
+        if not ctx.file_model or not getattr(ctx.file_model, "file_id", None):
+            logger.error(
+                "Critical error for '%s', but file record was not acquired; failed state in DB was not persisted",
+                getattr(ctx.file, "filename", None),
             )
-            await self.data_save_service.save_file(stub)
-            logger.info("Stub запись сохранена для файла %s", ctx.file.filename)
-        except Exception:
-            logger.exception("Не удалось сохранить stub запись файла %s", ctx.file.filename)
+            return
+
+        try:
+            await self.data_save_service.rollback(ctx.file_model, ctx.error)
+            logger.info("Rollback completed for file %s", ctx.file_model.file_id)
+        except Exception as rollback_err:
+            logger.error(
+                "Rollback error for file %s: %s",
+                ctx.file_model.file_id,
+                rollback_err,
+            )
 
 
 def build_default_pipeline(
-        file_service,
-        data_save_service,
+    file_service,
+    data_save_service,
 ) -> UploadPipelineRunner:
-    """
-    Собирает pipeline с шагами по умолчанию.
-    Шаги делегируют агрегатам: file, form, sheet.
-    """
+    """Build default upload pipeline."""
     steps: List[UploadPipelineStep] = [
+        AcquireFileRecordStep(file_service),
         ReadFileContentStep(),
         ExtractMetadataStep(file_service),
-        CheckUniquenessStep(file_service),
-        CreateFileModelStep(),
+        SyncFileMetadataStep(),
         ProcessSheetsStep(),
         EnrichFlatDataStep(),
         PersistStep(data_save_service),

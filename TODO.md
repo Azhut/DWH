@@ -58,7 +58,7 @@
 * [ ] странная ошибка {AttributeError}AttributeError("'UploadPipelineContext' object has no attribute 'extracted_data'")
   
 * [ ] в снепшоте есть странная штука с количество заголвоков на каждом листе. Надо бы проверить
-  
+* [ ] два раза читается файл, точно ли это нормально? два шага для этого создаются ReadFileContentStep и ProcessSheetsStep  
 
 * * *
 

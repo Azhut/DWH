@@ -5,7 +5,7 @@ from app.api.v2.schemas.files import FileResponse
 from app.application.upload.pipeline import UploadPipelineContext, UploadPipelineRunner
 from app.domain.file.models import FileStatus
 from app.domain.form.models import FormInfo
-from app.core.exceptions import CriticalUploadError, log_app_error
+from app.core.exceptions import CriticalUploadError, log_app_error, DuplicateFileError
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,13 @@ class FileProcessor:
                 )
 
             return response
-
+        except DuplicateFileError as e:  # ← Явная обработка
+            log_app_error(e)
+            return FileResponse(
+                filename=file.filename,
+                status=FileStatus.FAILED,
+                error=e.message,
+            )
         except Exception as e:
             error = CriticalUploadError(
                 message=f"Внутренняя ошибка обработки файла: {str(e)}",
