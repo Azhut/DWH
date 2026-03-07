@@ -111,3 +111,29 @@ async def test_retries_reuse_existing_failed_file_id() -> None:
     assert ctx.file_model.error is None
 
     file_service.update_or_create.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_same_filename_other_form_creates_new_record() -> None:
+    file_service = AsyncMock()
+    file_service.get_by_filename_and_status.return_value = None
+    file_service.get_by_filename.return_value = None
+    file_service.update_or_create = AsyncMock()
+
+    data_save_service = AsyncMock()
+    data_save_service.rollback = AsyncMock()
+
+    pipeline = UploadPipelineRunner(
+        steps=[AcquireFileRecordStep(file_service)],
+        data_save_service=data_save_service,
+    )
+
+    upload_file = UploadFile(filename="TEST 2025.xlsx", file=BytesIO(b"123"), size=3)
+    ctx = UploadPipelineContext(file=upload_file, form_id="form-2", form_info=None)
+
+    await pipeline.run_for_file(ctx)
+
+    assert ctx.failed is False
+    assert ctx.file_model is not None
+    assert ctx.file_model.form_id == "form-2"
+    file_service.update_or_create.assert_awaited_once()

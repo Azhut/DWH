@@ -77,13 +77,14 @@ class FlatDataService:
                 )
                 total_inserted += len(chunk)
             except Exception as e:
-                logger.exception("FlatDataService: ошибка bulk_write для чанка %d..%d: %s", i, i + len(chunk) - 1, e)
+                #TODO временно заменил логи на DEBUG, должно быть exception
+                logger.debug("FlatDataService: ошибка bulk_write для чанка %d..%d: %s", i, i + len(chunk) - 1, e)
                 for j, doc in enumerate(chunk):
                     try:
                         await self._repo.insert_one(doc)
                         total_inserted += 1
                     except Exception as e2:
-                        logger.exception("FlatDataService: не удалось вставить документ %d: %s", j, e2)
+                        logger.debug("FlatDataService: не удалось вставить документ %d: %s", j, e2)
 
         if file_ids:
             for fid in file_ids:

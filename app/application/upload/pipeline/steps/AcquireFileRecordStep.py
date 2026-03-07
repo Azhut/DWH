@@ -31,6 +31,7 @@ class AcquireFileRecordStep:
             existing_success = await self._file_service.get_by_filename_and_status(
                 filename,
                 FileStatus.SUCCESS,
+                ctx.form_id,
             )
             if existing_success:
                 raise DuplicateFileError(
@@ -44,7 +45,7 @@ class AcquireFileRecordStep:
                     },
                 )
 
-            file_model = await self._file_service.get_by_filename(filename)
+            file_model = await self._file_service.get_by_filename(filename, ctx.form_id)
             if not file_model:
                 file_model = FileModel.create_processing(
                     filename=filename,
@@ -58,7 +59,12 @@ class AcquireFileRecordStep:
 
             await self._file_service.update_or_create(file_model)
             ctx.file_model = file_model
-            logger.debug("Acquired file record file_id=%s for %s", file_model.file_id, filename)
+            logger.debug(
+                "Acquired file record file_id=%s for filename=%s form_id=%s",
+                file_model.file_id,
+                filename,
+                ctx.form_id,
+            )
 
         except DuplicateFileError:
             raise

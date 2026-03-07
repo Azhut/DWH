@@ -1,5 +1,8 @@
-"""Управление индексами MongoDB для агрегатов данных (Files, FlatData)."""
-from app.core.database import mongo_connection  # Используем единый mongo_connection
+﻿"""MongoDB index management for data aggregates (Files, FlatData)."""
+
+from pymongo.errors import OperationFailure
+
+from app.core.database import mongo_connection
 
 
 class MongoIndexManager:
@@ -7,9 +10,9 @@ class MongoIndexManager:
         self.db = db
 
     async def create_flat_data_index(self):
-        # Основной уникальный индекс
         await self.db.FlatData.create_index(
             [
+                ("file_id", 1),
                 ("year", 1),
                 ("reporter", 1),
                 ("section", 1),
@@ -21,14 +24,12 @@ class MongoIndexManager:
             background=True,
         )
 
-        # Индекс для часто используемых фильтров
         await self.db.FlatData.create_index(
             [("reporter", 1), ("year", 1)],
             name="reporter_year_idx",
             background=True,
         )
 
-        # Текстовый индекс для поиска по колонкам
         await self.db.FlatData.create_index(
             [("column", "text"), ("row", "text")],
             name="text_search_idx",
@@ -36,18 +37,36 @@ class MongoIndexManager:
         )
 
     async def create_file_indexes(self):
-        await self.db.Files.create_index("file_id", unique=True)
-        await self.db.Files.create_index("filename", unique=True)
+        await self.db.Files.create_index(
+            [("file_id", 1)],
+            unique=True,
+            name="uniq_file_id",
+            background=True,
+        )
+
+        # Upload uniqueness is scoped by form.
+        try:
+            await self.db.Files.create_index(
+                [("filename", 1), ("form_id", 1)],
+                unique=True,
+                name="uniq_filename_form_id",
+                background=True,
+            )
+        except OperationFailure as exc:
+            raise RuntimeError(
+                "Cannot create unique index uniq_filename_form_id because duplicate "
+                "(filename, form_id) pairs already exist in Files. "
+                "Clean duplicates first, then restart the app."
+            ) from exc
+
 
     async def create_all_indexes(self):
         await self.create_flat_data_index()
+        await self.create_file_indexes()
 
 
 async def create_indexes():
-    """
-    Фабричный метод для создания всех индексов через MongoIndexManager.
-    """
+    """Factory method to create all indexes via MongoIndexManager."""
     db = mongo_connection.get_database()
     index_manager = MongoIndexManager(db)
-    await index_manager.create_flat_data_index()
-
+    await index_manager.create_all_indexes()
