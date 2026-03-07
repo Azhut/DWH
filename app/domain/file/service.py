@@ -108,7 +108,7 @@ class FileService:
 
     async def is_filename_unique(self, filename: str) -> bool:
         """Проверяет, что файл с таким именем ещё не загружался."""
-        doc = await self._repo.find_by_filename(filename)
+        doc = await self._repo.find_by_filename_and_status(filename, FileStatus.SUCCESS)
         return doc is None
 
     async def delete_by_file_id(self, file_id: str) -> int:
