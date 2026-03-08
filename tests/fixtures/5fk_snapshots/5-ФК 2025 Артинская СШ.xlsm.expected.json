@@ -1,0 +1,140 @@
+{
+  "meta": {
+    "generated_at": "2026-03-08T22:02:32.904760",
+    "file_name": "5-ФК 2025 Артинская СШ.xlsm",
+    "form_id": "3b5ca99e-cdc7-4590-b4d7-b9d6d95ebc69",
+    "description": "Golden snapshot generated from upload pipeline output. Verified against API-equivalent persist payload."
+  },
+  "stats": {
+    "year": 2025,
+    "reporter": "5-ФК",
+    "total_flat_records": 69469,
+    "total_sheets": 11,
+    "by_section": {
+      "Раздел 1": 77,
+      "Раздел 2": 7222,
+      "Раздел 3": 9734,
+      "Раздел 4": 7850,
+      "Раздел 5": 4396,
+      "Раздел 6": 11618,
+      "Раздел 7": 17898,
+      "Раздел 8": 9420,
+      "Раздел 9": 192,
+      "Раздел 10": 880,
+      "Раздел 11": 182
+    }
+  },
+  "sheets": [
+    {
+      "name": "Раздел 1",
+      "flat_records_count": 77,
+      "headers_count": {
+        "horizontal": 7,
+        "vertical": 11
+      },
+      "first_horizontal": "№ строки",
+      "first_vertical": "Организации в ведении органов управления в сфере физической культуры и спорта"
+    },
+    {
+      "name": "Раздел 2",
+      "flat_records_count": 7222,
+      "headers_count": {
+        "horizontal": 23,
+        "vertical": 314
+      },
+      "first_horizontal": "№ строки",
+      "first_vertical": "Авиамодельный спорт"
+    },
+    {
+      "name": "Раздел 3",
+      "flat_records_count": 9734,
+      "headers_count": {
+        "horizontal": 31,
+        "vertical": 314
+      },
+      "first_horizontal": "№ строки",
+      "first_vertical": "Авиамодельный спорт"
+    },
+    {
+      "name": "Раздел 4",
+      "flat_records_count": 7850,
+      "headers_count": {
+        "horizontal": 25,
+        "vertical": 314
+      },
+      "first_horizontal": "№ строки",
+      "first_vertical": "Авиамодельный спорт"
+    },
+    {
+      "name": "Раздел 5",
+      "flat_records_count": 4396,
+      "headers_count": {
+        "horizontal": 14,
+        "vertical": 314
+      },
+      "first_horizontal": "№ строки",
+      "first_vertical": "Авиамодельный спорт"
+    },
+    {
+      "name": "Раздел 6",
+      "flat_records_count": 11618,
+      "headers_count": {
+        "horizontal": 37,
+        "vertical": 314
+      },
+      "first_horizontal": "№ строки",
+      "first_vertical": "Авиамодельный спорт"
+    },
+    {
+      "name": "Раздел 7",
+      "flat_records_count": 17898,
+      "headers_count": {
+        "horizontal": 57,
+        "vertical": 314
+      },
+      "first_horizontal": "№ строки",
+      "first_vertical": "Авиамодельный спорт"
+    },
+    {
+      "name": "Раздел 8",
+      "flat_records_count": 9420,
+      "headers_count": {
+        "horizontal": 30,
+        "vertical": 314
+      },
+      "first_horizontal": "№ строки",
+      "first_vertical": "Авиамодельный спорт"
+    },
+    {
+      "name": "Раздел 9",
+      "flat_records_count": 192,
+      "headers_count": {
+        "horizontal": 16,
+        "vertical": 12
+      },
+      "first_horizontal": "№ строки",
+      "first_vertical": "Директор (руководитель)"
+    },
+    {
+      "name": "Раздел 10",
+      "flat_records_count": 880,
+      "headers_count": {
+        "horizontal": 20,
+        "vertical": 44
+      },
+      "first_horizontal": "№ стро-ки",
+      "first_vertical": "Стадионы с трибунами – всего"
+    },
+    {
+      "name": "Раздел 11",
+      "flat_records_count": 182,
+      "headers_count": {
+        "horizontal": 7,
+        "vertical": 26
+      },
+      "first_horizontal": "№ строки",
+      "first_vertical": "Итого расходов"
+    }
+  ],
+  "checkpoints": []
+}

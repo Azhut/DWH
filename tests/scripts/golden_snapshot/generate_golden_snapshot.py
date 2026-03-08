@@ -36,11 +36,11 @@ from tests.scripts.golden_snapshot.table_builder import (
 )
 
 
-DEFAULT_FORM_ID = "eab639f7-78c4-4e08-bd27-756bac5cf571"
-DEFAULT_FORM_NAME = "1ФК"
-DEFAULT_FIXTURE = Path("tests/fixtures/1fk/АЛАПАЕВСК 2020.xls")
+DEFAULT_FORM_ID = "3b5ca99e-cdc7-4590-b4d7-b9d6d95ebc69"
+DEFAULT_FORM_NAME = "5ФК"
+DEFAULT_FIXTURE = Path("tests/fixtures/5fk/5-ФК 2025 Артинская СШ.xlsm")
 DEFAULT_REPORT_OUTPUT = Path("tests/scripts/golden_snapshot/visual_report.xlsx")
-DEFAULT_SNAPSHOT_OUTPUT = Path("tests/fixtures/1fk_snapshots/АЛАПАЕВСК 2020.expected.json")
+DEFAULT_SNAPSHOT_OUTPUT = Path("tests/fixtures/5fk_snapshots/5-ФК 2025 Артинская СШ.xlsm.expected.json")
 
 
 def _resolve_path(path_value: str | Path) -> Path:
