@@ -1,9 +1,9 @@
 {
   "meta": {
-    "generated_at": "2026-03-07T02:23:45.036623",
+    "generated_at": "2026-03-08T12:40:53.578826",
     "file_name": "АЛАПАЕВСК 2020.xls",
     "form_id": "eab639f7-78c4-4e08-bd27-756bac5cf571",
-    "description": "Golden Master. Статистика из ctx.flat_data (как в БД)."
+    "description": "Golden snapshot generated from upload pipeline output. Verified against API-equivalent persist payload."
   },
   "stats": {
     "year": 2020,

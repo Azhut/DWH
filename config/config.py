@@ -10,8 +10,6 @@ class Settings(BaseSettings):
     API_PORT: int
     DEBUG: bool
 
-    # Сделать путь абсолютным относительно корня проекта, чтобы
-    # при запуске из тестов не создавался tests/.../app/utils/...
     MANUAL_MAP_PATH: Path = Path(__file__).resolve().parent.parent / "app" / "utils" / "manual_map.json"
 
     model_config = SettingsConfigDict(
