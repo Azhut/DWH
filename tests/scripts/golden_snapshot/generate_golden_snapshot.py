@@ -38,9 +38,9 @@ from tests.scripts.golden_snapshot.table_builder import (
 
 DEFAULT_FORM_ID = "3b5ca99e-cdc7-4590-b4d7-b9d6d95ebc69"
 DEFAULT_FORM_NAME = "5ФК"
-DEFAULT_FIXTURE = Path("tests/fixtures/5fk/5-ФК 2025 Артинская СШ.xlsm")
+DEFAULT_FIXTURE = Path("tests/fixtures/5fk/7. 5-ФК 2024 СШОР Аист_гос.xlsm")
 DEFAULT_REPORT_OUTPUT = Path("tests/scripts/golden_snapshot/visual_report.xlsx")
-DEFAULT_SNAPSHOT_OUTPUT = Path("tests/fixtures/5fk_snapshots/5-ФК 2025 Артинская СШ.xlsm.expected.json")
+DEFAULT_SNAPSHOT_OUTPUT = Path("tests/fixtures/5fk_snapshots/7. 5-ФК 2024 СШОР Аист_гос.xlsm.expected.json")
 
 
 def _resolve_path(path_value: str | Path) -> Path:
