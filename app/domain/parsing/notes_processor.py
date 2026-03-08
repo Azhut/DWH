@@ -73,8 +73,10 @@ class NotesProcessor:
                             else:
                                 if e != row_label:
                                     unit = e
-                        if not row_label or value is None:
-                            break
+                        if not row_label:
+                            continue
+                        if value is None:
+                            value = float(0)
                         row_label = f"{row_label} ({unit})" if unit else row_label
                         row_dict = {col_name: _SERVICE_EMPTY for col_name in body_df.columns}
                         row_dict[first_col] = row_label

@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-03-08T12:40:53.578826",
+    "generated_at": "2026-03-09T00:26:41.714758",
     "file_name": "АЛАПАЕВСК 2020.xls",
     "form_id": "eab639f7-78c4-4e08-bd27-756bac5cf571",
     "description": "Golden snapshot generated from upload pipeline output. Verified against API-equivalent persist payload."
@@ -8,13 +8,13 @@
   "stats": {
     "year": 2020,
     "reporter": "АЛАПАЕВСК",
-    "total_flat_records": 4166,
+    "total_flat_records": 4170,
     "total_sheets": 7,
     "by_section": {
       "Раздел1": 180,
       "Раздел2": 322,
       "Раздел3": 468,
-      "Раздел4": 68,
+      "Раздел4": 72,
       "Раздел5": 2952,
       "Раздел6": 152,
       "Раздел7": 24
@@ -53,10 +53,10 @@
     },
     {
       "name": "Раздел4",
-      "flat_records_count": 68,
+      "flat_records_count": 72,
       "headers_count": {
         "horizontal": 9,
-        "vertical": 10
+        "vertical": 12
       },
       "first_horizontal": "N строки",
       "first_vertical": "Расходы – всего (сумма строк 74-80)"

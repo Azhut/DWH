@@ -19,4 +19,4 @@ class FinalizeFileModelStep:
         ctx.file_model.sheets = [
             sheet.sheet_name or sheet.sheet_fullname for sheet in ctx.sheets
         ]
-        ctx.file_model.size = len(ctx.flat_data)
+        ctx.file_model.flat_data_size = len(ctx.flat_data)

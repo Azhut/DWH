@@ -57,7 +57,7 @@ class AcquireFileRecordStep:
             file_model.status = FileStatus.PROCESSING
             file_model.error = None
             file_model.sheets = []
-            file_model.size = 0
+            file_model.flat_data_size = 0
             file_model.updated_at = datetime.now()
 
             await self._file_service.update_or_create(file_model)

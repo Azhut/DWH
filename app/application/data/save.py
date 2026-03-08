@@ -46,7 +46,7 @@ class DataSaveService:
                 )
 
             file_model.status = FileStatus.SUCCESS
-            file_model.size = inserted_total if inserted_total else file_model.size
+            file_model.flat_data_size = inserted_total if inserted_total else file_model.flat_data_size
 
             await self._file_service.update_or_create(file_model)
             await self._log_service.save_log(

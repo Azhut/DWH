@@ -35,7 +35,7 @@ class FileModel(BaseModel):
     error: Optional[str] = None
     upload_timestamp: datetime = Field(default_factory=datetime.now)
     sheets: List[str] = []
-    size: int = 0
+    flat_data_size: int = 0
     updated_at: datetime = Field(default_factory=datetime.now)
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
