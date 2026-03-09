@@ -7,6 +7,7 @@ from app.domain.file.service import FileService
 from app.domain.flat_data.service import FlatDataService
 from app.domain.form.models import FormType, detect_form_type
 from app.domain.form.service import FormService
+from app.domain.log.service import LogService
 
 
 class FormDeletionForbiddenError(Exception):
@@ -34,10 +35,12 @@ class FormMaintenanceService:
         form_service: FormService,
         file_service: FileService,
         flat_data_service: FlatDataService,
+        log_service: LogService,
     ) -> None:
         self._form_service = form_service
         self._file_service = file_service
         self._flat_data_service = flat_data_service
+        self._log_service = log_service
 
     async def ensure_system_forms_exist(self) -> None:
         for spec in SYSTEM_FORMS:
@@ -57,7 +60,24 @@ class FormMaintenanceService:
                 form_id=form_id,
             )
 
-        await self._flat_data_service.delete_by_form_id(form_id)
-        await self._file_service.delete_by_form_id(form_id)
-        return await self._form_service.delete_form(form_id)
+        files_deleted = await self._file_service.delete_by_form_id(form_id)
+        flat_deleted = await self._flat_data_service.delete_by_form_id(form_id)
+        result = await self._form_service.delete_form(form_id)
+
+        if result:
+            await self._log_service.save_log(
+                scenario="deletion",
+                message=f"Удалена форма {form_id}",
+                level="info",
+                meta={
+                    "deleted_type": "form",
+                    "deleted_id": form_id,
+                    "cascade": {
+                        "files_deleted": files_deleted,
+                        "flat_deleted": flat_deleted,
+                    },
+                },
+            )
+
+        return result
 

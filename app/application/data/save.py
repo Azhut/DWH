@@ -34,15 +34,22 @@ class DataSaveService:
     ) -> None:
         try:
             await self._file_service.update_or_create(file_model)
-            await self._log_service.save_log(f"Start processing file {file_model.file_id}")
+            # Upload-сценарий: подробно логируем ошибки только через Files; в Logs пишем только технические шаги/ошибки.
+            await self._log_service.save_log(
+                scenario="upload",
+                message=f"Start processing file {file_model.file_id}",
+                meta={"file_id": file_model.file_id},
+            )
 
             inserted_total = 0
             if flat_data:
                 inserted_total = await self._flat_data_service.save_flat_data(flat_data)
             else:
                 await self._log_service.save_log(
-                    f"FlatData is empty for {file_model.file_id}",
+                    scenario="upload",
+                    message=f"FlatData is empty for {file_model.file_id}",
                     level="warning",
+                    meta={"file_id": file_model.file_id},
                 )
 
             file_model.status = FileStatus.SUCCESS
@@ -50,7 +57,9 @@ class DataSaveService:
 
             await self._file_service.update_or_create(file_model)
             await self._log_service.save_log(
-                f"Data saved successfully for {file_model.file_id}; flat_inserted={inserted_total}",
+                scenario="upload",
+                message=f"Data saved successfully for {file_model.file_id}; flat_inserted={inserted_total}",
+                meta={"file_id": file_model.file_id, "flat_inserted": inserted_total},
             )
             logger.info(
                 "DataSaveService completed for %s; flat_inserted=%s",
@@ -72,8 +81,10 @@ class DataSaveService:
             await self._flat_data_service.delete_by_file_id(file_model.file_id)
         except Exception as exc:
             await self._log_service.save_log(
-                f"Failed to delete FlatData during rollback for {file_model.file_id}: {exc}",
+                scenario="upload",
+                message=f"Failed to delete FlatData during rollback for {file_model.file_id}: {exc}",
                 level="error",
+                meta={"file_id": file_model.file_id, "error": str(exc)},
             )
 
         file_model.status = FileStatus.FAILED
@@ -83,17 +94,29 @@ class DataSaveService:
             await self._file_service.update_or_create(file_model)
         except Exception as exc:
             await self._log_service.save_log(
-                f"Failed to update Files during rollback for {file_model.file_id}: {exc}",
+                scenario="upload",
+                message=f"Failed to update Files during rollback for {file_model.file_id}: {exc}",
                 level="error",
+                meta={"file_id": file_model.file_id, "error": str(exc)},
             )
 
-        await self._log_service.save_log(f"Rollback file {file_model.file_id}: {error}", level="error")
+        await self._log_service.save_log(
+            scenario="upload",
+            message=f"Rollback file {file_model.file_id}: {error}",
+            level="error",
+            meta={"file_id": file_model.file_id, "error": error},
+        )
 
     async def save_file(self, file_model: FileModel) -> None:
         """Persist only file record (stub fallback scenario)."""
         try:
             await self._file_service.update_or_create(file_model)
-            await self._log_service.save_log(f"Saved stub file {file_model.file_id}", level="warning")
+            await self._log_service.save_log(
+                scenario="upload",
+                message=f"Saved stub file {file_model.file_id}",
+                level="warning",
+                meta={"file_id": file_model.file_id},
+            )
         except Exception as exc:
             logger.exception("Failed to save stub file %s: %s", file_model.file_id, exc)
             raise

@@ -103,6 +103,7 @@ def get_form_maintenance_service() -> FormMaintenanceService:
         form_service=get_form_service(),
         file_service=get_file_service(),
         flat_data_service=get_flat_data_service(),
+        log_service=get_log_service(),
     )
 
 

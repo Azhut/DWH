@@ -25,26 +25,51 @@ class DataDeleteService:
             raise HTTPException(404, f"Файл '{file_id}' не найден")
 
         try:
-            await self._flat_data_service.delete_by_file_id(file_id)
+            flat_deleted = await self._flat_data_service.delete_by_file_id(file_id)
         except Exception as e:
             await self._log_service.save_log(
-                f"Ошибка при удалении FlatData для {file_id}: {e}",
+                scenario="deletion",
+                message=f"Ошибка при удалении FlatData для {file_id}: {e}",
                 level="error",
+                meta={
+                    "deleted_type": "file",
+                    "deleted_id": file_id,
+                    "cascade": {"files_deleted": 0, "flat_deleted": None},
+                    "error": str(e),
+                },
             )
             raise HTTPException(500, f"Ошибка при удалении связанных данных: {str(e)}")
 
         try:
-            deleted = await self._file_service.delete_by_file_id(file_id)
-            if deleted == 0:
+            files_deleted = await self._file_service.delete_by_file_id(file_id)
+            if files_deleted == 0:
                 raise HTTPException(404, f"Файл '{file_id}' не найден при финальном удалении")
         except HTTPException:
             raise
         except Exception as e:
             await self._log_service.save_log(
-                f"Ошибка при удалении записи Files для {file_id}: {e}",
+                scenario="deletion",
+                message=f"Ошибка при удалении записи Files для {file_id}: {e}",
                 level="error",
+                meta={
+                    "deleted_type": "file",
+                    "deleted_id": file_id,
+                    "cascade": {"files_deleted": None, "flat_deleted": flat_deleted},
+                    "error": str(e),
+                },
             )
             raise HTTPException(500, f"Ошибка при удалении записи файла: {str(e)}")
 
-        await self._log_service.save_log(f"Удалён файл {file_id}", level="info")
-
+        await self._log_service.save_log(
+            scenario="deletion",
+            message=f"Удалён файл {file_id}",
+            level="info",
+            meta={
+                "deleted_type": "file",
+                "deleted_id": file_id,
+                "cascade": {
+                    "files_deleted": files_deleted,
+                    "flat_deleted": flat_deleted,
+                },
+            },
+        )

@@ -98,6 +98,16 @@ class FileService:
         query = {} if year is None else {"year": year}
         return await self._repo.find(query=query, limit=limit, skip=offset)
 
+    async def list_files_by_status(
+        self,
+        status: FileStatus,
+        limit: int = 1000,
+    ) -> List[dict]:
+        return await self._repo.find(
+            query={"status": status.value if isinstance(status, FileStatus) else status},
+            limit=limit,
+        )
+
     async def list_files_by_form_id(self, form_id: str) -> List[dict]:
         return await self._repo.list_by_form_id(form_id)
 
