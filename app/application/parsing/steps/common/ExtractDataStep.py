@@ -46,7 +46,7 @@ class ExtractDataStep(BaseParsingStep):
                 },
             )
 
-        df = ctx.processed_dataframe if ctx.processed_dataframe is not None else ctx.raw_dataframe
+        df = ctx.processed_dataframe
         headers = ParsedHeaders(
             horizontal=ctx.sheet_model.horizontal_headers,
             vertical=ctx.sheet_model.vertical_headers,

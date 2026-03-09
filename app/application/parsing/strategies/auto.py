@@ -71,7 +71,7 @@ class AutoFormParsingStrategy(BaseFormParsingStrategy):
         deduplicate_columns: bool = form_info.requisites.get("deduplicate_columns", False)
 
         return [
-            DetectTableStructureStep(auto_detect=True),  # normalize_fn=None -> as-is
+            DetectTableStructureStep(),  # авто-детекция по умолчанию, normalize_fn=None -> as-is
             ParseHeadersStep(),
             ExtractDataStep(deduplicate_columns=deduplicate_columns),
             GenerateFlatDataStep(),

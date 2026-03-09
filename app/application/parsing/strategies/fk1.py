@@ -4,6 +4,7 @@ import logging
 from dataclasses import dataclass
 
 from app.domain.form.models import FormInfo
+from app.domain.parsing import FixedStructureStrategy
 from app.application.parsing.strategies.base import BaseFormParsingStrategy, normalize_sheet_name
 from app.application.parsing.steps.base import ParsingPipelineStep
 from app.core.exceptions import CriticalParsingError
@@ -112,9 +113,12 @@ class FK1FormParsingStrategy(BaseFormParsingStrategy):
 
         steps: list[ParsingPipelineStep] = [
             DetectTableStructureStep(
-                fixed_header_range=config.header_row_range,
-                fixed_vertical_col=config.vertical_header_col,
-                fixed_data_start_row=config.data_start_row,
+                strategy=FixedStructureStrategy(
+                    header_start_row=config.header_row_range[0],
+                    header_end_row=config.header_row_range[1],
+                    data_start_row=config.data_start_row,
+                    vertical_header_column=config.vertical_header_col,
+                ),
                 normalize_fn=normalize_sheet_name,  # стратегия передаёт свою логику
             ),
         ]
