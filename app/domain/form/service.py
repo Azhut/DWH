@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from uuid import uuid4
 from datetime import datetime
 
-from app.core.exceptions import  FormValidationError
+from app.core.exceptions import FormValidationError
 from app.domain.form.models import FormInfo
 from app.domain.form.repository import FormRepository
 
@@ -69,34 +69,64 @@ class FormService:
     async def create_form(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         new_id = str(uuid4())
         requisites = payload.get("requisites") or {}
-        skip_sheets = requisites.get("skip_sheets", payload.get("skip_sheets") or [])
+        if not isinstance(requisites, dict):
+            requisites = {}
+
+        skip_sheets = requisites.get("skip_sheets", payload.get("skip_sheets"))
+        if skip_sheets is None:
+            skip_sheets = []
+        if not isinstance(skip_sheets, list):
+            skip_sheets = list(skip_sheets) if skip_sheets else []
+
         doc = {
             "id": new_id,
             "name": payload.get("name"),
             "requisites": {**requisites, "skip_sheets": skip_sheets},
-            "skip_sheets": skip_sheets,
             "created_at": datetime.utcnow().isoformat() + "Z",
         }
         return await self._repo.create_form(doc)
+
+    async def ensure_form_by_name(self, *, name: str, default_requisites: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Гарантирует, что форма с таким именем существует.
+        Если форма уже есть — дозаполняет requisites дефолтами.
+        """
+        existing = await self._repo.get_form_by_name_ci(name)
+        if not existing:
+            return await self.create_form({"name": name, "requisites": default_requisites})
+
+        requisites = existing.get("requisites") or {}
+        if not isinstance(requisites, dict):
+            requisites = {}
+
+        merged = {**(default_requisites or {}), **requisites}
+        updated = await self._repo.update_form(existing["id"], {"$set": {"requisites": merged}})
+        return updated or existing
 
     async def update_form(
         self,
         form_id: str,
         payload: Dict[str, Any],
     ) -> Optional[Dict[str, Any]]:
-        update_doc = {}
+        update_doc: Dict[str, Any] = {}
         if "name" in payload and payload.get("name") is not None:
             update_doc["name"] = payload["name"]
         requisites = payload.get("requisites")
         if requisites is not None:
-            update_doc["requisites"] = requisites if isinstance(requisites, dict) else {}
-            if "skip_sheets" in requisites:
-                update_doc["skip_sheets"] = requisites["skip_sheets"]
-        if "skip_sheets" in payload and "skip_sheets" not in update_doc:
-            update_doc["skip_sheets"] = payload.get("skip_sheets") or []
+            requisites = requisites if isinstance(requisites, dict) else {}
+
+            skip_sheets = requisites.get("skip_sheets")
+            if skip_sheets is not None:
+                if not isinstance(skip_sheets, list):
+                    skip_sheets = list(skip_sheets) if skip_sheets else []
+                requisites = {**requisites, "skip_sheets": skip_sheets}
+
+            update_doc["requisites"] = requisites
+
         if not update_doc:
-            return await self.get_form(form_id)
-        return await self._repo.update_form(form_id, update_doc)
+            return await self._repo.get_form(form_id)
+
+        return await self._repo.update_form(form_id, {"$set": update_doc})
 
     async def delete_form(self, form_id: str) -> bool:
         return await self._repo.delete_form(form_id)

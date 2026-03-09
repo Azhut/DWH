@@ -9,7 +9,9 @@ from app.api.v2.schemas.forms import (
     UpdateFormResponse,
     DeleteFormResponse,
 )
-from app.core.dependencies import get_form_service
+from app.core.dependencies import get_form_maintenance_service, get_form_service
+from app.application.forms.maintenance import FormDeletionForbiddenError
+from app.application.forms.maintenance import FormMaintenanceService
 from app.domain.form.service import FormService
 
 router = APIRouter()
@@ -56,8 +58,15 @@ async def update_form(
 
 
 @router.delete("/forms/{form_id}", response_model=DeleteFormResponse)
-async def delete_form(form_id: str, form_service: FormService = Depends(get_form_service)):
-    deleted = await form_service.delete_form(form_id)
+async def delete_form(
+    form_id: str,
+    forms_maintenance: FormMaintenanceService = Depends(get_form_maintenance_service),
+):
+    try:
+        deleted = await forms_maintenance.delete_form_with_related(form_id)
+    except FormDeletionForbiddenError as e:
+        raise HTTPException(409, e.message)
+
     if not deleted:
         raise HTTPException(404, "Form not found")
     return {"message": "Form deleted", "id": form_id}

@@ -1,4 +1,4 @@
-﻿import uvicorn
+import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
@@ -31,6 +31,8 @@ def create_app() -> FastAPI:
         await create_indexes()
         from app.application.parsing.registry import get_parsing_strategy_registry
         get_parsing_strategy_registry()
+        from app.core.dependencies import get_form_maintenance_service
+        await get_form_maintenance_service().ensure_system_forms_exist()
 
     app.include_router(upload_router, prefix="/api/v2", tags=["upload"])
     app.include_router(filters_router, prefix="/api/v2", tags=["filters"])

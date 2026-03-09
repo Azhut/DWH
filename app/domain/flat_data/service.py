@@ -97,6 +97,10 @@ class FlatDataService:
         res = await self._repo.delete_by_file_id(file_id)
         return getattr(res, "deleted_count", 0) or 0
 
+    async def delete_by_form_id(self, form_id: str) -> int:
+        res = await self._repo.delete_by_form(form_id)
+        return getattr(res, "deleted_count", 0) or 0
+
     def _map_filter_name(self, name: str) -> str:
         key = name.lower()
         if key not in FILTER_MAP:

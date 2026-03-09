@@ -14,6 +14,11 @@ from app.domain.form.models import FormInfo
 FILENAME = "TEST 2025.xlsx"
 FORM_ID = "form-1"
 
+def _banner(title: str) -> None:
+    print("\n" + "=" * 88)
+    print(f"TEST | {title}")
+    print("=" * 88)
+
 
 class FailingStep:
     def __init__(self, message: str) -> None:
@@ -126,6 +131,7 @@ def _print_step_result(
 
 @pytest.mark.asyncio
 async def test_upload_lifecycle_pipeline_full_flow_with_pretty_console_output() -> None:
+    _banner("upload lifecycle: record reuse, status transitions, duplicate rejection")
     file_service = InMemoryFileService()
     data_save_service = InMemoryDataSaveService(file_service)
 

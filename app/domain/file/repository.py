@@ -1,4 +1,4 @@
-﻿"""Repository for Files aggregate."""
+"""Repository for Files aggregate."""
 
 from typing import Any, Dict, Optional
 
@@ -30,3 +30,9 @@ class FileRepository(BaseRepository):
         if form_id is not None:
             query["form_id"] = form_id
         return await self.find_one(query)
+
+    async def list_by_form_id(self, form_id: str, *, projection: Optional[Dict[str, Any]] = None) -> list[Dict[str, Any]]:
+        return await self.find(query={"form_id": form_id}, projection=projection)
+
+    async def delete_by_form_id(self, form_id: str) -> Any:
+        return await self.delete_many({"form_id": form_id})

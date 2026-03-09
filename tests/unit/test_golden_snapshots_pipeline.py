@@ -1,4 +1,4 @@
-﻿import json
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -14,6 +14,17 @@ from tests.scripts.golden_snapshot.runtime import (
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+def _safe(obj) -> str:
+    if isinstance(obj, str):
+        return obj
+    return json.dumps(obj, ensure_ascii=True, default=str)
+
+
+def _banner(title: str) -> None:
+    print("\n" + "=" * 88)
+    print(f"TEST | {_safe(title)}")
+    print("=" * 88)
 
 
 @dataclass(frozen=True)
@@ -41,6 +52,10 @@ def _case_id(case: SnapshotCase) -> str:
 
 
 async def _run_case(case: SnapshotCase):
+    print(f"case.file      : {_safe(Path(case.fixture_path).name)}")
+    print(f"case.form_name : {_safe(case.form_name)}")
+    print(f"case.form_id   : {case.form_id}")
+    print(f"case.requisites: {_safe(case.requisites)}")
     fixture_path = PROJECT_ROOT / case.fixture_path
     ctx, capture = await run_upload_pipeline(
         file_path=fixture_path,
@@ -56,6 +71,7 @@ async def _run_case(case: SnapshotCase):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("case", SNAPSHOT_CASES, ids=_case_id)
 async def test_snapshot_matches_pipeline_output(case: SnapshotCase):
+    _banner("golden snapshot: pipeline output matches expected JSON snapshot")
     snapshot_path = PROJECT_ROOT / case.snapshot_path
     if not snapshot_path.exists():
         pytest.skip(
@@ -73,6 +89,11 @@ async def test_snapshot_matches_pipeline_output(case: SnapshotCase):
         description=expected.get("meta", {}).get("description", ""),
     )
 
+    print("result.stats.equal      :", actual["stats"] == expected["stats"])
+    print("result.sheets.equal     :", actual["sheets"] == expected["sheets"])
+    print("result.checkpoints.equal:", actual["checkpoints"] == expected["checkpoints"])
+    print("result.meta.file_name   :", _safe(actual["meta"]["file_name"]))
+    print("result.meta.form_id     :", actual["meta"]["form_id"])
     assert actual["stats"] == expected["stats"]
     assert actual["sheets"] == expected["sheets"]
     assert actual["checkpoints"] == expected["checkpoints"]
@@ -83,6 +104,7 @@ async def test_snapshot_matches_pipeline_output(case: SnapshotCase):
 @pytest.mark.asyncio
 @pytest.mark.parametrize("case", SNAPSHOT_CASES, ids=_case_id)
 async def test_pipeline_payload_is_api_equivalent(case: SnapshotCase):
+    _banner("golden snapshot: ctx.flat_data is API-equivalent to saved flat_data")
     ctx, capture = await _run_case(case)
 
     comparison = compare_record_sets(
@@ -91,6 +113,8 @@ async def test_pipeline_payload_is_api_equivalent(case: SnapshotCase):
         include_file_meta=True,
     )
 
+    print("comparison.equal:", comparison.get("equal"))
+    print("comparison.meta :", {k: v for k, v in comparison.items() if k != "diff"})
     assert comparison["equal"], json.dumps(
         comparison,
         ensure_ascii=False,

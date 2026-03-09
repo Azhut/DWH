@@ -18,6 +18,7 @@ from app.application.data import (
     DataRetrievalService,
     DataSaveService,
 )
+from app.application.forms import FormMaintenanceService
 from app.application.parsing.registry import get_parsing_strategy_registry
 
 @lru_cache
@@ -94,6 +95,15 @@ def get_data_delete_service() -> DataDeleteService:
 @lru_cache
 def get_data_retrieval_service() -> DataRetrievalService:
     return DataRetrievalService(get_flat_data_service())
+
+
+@lru_cache
+def get_form_maintenance_service() -> FormMaintenanceService:
+    return FormMaintenanceService(
+        form_service=get_form_service(),
+        file_service=get_file_service(),
+        flat_data_service=get_flat_data_service(),
+    )
 
 
 @lru_cache

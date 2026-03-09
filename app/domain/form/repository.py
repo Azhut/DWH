@@ -1,4 +1,5 @@
 """Репозиторий агрегата Form: работа с коллекцией Forms."""
+import re
 from typing import Any, Dict, List, Optional
 
 from motor.motor_asyncio import AsyncIOMotorCollection
@@ -24,6 +25,15 @@ class FormRepository:
         doc = await self.collection.find_one({"id": form_id})
         return self._strip_id(doc)
 
+    async def get_form_by_name_ci(self, name: str) -> Optional[Dict[str, Any]]:
+        """
+        Возвращает форму по имени (case-insensitive, точное совпадение).
+        Нужно для «системных» форм, которые должны существовать в БД.
+        """
+        pattern = f"^{re.escape(name)}$"
+        doc = await self.collection.find_one({"name": {"$regex": pattern, "$options": "i"}})
+        return self._strip_id(doc)
+
     async def create_form(self, form_doc: Dict[str, Any]) -> Dict[str, Any]:
         await self.collection.insert_one(form_doc)
         return self._strip_id(form_doc)
@@ -33,10 +43,14 @@ class FormRepository:
         form_id: str,
         update_doc: Dict[str, Any],
     ) -> Optional[Dict[str, Any]]:
-        result = await self.collection.update_one(
-            {"id": form_id},
-            {"$set": update_doc},
-        )
+        # Позволяем передавать как "сырой" Mongo update (с $set/$unset),
+        # так и плоский dict (который будет обёрнут в $set).
+        if any(k.startswith("$") for k in update_doc.keys()):
+            mongo_update = update_doc
+        else:
+            mongo_update = {"$set": update_doc}
+
+        result = await self.collection.update_one({"id": form_id}, mongo_update)
         if result.matched_count == 0:
             return None
         doc = await self.collection.find_one({"id": form_id})

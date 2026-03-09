@@ -98,12 +98,19 @@ class FileService:
         query = {} if year is None else {"year": year}
         return await self._repo.find(query=query, limit=limit, skip=offset)
 
+    async def list_files_by_form_id(self, form_id: str) -> List[dict]:
+        return await self._repo.list_by_form_id(form_id)
+
     async def is_filename_unique(self, filename: str, form_id: Optional[str] = None) -> bool:
         doc = await self._repo.find_by_filename_and_status(filename, FileStatus.SUCCESS, form_id)
         return doc is None
 
     async def delete_by_file_id(self, file_id: str) -> int:
         result = await self._repo.delete_one({"file_id": file_id})
+        return getattr(result, "deleted_count", 0) or 0
+
+    async def delete_by_form_id(self, form_id: str) -> int:
+        result = await self._repo.delete_by_form_id(form_id)
         return getattr(result, "deleted_count", 0) or 0
 
     async def get_by_filename(self, filename: str, form_id: Optional[str] = None) -> Optional[FileModel]:

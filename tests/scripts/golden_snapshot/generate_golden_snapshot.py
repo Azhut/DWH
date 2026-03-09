@@ -282,7 +282,7 @@ async def main_async() -> int:
 
     # IDE-friendly mode: run defaults when script is started without CLI args.
     if len(sys.argv) == 1:
-        args = parser.parse_args(["both", "--use-db-form"])
+        args = parser.parse_args(["visual", "--use-db-form"])
         print("INFO: no CLI args detected, running default IDE mode: both --use-db-form")
     else:
         args = parser.parse_args()
