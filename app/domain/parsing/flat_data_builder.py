@@ -1,4 +1,4 @@
-﻿"""
+"""
 Универсальная сборка FlatDataRecord из извлечённых данных листа.
 """
 import math
@@ -51,6 +51,9 @@ def build_flat_data_records(
                     continue
                 if isinstance(value, str) and value.strip() in ("", "nan", "none"):
                     continue
+            if value is None:
+                # Пустые значения в ячейках считаем нулём для flat_data.
+                value = 0
             if isinstance(value, float) and math.isnan(value):
                 value = 0
             if isinstance(value, float) and value == int(value):

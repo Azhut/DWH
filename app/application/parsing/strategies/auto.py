@@ -3,31 +3,26 @@ import logging
 import re
 
 from app.domain.form.models import FormInfo
-from app.application.parsing.strategies.base import BaseFormParsingStrategy
-from app.application.parsing.steps.base import ParsingPipelineStep
+from app.application.parsing.strategies.base import DefaultFormParsingStrategy
 
 logger = logging.getLogger(__name__)
 
 # Принимает: "Раздел0", "Раздел 1", "раздел2", "РАЗДЕЛ 3" и т.д.
-_VALID_SHEET_RE = re.compile(r'^\s*раздел\s*\d+\s*$', re.IGNORECASE)
+_VALID_SHEET_RE = re.compile(r"^\s*раздел\s*\d+\s*$", re.IGNORECASE)
 
 
-class AutoFormParsingStrategy(BaseFormParsingStrategy):
+class AutoFormParsingStrategy(DefaultFormParsingStrategy):
     """
     Стратегия для автоматических форм: 5ФК и любых форм, созданных пользователем
     через фронтенд.
 
-    Характеристики:
-    - Структура таблицы определяется автоматически (AutoDetectStructureStrategy).
-    - Один и тот же набор шагов для всех листов файла.
-    - Конфигурация читается из form_info.requisites — новый код не нужен.
-    - Является стратегией по умолчанию в реестре.
-    - Нормализация имён листов: не применяется (sheet_name = sheet_fullname as-is),
-      так как автоформы не имеют фиксированной схемы листов.
-
-    Реквизиты формы (form_info.requisites):
-    - skip_sheets: list[int] — индексы листов, которые нужно пропустить.
-    - deduplicate_columns: bool — дедупликация колонок при извлечении данных.
+    Базируется на DefaultFormParsingStrategy и использует общий pipeline:
+    1) NormalizeSheetNameStep (без нормализации имён для автоформ);
+    2) NormalizeDataFrameStep (по строке нумерации 1..n, критично для всех листов);
+    3) DetectTableStructureStep (автоматическая стратегия структуры);
+    4) ParseHeadersStep;
+    5) ExtractDataStep (с возможной дедупликацией колонок);
+    6) GenerateFlatDataStep.
     """
 
     def should_process_sheet(
@@ -51,28 +46,3 @@ class AutoFormParsingStrategy(BaseFormParsingStrategy):
 
         return True
 
-    def build_steps_for_sheet(
-        self,
-        sheet_name: str,
-        form_info: FormInfo,
-    ) -> list[ParsingPipelineStep]:
-        """
-        Стандартный набор шагов для автоматической формы.
-        Одинаков для всех листов.
-
-        normalize_fn не передаётся в DetectTableStructureStep —
-        для автоформ sheet_name = sheet_fullname (имена не нормализуются).
-        """
-        from app.application.parsing.steps.common.DetectTableStructureStep import DetectTableStructureStep
-        from app.application.parsing.steps.common.ParseHeadersStep import ParseHeadersStep
-        from app.application.parsing.steps.common.ExtractDataStep import ExtractDataStep
-        from app.application.parsing.steps.common.GenerateFlatDataStep import GenerateFlatDataStep
-
-        deduplicate_columns: bool = form_info.requisites.get("deduplicate_columns", False)
-
-        return [
-            DetectTableStructureStep(),  # авто-детекция по умолчанию, normalize_fn=None -> as-is
-            ParseHeadersStep(),
-            ExtractDataStep(deduplicate_columns=deduplicate_columns),
-            GenerateFlatDataStep(),
-        ]

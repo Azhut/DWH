@@ -80,60 +80,67 @@ def _to_positive_int(value: object) -> Optional[int]:
     return None
 
 
-def _find_1_to_n_run(row: pd.Series) -> Optional[Tuple[int, int, int]]:
+def _find_1_to_n_run(row: pd.Series, min_sequence_len: int) -> Optional[Tuple[int, int, int]]:
     """
-    Ищет в строке самый длинный подряд идущий прогон 1..n.
+    Ищет последовательность натуральных чисел 1..n.
 
-    Возвращает кортеж (start_col, end_col, n), где:
-    - start_col/end_col — границы прогона по индексам столбцов
-    - n — длина прогона (последнее ожидаемое число)
+    Правила:
+    - последовательность начинается с первой найденной 1
+    - далее строго 2,3,4...
+    - между числами последовательности мусора быть не может
+    - мусор может быть только до 1 и после окончания последовательности
     """
-    best_start = -1
-    best_end = -1
-    best_len = 0
 
-    run_start = -1
+    values = row.tolist()
+
+    start_col = None
+    end_col = None
     expected = 1
+    in_sequence = False
+    finished = False
 
-    for col_idx, raw_value in enumerate(row.tolist()):
-        parsed = _to_positive_int(raw_value)
+    for col_idx, v in enumerate(values):
+        parsed = _to_positive_int(v)
 
-        if parsed == expected:
-            if expected == 1:
-                run_start = col_idx
-            expected += 1
+        if not in_sequence:
+            if parsed == 1:
+                in_sequence = True
+                start_col = col_idx
+                end_col = col_idx
+                expected = 2
             continue
 
-        run_len = expected - 1
-        if run_len > best_len:
-            best_len = run_len
-            best_start = run_start
-            best_end = col_idx - 1
+        if not finished:
+            if parsed == expected:
+                end_col = col_idx
+                expected += 1
+                continue
 
-        if parsed == 1:
-            run_start = col_idx
-            expected = 2
-        else:
-            run_start = -1
-            expected = 1
+            if parsed is None:
+                finished = True
+                continue
 
-    tail_len = expected - 1
-    if tail_len > best_len:
-        best_len = tail_len
-        best_start = run_start
-        best_end = len(row) - 1
+            return None
 
-    if best_len <= 0 or best_start < 0 or best_end < best_start:
+        if finished:
+            if parsed is not None:
+                return None
+
+    if start_col is None:
         return None
 
-    return best_start, best_end, best_len
+    length = expected - 1
 
+    if length < min_sequence_len:
+        return None
+
+    return start_col, end_col, length
 
 def _find_numbering_row_and_bounds(
     df: pd.DataFrame,
     *,
     max_rows_to_check: int = 80,
-    min_sequence_len: int = 8,
+    min_sequence_len: int = 3,
 ) -> Optional[Tuple[int, int, int, int]]:
     """
     Находит строку нумерации столбцов и границы валидных столбцов.
@@ -150,7 +157,7 @@ def _find_numbering_row_and_bounds(
     best: Optional[Tuple[int, int, int, int]] = None
 
     for row_idx in range(search_rows):
-        run = _find_1_to_n_run(df.iloc[row_idx])
+        run = _find_1_to_n_run(df.iloc[row_idx], min_sequence_len)
         if run is None:
             continue
 
@@ -209,7 +216,7 @@ def auto_detect_table_layout(
     *,
     sheet_name: str = "",
     max_rows_to_check: int = 80,
-    min_sequence_len: int = 8,
+    min_sequence_len: int = 3,
 ) -> Optional[AutoDetectedTableLayout]:
     """
     Автоматически определяет структуру таблицы по строке нумерации столбцов.
@@ -306,20 +313,14 @@ class AutoDetectStructureStrategy(StructureDetectionStrategy):
 
     def detect(self, df: pd.DataFrame, sheet_name: str = "") -> TableStructure:
         layout = auto_detect_table_layout(df, sheet_name=sheet_name)
-        if layout is not None:
-            return layout.structure
+        if layout is None:
+            # Отсутствие строки нумерации для автоформы — это явная ошибка входных данных.
+            raise ValueError(
+                f"AutoDetectStructureStrategy: не удалось определить структуру листа '{sheet_name}': "
+                f"строка нумерации столбцов 1..n не найдена."
+            )
 
-        # Fallback: если строка нумерации не найдена — считаем, что заголовок в первых строках.
-        # Это "best-effort" поведение, чтобы не падать на нестандартных листах.
-        header_start_row = 0
-        header_end_row = min(2, max(0, len(df) - 1))
-        data_start_row = min(header_end_row + 1, len(df))
-        return TableStructure(
-            header_start_row=header_start_row,
-            header_end_row=header_end_row,
-            data_start_row=data_start_row,
-            vertical_header_column=0,
-        )
+        return layout.structure
 
 
 def detect_table_structure(

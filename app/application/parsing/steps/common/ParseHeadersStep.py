@@ -79,7 +79,15 @@ class ParseHeadersStep(BaseParsingStep):
                 meta={"sheet_name": ctx.sheet_name},
             )
 
-        df = ctx.processed_dataframe if ctx.processed_dataframe is not None else ctx.raw_dataframe
+        if ctx.processed_dataframe is None:
+            raise CriticalParsingError(
+                f"ParseHeadersStep: отсутствует подготовленный DataFrame для листа '{ctx.sheet_name}'. "
+                "NormalizeDataFrameStep должен выполняться до DetectTableStructureStep/ParseHeadersStep.",
+                domain="parsing.steps.parse_headers",
+                meta={"sheet_name": ctx.sheet_name},
+            )
+
+        df = ctx.processed_dataframe
 
         try:
             result = parse_headers(df, ctx.table_structure)

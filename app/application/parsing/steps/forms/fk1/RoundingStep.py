@@ -20,11 +20,22 @@ class FK1RoundingStep(RoundingStep):
     """
 
     async def execute(self, ctx: ParsingPipelineContext) -> None:
+        """
+        Применяет округление к рабочему DataFrame (processed_dataframe).
+
+        Ожидается, что к моменту вызова шага уже выполнена нормализация по строке
+        нумерации и определена структура таблицы.
+        """
         try:
-            ctx.raw_dataframe = RoundingService.round_dataframe(
+            df = ctx.processed_dataframe
+            if df is None:
+                raise ValueError("processed_dataframe is None в FK1RoundingStep")
+
+            rounded = RoundingService.round_dataframe(
                 ctx.sheet_name,
-                ctx.raw_dataframe,
+                df,
             )
+            ctx.processed_dataframe = rounded
             logger.debug(
                 "Округление применено для листа '%s' (1ФК)",
                 ctx.sheet_name,
