@@ -103,3 +103,18 @@ class FK1FormParsingStrategy(DefaultFormParsingStrategy):
 
         return True
 
+    def get_horizontal_header_strip_fk1_banner(
+        self,
+        sheet_name: str,
+        form_info: FormInfo,
+    ) -> bool:
+        """
+        Для 1ФК дополнительно снимаем ведущий сегмент с «ОКЕИ» (после общего снятия «Раздел»).
+
+        Выключить: ``horizontal_header_strip_fk1_banner``: false в requisites.
+        """
+        raw = (form_info.requisites or {}).get("horizontal_header_strip_fk1_banner")
+        if raw is False:
+            return False
+        return True
+

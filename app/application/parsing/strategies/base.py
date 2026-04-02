@@ -148,6 +148,47 @@ class DefaultFormParsingStrategy(BaseFormParsingStrategy):
         """
         return bool((form_info.requisites or {}).get("deduplicate_columns", False))
 
+    def get_horizontal_header_leading_levels_to_drop(
+        self,
+        sheet_name: str,
+        form_info: FormInfo,
+    ) -> int:
+        """
+        Сколько ведущих уровней (сегментов, разделённых PATH_SEPARATOR) отрезать
+        у каждого горизонтального заголовка после parse_headers.
+
+        Универсальные формы по умолчанию не отрезают ничего (0). Переопределяется
+        в стратегии 1ФК; при необходимости можно задать в requisites
+        ``horizontal_header_leading_levels_to_drop``.
+        """
+        raw = (form_info.requisites or {}).get("horizontal_header_leading_levels_to_drop")
+        if raw is None:
+            return 0
+        try:
+            return max(0, int(raw))
+        except (TypeError, ValueError):
+            return 0
+
+    def get_horizontal_header_strip_fk1_banner(
+        self,
+        sheet_name: str,
+        form_info: FormInfo,
+    ) -> bool:
+        """
+        Включить снятие ведущего сегмента с «ОКЕИ» (после общего снятия «Раздел»).
+
+        Сегмент с «раздел» снимается для **всех** форм в ParseHeadersStep; этот флаг — только ОКЕИ.
+        У автоформ по умолчанию выключено. Для 1ФК см. FK1FormParsingStrategy.
+        Принудительно: requisites ``horizontal_header_strip_fk1_banner``: true;
+        отключить на 1ФК: ``false``.
+        """
+        raw = (form_info.requisites or {}).get("horizontal_header_strip_fk1_banner")
+        if raw is False:
+            return False
+        if raw is True:
+            return True
+        return False
+
     # --- Реализация типового pipeline ---
 
     def build_steps_for_sheet(
@@ -176,6 +217,11 @@ class DefaultFormParsingStrategy(BaseFormParsingStrategy):
         normalize_fn = self.get_normalize_sheet_name_fn(sheet_name, form_info)
         extra_steps = self.get_additional_steps_before_headers(sheet_name, form_info)
         deduplicate_columns = self.get_deduplicate_columns(form_info)
+        header_leading_drop = self.get_horizontal_header_leading_levels_to_drop(
+            sheet_name,
+            form_info,
+        )
+        strip_fk1_banner = self.get_horizontal_header_strip_fk1_banner(sheet_name, form_info)
 
         steps: list["ParsingPipelineStep"] = [
             NormalizeSheetNameStep(normalize_fn=normalize_fn),
@@ -186,7 +232,10 @@ class DefaultFormParsingStrategy(BaseFormParsingStrategy):
         steps.extend(extra_steps)
         steps.extend(
             [
-                ParseHeadersStep(),
+                ParseHeadersStep(
+                    horizontal_header_leading_levels_to_drop=header_leading_drop,
+                    horizontal_header_strip_fk1_banner=strip_fk1_banner,
+                ),
                 ExtractDataStep(deduplicate_columns=deduplicate_columns),
                 GenerateFlatDataStep(),
             ]

@@ -18,11 +18,11 @@ class VerticalHierarchyHeuristicConfig:
     """
     Префиксы сравниваются с началом строки после lstrip пробелов, в lower-case.
 
-    primary_* — достаточно одного совпадения, чтобы считать строку «дочерней»
-    (плюс dash / пробельные эвристики).
+    primary_* / compound_* — префиксы «витков» иерархии: строка может углублять путь.
+    Несколько таких строк подряд (например «в том числе» внутри «в том числе») наращивают
+    глубину рекурсивно. Пробелы в начале и тире дополнительно сдвигают уровень.
 
-    compound_* — учитываются только вместе с первичным триггером на той же строке
-    (например «в том числе» + «- …»). Одна только «в том числе: …» не создаёт уровень.
+    По умолчанию лимита длины пути нет (см. vertical_hierarchy_max_path_segments в requisites).
     """
 
     primary_child_phrase_prefixes: tuple[str, ...] = (
@@ -49,8 +49,8 @@ class VerticalHierarchyHeuristicConfig:
 
 DEFAULT_VERTICAL_HIERARCHY_HEURISTICS = VerticalHierarchyHeuristicConfig()
 
-# Максимум сегментов в пути: 2 → только «корень | потомок» (один уровень вложенности).
-DEFAULT_MAX_VERTICAL_PATH_SEGMENTS = 2
+# None — без ограничения числа сегментов в вертикальном пути.
+DEFAULT_MAX_VERTICAL_PATH_SEGMENTS: int | None = None
 
 
 def heuristic_config_from_requisites(requisites: Mapping[str, Any] | None) -> VerticalHierarchyHeuristicConfig:
@@ -95,10 +95,16 @@ def heuristic_config_from_requisites(requisites: Mapping[str, Any] | None) -> Ve
     return cfg
 
 
-def max_vertical_path_segments_from_requisites(requisites: Mapping[str, Any] | None) -> int:
-    if not requisites:
+def max_vertical_path_segments_from_requisites(requisites: Mapping[str, Any] | None) -> int | None:
+    """
+    Ограничение числа узлов в вертикальном пути (сколько сегментов через PATH_SEPARATOR).
+
+    None — без лимита. Положительное число — обрезка до «корень + последние (n-1) сегментов».
+    0 в реквизитах трактуем как «без лимита», как None.
+    """
+    if not requisites or "vertical_hierarchy_max_path_segments" not in requisites:
         return DEFAULT_MAX_VERTICAL_PATH_SEGMENTS
-    if "vertical_hierarchy_max_path_segments" in requisites:
-        # Минимум 2: один общий корень и одна строка-лист (один уровень вложенности).
-        return max(2, int(requisites["vertical_hierarchy_max_path_segments"]))
-    return DEFAULT_MAX_VERTICAL_PATH_SEGMENTS
+    raw = int(requisites["vertical_hierarchy_max_path_segments"])
+    if raw <= 0:
+        return None
+    return raw

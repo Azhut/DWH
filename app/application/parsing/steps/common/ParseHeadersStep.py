@@ -6,6 +6,11 @@ from app.application.parsing.context import ParsingPipelineContext
 from app.application.parsing.steps.base import BaseParsingStep
 from app.core.exceptions import CriticalParsingError
 from app.domain.parsing import parse_headers
+from app.domain.parsing.header_parsing import (
+    drop_leading_horizontal_path_segments,
+    strip_horizontal_leading_okei_banner,
+    strip_horizontal_leading_section_banner,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +75,19 @@ class ParseHeadersStep(BaseParsingStep):
     Записывает: ctx.sheet_model.horizontal_headers, ctx.sheet_model.vertical_headers.
     """
 
+    def __init__(
+        self,
+        horizontal_header_leading_levels_to_drop: int = 0,
+        *,
+        horizontal_header_strip_fk1_banner: bool = False,
+    ) -> None:
+        self._horizontal_header_leading_levels_to_drop = max(
+            0,
+            int(horizontal_header_leading_levels_to_drop),
+        )
+        # Флаг исторически назван «fk1_banner»; сейчас управляет только снятием сегмента с «ОКЕИ».
+        self._horizontal_header_strip_okei_banner = horizontal_header_strip_fk1_banner
+
     async def execute(self, ctx: ParsingPipelineContext) -> None:
         if ctx.table_structure is None:
             raise CriticalParsingError(
@@ -113,16 +131,28 @@ class ParseHeadersStep(BaseParsingStep):
                 show_traceback=True,
             ) from e
 
-        _check_duplicate_headers(result.horizontal, ctx.sheet_name)
+        horizontal = result.horizontal
+        horizontal = [strip_horizontal_leading_section_banner(h) for h in horizontal]
+        if self._horizontal_header_strip_okei_banner:
+            horizontal = [strip_horizontal_leading_okei_banner(h) for h in horizontal]
+        if self._horizontal_header_leading_levels_to_drop:
+            horizontal = [
+                drop_leading_horizontal_path_segments(
+                    h,
+                    self._horizontal_header_leading_levels_to_drop,
+                )
+                for h in horizontal
+            ]
 
-        
-        ctx.sheet_model.horizontal_headers = result.horizontal
+        _check_duplicate_headers(horizontal, ctx.sheet_name)
+
+        ctx.sheet_model.horizontal_headers = horizontal
         ctx.sheet_model.vertical_headers = result.vertical
 
         logger.debug(
             "Заголовки для листа '%s': горизонтальных=%d, вертикальных=%d",
             ctx.sheet_name,
-            len(result.horizontal),
+            len(horizontal),
             len(result.vertical),
         )
 

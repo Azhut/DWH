@@ -2,6 +2,7 @@
 Универсальный парсинг заголовков листа (горизонтальные и вертикальные).
 Общая логика из BaseSheetParser; используется для 1ФК и 5ФК.
 """
+import re
 from io import BytesIO
 from typing import Any, List, Mapping, Optional
 
@@ -16,6 +17,100 @@ from app.domain.parsing.vertical_hierarchy_config import (
     PATH_SEPARATOR,
 )
 from app.domain.parsing.workbook_source import ParsingWorkbookSource
+
+_HORIZONTAL_BANNER_SECTION_HINT = re.compile(r"раздел", re.IGNORECASE)
+_HORIZONTAL_BANNER_OKEI_HINT = re.compile(r"океи", re.IGNORECASE)
+
+
+def _strip_leading_segment_if_hint(
+    path: str,
+    hint: re.Pattern[str],
+    *,
+    separator: str = PATH_SEPARATOR,
+) -> str:
+    if path is None:
+        return ""
+    text = str(path).strip()
+    if not text:
+        return path if isinstance(path, str) else ""
+    parts = [p.strip() for p in text.split(separator)]
+    if not parts:
+        return text
+    out = list(parts)
+    if out and hint.search(out[0]):
+        out = out[1:]
+    if not out:
+        return text
+    return separator.join(out)
+
+
+def strip_horizontal_leading_section_banner(path: str, *, separator: str = PATH_SEPARATOR) -> str:
+    """
+    Снимает первый сегмент пути, если в нём есть «раздел» (шапка раздела в Excel).
+
+    Применяется для **всех** форм после parse_headers.
+    """
+    return _strip_leading_segment_if_hint(
+        path,
+        _HORIZONTAL_BANNER_SECTION_HINT,
+        separator=separator,
+    )
+
+
+def strip_horizontal_leading_okei_banner(path: str, *, separator: str = PATH_SEPARATOR) -> str:
+    """
+    Снимает первый сегмент пути, если в нём есть «океи» (блок кодов ОКЕИ).
+
+    Используется **только для 1ФК** (и опционально по реквизиту для других форм).
+    Вызывать после ``strip_horizontal_leading_section_banner``.
+    """
+    return _strip_leading_segment_if_hint(
+        path,
+        _HORIZONTAL_BANNER_OKEI_HINT,
+        separator=separator,
+    )
+
+
+def strip_fk1_horizontal_banner_segments(
+    path: str,
+    *,
+    separator: str = PATH_SEPARATOR,
+) -> str:
+    """
+    Подряд: снять баннер «Раздел», затем «ОКЕИ» — полное правило для 1ФК.
+
+    Для пайплайна эквивалентно: section (всегда) + okei (флаг 1ФК).
+    """
+    return strip_horizontal_leading_okei_banner(
+        strip_horizontal_leading_section_banner(path, separator=separator),
+        separator=separator,
+    )
+
+
+def drop_leading_horizontal_path_segments(
+    path: str,
+    drop_count: int,
+    *,
+    separator: str = PATH_SEPARATOR,
+) -> str:
+    """
+    Убирает первые ``drop_count`` сегментов иерархического горизонтального заголовка.
+
+    Сегменты разделяются ``PATH_SEPARATOR`` (как после parse_headers / _normalize_headers).
+    Не оставляет пустой путь: отбрасывает не больше ``len(segments) - 1`` сегментов.
+    """
+    if drop_count <= 0 or path is None:
+        return path if path is not None else ""
+    text = str(path).strip()
+    if not text:
+        return path if isinstance(path, str) else ""
+    parts = text.split(separator)
+    if not parts:
+        return text
+    effective_drop = min(drop_count, max(0, len(parts) - 1))
+    if effective_drop <= 0:
+        return text
+    return separator.join(parts[effective_drop:])
 
 
 def _get_header_rows(sheet: pd.DataFrame, structure: TableStructure) -> pd.DataFrame:
@@ -78,9 +173,9 @@ def _clean_header_cell(text: object) -> str:
     return raw.replace("_x000D_", "").strip()
 
 
-def _cap_stack(stack: List[str], max_path_segments: int) -> List[str]:
-    if max_path_segments < 1:
-        return stack[-1:] if stack else stack
+def _cap_stack(stack: List[str], max_path_segments: Optional[int]) -> List[str]:
+    if max_path_segments is None or max_path_segments < 1:
+        return stack
     if len(stack) <= max_path_segments:
         return stack
     return stack[:1] + stack[-(max_path_segments - 1) :]
@@ -90,13 +185,13 @@ def _build_hierarchy_paths_from_depths(
     values: List[str],
     depths: List[int],
     *,
-    max_path_segments: int,
+    max_path_segments: Optional[int],
 ) -> List[str]:
     """
-    Строит полный иерархический путь по рассчитанной глубине (0 = корень, 1 = потомок).
+    Строит полный иерархический путь по рассчитанной глубине (0 = корень, далее вложенность).
 
-    max_path_segments ограничивает число узлов в пути (см. конфиг формы): при превышении
-    сохраняются корень и «лист» — например «А | Б | В» при лимите 2 превращается в «А | В».
+    max_path_segments: если задано положительное число — обрезка пути до «корень + хвост»;
+    None — без ограничения (произвольная рекурсивная глубина).
     """
     stack: List[str] = []
     paths: List[str] = []
@@ -108,38 +203,18 @@ def _build_hierarchy_paths_from_depths(
         depth = max(0, int(depth))
         while len(stack) > depth:
             stack.pop()
-        if len(stack) < depth:
-            depth = len(stack)
+        # Скачок глубины (indent / накопленные «в том числе»): восстанавливаем недостающие
+        # уровни дублированием последнего известного предка — редкий кейс, но без этого
+        # путь обрезался бы до len(stack)+1.
+        while len(stack) < depth and stack:
+            stack.append(stack[-1])
+        if len(stack) < depth and not stack:
+            depth = 0
         stack.append(node)
         stack = _cap_stack(stack, max_path_segments)
         paths.append(PATH_SEPARATOR.join(stack))
 
     return paths
-
-
-def _row_explicit_child(text: object, cfg: VerticalHierarchyHeuristicConfig) -> bool:
-    """Явный признак дочерней строки (без учёта «продолжений» подблока)."""
-    s = "" if text is None else str(text)
-    leading_spaces = len(s) - len(s.lstrip(" "))
-    stripped = s.lstrip(" ")
-    if not stripped:
-        return False
-
-    sl = stripped.lower()
-    dash = any(stripped.startswith(d) for d in cfg.dash_prefixes)
-    primary = any(sl.startswith(p) for p in cfg.primary_child_phrase_prefixes)
-    compound = any(sl.startswith(p) for p in cfg.compound_child_phrase_prefixes)
-    # «В том числе» — только вместе с первичным триггером на той же строке (например «-»).
-    phrase_child = primary or (compound and dash)
-
-    space_only_child = (
-        leading_spaces >= cfg.min_leading_spaces_for_child_hint
-        and not compound
-        and not primary
-        and not dash
-    )
-
-    return dash or phrase_child or space_only_child
 
 
 def _subblock_should_exit(stripped: str, sl: str, cfg: VerticalHierarchyHeuristicConfig) -> bool:
@@ -154,31 +229,99 @@ def _estimate_depths_heuristic(
     cfg: VerticalHierarchyHeuristicConfig,
 ) -> List[int]:
     """
-    Глубины 0/1 + «продолжения» в активном подблоке без тире (напр. «детские…» после «из них»).
+    Многоуровневые глубины (0, 1, 2, …), в т.ч. рекурсивные «в том числе» подряд.
+
+    Логика:
+    - строка, начинающаяся с префикса из primary или compound, наращивает «виток»:
+      две такие подряд увеличивают глубину (рекурсия);
+    - строка с тире в начале — уровень под текущим витком;
+    - ведущие пробелы дают базовый уровень (как прокси indent в .xls);
+    - внутри подблока короткие строки без триггеров трактуются как продолжение;
+    - длинные / с маркерами («всего») — выход к новому корневому блоку.
     """
-    in_subblock = False
     depths: List[int] = []
+    phrase_run_depth = 0
+    prev_line_was_phrase_opener = False
+    in_subblock = False
+    last_explicit_depth = 0
 
     for raw in values:
-        explicit = _row_explicit_child(raw, cfg)
-        s = str(raw) if raw is not None else ""
+        s = "" if raw is None else str(raw)
+        leading_spaces = len(s) - len(s.lstrip(" "))
         stripped = s.lstrip(" ")
-        sl = stripped.lower()
+        if not stripped:
+            depths.append(0)
+            phrase_run_depth = 0
+            prev_line_was_phrase_opener = False
+            in_subblock = False
+            last_explicit_depth = 0
+            continue
 
-        if explicit:
-            depths.append(1)
+        sl = stripped.lower()
+        base_level = leading_spaces // max(1, cfg.leading_spaces_per_level)
+
+        opens_phrase = any(sl.startswith(p) for p in cfg.primary_child_phrase_prefixes) or any(
+            sl.startswith(p) for p in cfg.compound_child_phrase_prefixes
+        )
+        dash = any(stripped.startswith(d) for d in cfg.dash_prefixes)
+        space_only_child = (
+            leading_spaces >= cfg.min_leading_spaces_for_child_hint
+            and not opens_phrase
+            and not dash
+        )
+
+        # Выход к новому крупному заголовку (конец подблока)
+        exit_block = _subblock_should_exit(stripped, sl, cfg) or (
+            in_subblock
+            and not opens_phrase
+            and not dash
+            and not space_only_child
+            and leading_spaces == 0
+            and len(stripped) >= cfg.subblock_exit_min_line_length
+        )
+        if in_subblock and exit_block and not opens_phrase and not dash and not space_only_child:
+            phrase_run_depth = 0
+            prev_line_was_phrase_opener = False
+            in_subblock = False
+            last_explicit_depth = base_level
+            depths.append(base_level)
+            continue
+
+        if opens_phrase:
+            if prev_line_was_phrase_opener:
+                phrase_run_depth += 1
+            else:
+                phrase_run_depth = max(base_level + 1, 1)
+            last_explicit_depth = phrase_run_depth
+            depths.append(phrase_run_depth)
+            in_subblock = True
+            prev_line_was_phrase_opener = True
+            continue
+
+        prev_line_was_phrase_opener = False
+
+        if dash:
+            d = max(phrase_run_depth, base_level) + 1
+            last_explicit_depth = d
+            depths.append(d)
             in_subblock = True
             continue
 
-        if in_subblock:
-            if _subblock_should_exit(stripped, sl, cfg):
-                depths.append(0)
-                in_subblock = False
-            else:
-                depths.append(1)
+        if space_only_child:
+            d = max(phrase_run_depth, base_level) + 1
+            last_explicit_depth = d
+            depths.append(d)
+            in_subblock = True
             continue
 
-        depths.append(0)
+        if in_subblock and not _subblock_should_exit(stripped, sl, cfg):
+            depths.append(max(last_explicit_depth, phrase_run_depth, base_level))
+            continue
+
+        phrase_run_depth = 0
+        in_subblock = False
+        last_explicit_depth = base_level
+        depths.append(base_level)
 
     if depths:
         baseline = depths[0]
