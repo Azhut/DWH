@@ -12,39 +12,63 @@ from app.domain.file.repository import FileRepository
 logger = logging.getLogger(__name__)
 
 VALID_EXTENSIONS = (".xlsx", ".xls", ".xlsm")
-REPORTER_YEAR_PATTERN = re.compile(r"^(.+?)\s+(\d{4}).*\.(xls|xlsx|xlsm)$", re.IGNORECASE)
+YEAR_SEGMENT_PATTERN = re.compile(r"[0-9]{4}")
 
 
 def validate_and_extract_metadata_from_filename(filename: str) -> FileInfo:
-    """Validate filename and extract reporter/year metadata."""
+    """Validate filename and extract subject (reporter) / year / extension.
+
+    Rules (same for all forms):
+    - Extension is the substring after the last ``.``; if there is no ``.``, invalid.
+    - Exactly one contiguous run of four ASCII digits in the stem (name without extension);
+      that run is the year. Zero or more than one such run is invalid.
+    - Everything else in the stem, with the year removed, is the subject (reporter).
+    """
     logger.debug("Validating file name: %s", filename)
 
     if not filename:
         raise FileValidationError("File name cannot be empty", filename=filename)
 
-    if not any(filename.lower().endswith(ext) for ext in VALID_EXTENSIONS):
+    if "." not in filename:
+        raise FileValidationError(
+            "File name must include an extension after '.'",
+            filename=filename,
+        )
+
+    stem, ext = filename.rsplit(".", 1)
+    if not ext.strip():
+        raise FileValidationError("File name has an empty extension", filename=filename)
+
+    ext_lower = ext.lower()
+    if f".{ext_lower}" not in VALID_EXTENSIONS:
         raise FileValidationError(
             f"Invalid file extension: {filename}. Allowed: {list(VALID_EXTENSIONS)}",
             filename=filename,
         )
 
-    match = REPORTER_YEAR_PATTERN.match(filename)
-    if not match:
+    year_matches = list(YEAR_SEGMENT_PATTERN.finditer(stem))
+    if not year_matches:
         raise FileValidationError(
-            "Invalid file name format. Expected: 'REPORTER YYYY.extension'",
+            "File name must contain exactly one 4-digit year in the name (before the extension)",
+            filename=filename,
+        )
+    if len(year_matches) > 1:
+        raise FileValidationError(
+            "File name must contain only one sequence of 4 digits (the year)",
             filename=filename,
         )
 
-    reporter = match.group(1).strip().upper()
-    year = int(match.group(2))
-    ext = filename.split(".")[-1].lower() if "." in filename else ""
+    ym = year_matches[0]
+    year = int(ym.group())
+    subject_raw = stem[: ym.start()] + stem[ym.end() :]
+    reporter = re.sub(r"\s+", " ", subject_raw).strip().upper()
 
     if not reporter:
-        raise FileValidationError("Reporter cannot be empty", filename=filename)
+        raise FileValidationError("Reporter (subject) cannot be empty", filename=filename)
     if year < 1900 or year > 2100:
         raise FileValidationError("Invalid year. Allowed range: 1900..2100", filename=filename)
 
-    return FileInfo(reporter=reporter, year=year, extension=ext)
+    return FileInfo(reporter=reporter, year=year, extension=ext_lower)
 
 
 class FileService:
