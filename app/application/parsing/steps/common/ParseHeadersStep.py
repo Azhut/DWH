@@ -89,8 +89,22 @@ class ParseHeadersStep(BaseParsingStep):
 
         df = ctx.processed_dataframe
 
+        # Возможность принудительно переключить режим построения вертикальной иерархии
+        # (эвристики vs indent). Передаётся как форма-специфичный параметр.
+        vertical_hierarchy_mode = (
+            (ctx.form_info.requisites or {}).get("vertical_hierarchy_mode")  # type: ignore[union-attr]
+            or "auto"
+        )
+
         try:
-            result = parse_headers(df, ctx.table_structure)
+            result = parse_headers(
+                df,
+                ctx.table_structure,
+                sheet_name=ctx.sheet_model.sheet_fullname,
+                workbook_source=ctx.workbook_source,
+                vertical_hierarchy_mode=vertical_hierarchy_mode,
+                form_requisites=ctx.form_info.requisites,
+            )
         except Exception as e:
             raise CriticalParsingError(
                 f"Ошибка парсинга заголовков листа '{ctx.sheet_name}': {e}",
@@ -101,7 +115,7 @@ class ParseHeadersStep(BaseParsingStep):
 
         _check_duplicate_headers(result.horizontal, ctx.sheet_name)
 
-        # Финальные результаты — в sheet_model (единственный источник правды)
+        
         ctx.sheet_model.horizontal_headers = result.horizontal
         ctx.sheet_model.vertical_headers = result.vertical
 

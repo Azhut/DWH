@@ -19,6 +19,11 @@ from app.domain.parsing.structure_detection import (
     AutoDetectStructureStrategy,
 )
 from app.domain.parsing.header_parsing import parse_headers
+from app.domain.parsing.workbook_source import ParsingWorkbookSource
+from app.domain.parsing.vertical_hierarchy_config import (
+    DEFAULT_VERTICAL_HIERARCHY_HEURISTICS,
+    VerticalHierarchyHeuristicConfig,
+)
 from app.domain.parsing.data_extraction import extract_sheet_data
 from app.domain.parsing.flat_data_builder import build_flat_data_records
 from app.domain.parsing.notes import process_notes_1fk
@@ -35,6 +40,9 @@ __all__ = [
     "FixedStructureStrategy",
     "AutoDetectStructureStrategy",
     "parse_headers",
+    "ParsingWorkbookSource",
+    "VerticalHierarchyHeuristicConfig",
+    "DEFAULT_VERTICAL_HIERARCHY_HEURISTICS",
     "extract_sheet_data",
     "build_flat_data_records",
     "process_notes_1fk",

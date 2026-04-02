@@ -6,6 +6,7 @@ import pandas as pd
 
 from app.domain.form.models import FormInfo
 from app.domain.parsing.models import ExtractedSheetData, TableStructure
+from app.domain.parsing.workbook_source import ParsingWorkbookSource
 from app.domain.sheet.models import SheetModel
 
 
@@ -36,6 +37,10 @@ class ParsingPipelineContext:
     raw_dataframe: pd.DataFrame
     form_info: FormInfo
 
+    # Снимок файла для доменного парсинга (openpyxl indent и т.п.).
+    # Заполняется в ProcessSheetsStep из UploadPipelineContext одним объектом — без
+    # дублирования отдельных полей вроде file_content + extension.
+    workbook_source: ParsingWorkbookSource | None = None
 
     # --- Рабочие/промежуточные данные шагов ---
     table_structure: Optional[TableStructure] = None

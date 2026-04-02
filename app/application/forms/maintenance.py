@@ -22,6 +22,13 @@ _PROTECTED_TYPES: Set[FormType] = {
 }
 
 
+class _NullLogService:
+    """No-op логирование для сценариев/тестов, где LogService не передают."""
+
+    async def save_log(self, *args, **kwargs) -> None:  # noqa: ANN002, ANN003
+        return None
+
+
 class FormMaintenanceService:
     """
     Сценарии жизненного цикла форм (уровень application):
@@ -35,12 +42,12 @@ class FormMaintenanceService:
         form_service: FormService,
         file_service: FileService,
         flat_data_service: FlatDataService,
-        log_service: LogService,
+        log_service: LogService | None = None,
     ) -> None:
         self._form_service = form_service
         self._file_service = file_service
         self._flat_data_service = flat_data_service
-        self._log_service = log_service
+        self._log_service = log_service or _NullLogService()
 
     async def ensure_system_forms_exist(self) -> None:
         for spec in SYSTEM_FORMS:

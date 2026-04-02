@@ -1,4 +1,4 @@
-﻿"""Шаг парсинга листов рабочей книги через parsing-pipeline."""
+"""Шаг парсинга листов рабочей книги через parsing-pipeline."""
 
 import logging
 from typing import Optional
@@ -7,6 +7,7 @@ from app.application.parsing.context import ParsingPipelineContext
 from app.application.parsing.registry import ParsingStrategyRegistry
 from app.application.upload.pipeline.context import UploadPipelineContext
 from app.core.exceptions import CriticalParsingError, CriticalUploadError
+from app.domain.parsing.workbook_source import ParsingWorkbookSource
 from app.domain.sheet.models import SheetModel
 
 logger = logging.getLogger(__name__)
@@ -33,12 +34,20 @@ class ProcessSheetsStep:
             self._parsing_registry = get_parsing_strategy_registry()
 
         parsed_sheets: list[SheetModel] = []
+        workbook_source: ParsingWorkbookSource | None = None
+        if ctx.file_content is not None and ctx.file_info is not None:
+            workbook_source = ParsingWorkbookSource(
+                content=ctx.file_content,
+                extension=ctx.file_info.extension or "",
+            )
+
         for sheet_index, (sheet_name, dataframe) in enumerate(ctx.workbook_sheets.items()):
             parsed_sheet = await self._parse_sheet(
                 ctx=ctx,
                 sheet_name=sheet_name,
                 sheet_index=sheet_index,
                 dataframe=dataframe,
+                workbook_source=workbook_source,
             )
             if parsed_sheet is not None:
                 parsed_sheets.append(parsed_sheet)
@@ -65,6 +74,7 @@ class ProcessSheetsStep:
         sheet_name: str,
         sheet_index: int,
         dataframe,
+        workbook_source: ParsingWorkbookSource | None,
     ) -> Optional[SheetModel]:
         pipeline = self._parsing_registry.build_pipeline_for_sheet(
             form_info=ctx.form_info,
@@ -79,6 +89,7 @@ class ProcessSheetsStep:
             sheet_model=sheet_model,
             raw_dataframe=dataframe,
             form_info=ctx.form_info,
+            workbook_source=workbook_source,
         )
 
         try:
