@@ -15,31 +15,25 @@ class UploadResponseBuilder:
 
     @staticmethod
     def build_response(file_responses: List[FileResponse], upload_id: Optional[str] = None) -> UploadResponse:
-        """
-        Формирует UploadResponse из списка результатов обработки файлов.
-
-        Args:
-            file_responses: Список результатов обработки каждого файла
-            upload_id: Optional ID для отслеживания прогресса
-
-        Returns:
-            UploadResponse с итоговой статистикой
-        """
-        success_count = sum(
-            1 for r in file_responses if r.status == FileStatus.SUCCESS
-        )
+        """Формирует UploadResponse из списка результатов обработки файлов."""
+        success_count = sum(1 for r in file_responses if r.status == FileStatus.SUCCESS)
         failure_count = len(file_responses) - success_count
 
-        logger.info(
-            "Обработка завершена. Успешно: %d, с ошибками: %d",
-            success_count,
-            failure_count,
-        )
-
-        message = f"{success_count} files processed successfully, {failure_count} failed."
+        logger.info("Обработка завершена. Успешно: %d, с ошибками: %d", success_count, failure_count)
 
         return UploadResponse(
-            message=message,
+            message=f"{success_count} files processed successfully, {failure_count} failed.",
             details=file_responses,
-            upload_id=upload_id,  # Optional поле для обратной совместимости
+            upload_id=upload_id,
+        )
+
+    @staticmethod
+    def build_pending_response(upload_id: str) -> UploadResponse:
+        """Формирует UploadResponse для фоновой обработки — файлы ещё не обработаны."""
+        logger.info("Upload accepted, processing in background. upload_id=%s", upload_id)
+
+        return UploadResponse(
+            message="Upload accepted. Track progress via /api/v2/upload-progress/{upload_id}",
+            details=[],
+            upload_id=upload_id,
         )

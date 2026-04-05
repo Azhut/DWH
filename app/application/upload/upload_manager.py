@@ -1,8 +1,11 @@
+import asyncio
+import io
 import logging
 from typing import List, Dict
 from uuid import uuid4
 
 from fastapi import UploadFile
+from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from app.api.v2.schemas.upload import UploadResponse
 from app.application.data import DataSaveService
@@ -37,7 +40,6 @@ class UploadManager:
             parsing_registry=parsing_registry,
         )
         self._file_processor = FileProcessor(pipeline=self._pipeline)
-        # Хранилище прогресса в памяти
         self._upload_progress: Dict[str, UploadProgress] = {}
 
     async def upload_files(
@@ -49,46 +51,63 @@ class UploadManager:
         form_id = self._validator.validate_request(files, form_id)
         logger.info("Upload started for form '%s' with %d file(s)", form_id, len(files))
 
-        # Генерируем upload_id и создаем прогресс
+        # Читаем файлы в память сразу — FastAPI закроет их после возврата ответа
+        buffered: List[tuple[str, str, bytes]] = []
+        for file in files:
+            content = await file.read()
+            buffered.append((file.filename or "", file.content_type or "", content))
+
         upload_id = str(uuid4())
         progress = UploadProgress(
             upload_id=upload_id,
-            total_files=len(files),
-            form_id=form_id
+            total_files=len(buffered),
+            form_id=form_id,
         )
         self._upload_progress[upload_id] = progress
 
-        form_info = await self._form_loader.load_form(form_id)
+        # Запускаем обработку в фоне и сразу возвращаем upload_id
+        asyncio.create_task(
+            self._process_files_background(buffered, form_id, upload_id, progress)
+        )
 
+        return UploadResponseBuilder.build_pending_response(upload_id)
+
+    async def _process_files_background(
+        self,
+        buffered: List[tuple[str, str, bytes]],
+        form_id: str,
+        upload_id: str,
+        progress: UploadProgress,
+    ) -> None:
         file_responses = []
         try:
-            for file in files:
-                response = await self._file_processor.process_file(file, form_id, form_info)
-                file_responses.append(response)
-                
-                # Обновляем прогресс
-                success = response.status == "success"
-                error = response.error if not success else None
-                progress.add_processed_file(response.filename, success, error)
+            form_info = await self._form_loader.load_form(form_id)
 
-            # Завершаем прогресс
-            if all(file.status == "success" for file in file_responses):
+            for filename, content_type, content in buffered:
+                upload_file = StarletteUploadFile(
+                    file=io.BytesIO(content),
+                    filename=filename,
+                    headers={"content-type": content_type},
+                )
+                response = await self._file_processor.process_file(upload_file, form_id, form_info)
+                file_responses.append(response)
+
+                success = response.status == "success"
+                progress.add_processed_file(response.filename, success, response.error if not success else None)
+
+            if all(r.status == "success" for r in file_responses):
                 progress.complete()
             else:
                 progress.fail()
 
-        except Exception as e:
-            logger.error(f"Upload failed for {upload_id}: {e}")
-            progress.fail()
-            raise
+            logger.info("Background processing done for upload_id=%s", upload_id)
 
-        # Возвращаем ответ с upload_id для обратной совместимости
-        return UploadResponseBuilder.build_response(file_responses, upload_id)
+        except Exception as e:
+            logger.error("Background processing failed for upload_id=%s: %s", upload_id, e)
+            progress.fail()
 
     def get_upload_progress(self, upload_id: str) -> UploadProgress | None:
-        """Возвращает прогресс загрузки по upload_id"""
         return self._upload_progress.get(upload_id)
 
-    def cleanup_upload_progress(self, upload_id: str):
-        """Удаляет прогресс из памяти (опционально для очистки)"""
+    def cleanup_upload_progress(self, upload_id: str) -> None:
         self._upload_progress.pop(upload_id, None)

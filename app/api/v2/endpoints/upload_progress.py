@@ -1,27 +1,27 @@
 import asyncio
 import json
-from typing import AsyncGenerator
 
-from fastapi import APIRouter, Path, HTTPException, Response, Depends
+
+from fastapi import APIRouter, Path, HTTPException,  Depends
 from fastapi.responses import StreamingResponse
 
 from app.application.upload import UploadManager
 from app.core.dependencies import get_upload_manager
-from app.core.exceptions import log_and_raise_http
+from app.core.exceptions import log_and_raise_http, AppError
 
 router = APIRouter()
 
 
 @router.get("/upload-progress/{upload_id}")
 async def upload_progress(
-    upload_id: str = Path(..., description="ID загрузки для отслеживания прогресса"),
-    upload_manager: UploadManager = Depends(get_upload_manager),
+        upload_id: str = Path(..., description="ID загрузки для отслеживания прогресса"),
+        upload_manager: UploadManager = Depends(get_upload_manager),
 ):
     """
     Server-Sent Events endpoint для отслеживания прогресса загрузки файлов.
-    
+
     Отправляет обновления прогресса в реальном времени.
-    
+
     Формат сообщений:
     {
         "current": 2,
@@ -32,35 +32,41 @@ async def upload_progress(
         "errors": []
     }
     """
-    
+
+    # Проверяем существование upload_id ДО создания StreamingResponse,
+    # пока заголовки ещё не отправлены и можно вернуть 404
+    progress = upload_manager.get_upload_progress(upload_id)
+    if not progress:
+        raise HTTPException(status_code=404, detail="Upload not found")
+
     async def event_generator():
         """Генератор событий SSE с прогрессом загрузки"""
-        
-        # Проверяем существование upload_id
-        progress = upload_manager.get_upload_progress(upload_id)
-        if not progress:
-            raise HTTPException(status_code=404, detail="Upload not found")
-        
+
+        current_progress = upload_manager.get_upload_progress(upload_id)
+        if not current_progress:
+            return
+
         # Отправляем начальное состояние
+        last_sent_data = None
         data = {
-            "current": progress.current_file,
-            "total": progress.total_files,
-            "status": progress.status,
-            "processed_files": progress.processed_files.copy(),
-            "progress_percentage": progress.progress_percentage,
-            "errors": progress.errors.copy(),
+            "current": current_progress.current_file,
+            "total": current_progress.total_files,
+            "status": current_progress.status,
+            "processed_files": current_progress.processed_files.copy(),
+            "progress_percentage": current_progress.progress_percentage,
+            "errors": current_progress.errors.copy(),
         }
         yield f"data: {json.dumps(data)}\n\n"
-        
+        last_sent_data = data
+
         # Продолжаем отправлять обновления пока загрузка не завершится
-        while progress.status in ["processing"]:
-            await asyncio.sleep(0.5)  # Обновляем каждые 0.5 секунды
-            
-            # Отправляем обновление только если есть изменения
+        while True:
+            await asyncio.sleep(0.1)  # Уменьшил для более быстрой реакции
+
             current_progress = upload_manager.get_upload_progress(upload_id)
             if not current_progress:
                 break
-                
+
             data = {
                 "current": current_progress.current_file,
                 "total": current_progress.total_files,
@@ -69,24 +75,18 @@ async def upload_progress(
                 "progress_percentage": current_progress.progress_percentage,
                 "errors": current_progress.errors.copy(),
             }
-            yield f"data: {json.dumps(data)}\n\n"
             
-            # Если загрузка завершена, отправляем финальное состояние и выходим
-            if current_progress.status in ["completed", "failed"]:
-                data = {
-                    "current": current_progress.current_file,
-                    "total": current_progress.total_files,
-                    "status": current_progress.status,
-                    "processed_files": current_progress.processed_files.copy(),
-                    "progress_percentage": current_progress.progress_percentage,
-                    "errors": current_progress.errors.copy(),
-                }
+            # Отправляем только если данные изменились
+            if data != last_sent_data:
                 yield f"data: {json.dumps(data)}\n\n"
+                last_sent_data = data
+
+            if current_progress.status in ["completed", "failed"]:
                 break
-        
+
         # Очищаем память после завершения
         upload_manager.cleanup_upload_progress(upload_id)
-    
+
     try:
         return StreamingResponse(
             event_generator(),
@@ -101,8 +101,5 @@ async def upload_progress(
     except Exception as e:
         error_msg = f"Error creating SSE stream: {str(e)}"
         log_and_raise_http(
-            Exception(error_msg),
-            http_status=500,
-            domain="upload_progress.endpoint",
-            meta={"upload_id": upload_id, "error": str(e)}
+            AppError(error_msg),
         )
