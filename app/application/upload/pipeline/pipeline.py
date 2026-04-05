@@ -20,6 +20,7 @@ from app.core.exceptions import (
     NonCriticalUploadError,
     log_app_error,
 )
+from app.core.profiling import PipelineProfiler
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +31,13 @@ class UploadPipelineRunner:
     def __init__(self, steps: List[UploadPipelineStep], data_save_service):
         self.steps = steps
         self.data_save_service = data_save_service
+        self.profiler = PipelineProfiler("Upload")
 
     async def run_for_file(self, ctx: UploadPipelineContext) -> None:
+        self.profiler.start()
+        
         for step in self.steps:
+            self.profiler.increment_step()
             try:
                 await step.execute(ctx)
 
@@ -67,6 +72,8 @@ class UploadPipelineRunner:
                 log_app_error(error, exc_info=True)
                 await self._handle_critical_error(ctx, error)
                 return
+        
+        self.profiler.finish()
 
     async def _handle_critical_error(self, ctx: UploadPipelineContext, error: Exception) -> None:
         """Помечает контекст как неуспешный и делает rollback записи файла, если возможно."""

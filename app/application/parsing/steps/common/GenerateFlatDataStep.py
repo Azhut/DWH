@@ -5,6 +5,7 @@ import logging
 from app.application.parsing.context import ParsingPipelineContext
 from app.application.parsing.steps.base import BaseParsingStep
 from app.core.exceptions import CriticalParsingError, NonCriticalParsingError
+from app.core.profiling import profile_step
 from app.domain.parsing import build_flat_data_records
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ class GenerateFlatDataStep(BaseParsingStep):
     но это не повод останавливать весь файл.
     """
 
+    @profile_step()
     async def execute(self, ctx: ParsingPipelineContext) -> None:
         if ctx.extracted_data is None:
             raise NonCriticalParsingError(

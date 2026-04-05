@@ -1,6 +1,9 @@
 """Сервис агрегата FlatData: сохранение, удаление, фильтрация (значения фильтров, отфильтрованные данные)."""
+import hashlib
+import json
 import logging
 import math
+from functools import lru_cache
 from typing import Any, Dict, List, Set, Tuple, Union
 
 from pymongo import InsertOne
@@ -47,6 +50,58 @@ class FlatDataService:
 
     def __init__(self, repository: FlatDataRepository):
         self._repo = repository
+        self._filter_cache: Dict[str, List[Union[str, int, float]]] = {}
+        self._cache_max_size = 128
+
+    def _generate_cache_key(
+        self, 
+        filter_name: str, 
+        applied_filters: List[Dict[str, Any]], 
+        pattern: str, 
+        form_id: str | None
+    ) -> str:
+        """Генерирует ключ для кэширования результатов фильтрации."""
+        cache_data = {
+            "filter_name": filter_name,
+            "applied_filters": sorted(applied_filters, key=lambda x: x.get("filter-name", "")),
+            "pattern": pattern,
+            "form_id": form_id
+        }
+        cache_str = json.dumps(cache_data, sort_keys=True, default=str)
+        return hashlib.md5(cache_str.encode()).hexdigest()
+
+    async def get_filter_values(
+        self,
+        filter_name: str,
+        applied_filters: List[Dict[str, Any]],
+        pattern: str = "",
+        form_id: str | None = None,
+    ) -> List[Union[str, int, float]]:
+        cache_key = self._generate_cache_key(filter_name, applied_filters, pattern, form_id)
+        
+        # Проверяем кэш
+        if cache_key in self._filter_cache:
+            return self._filter_cache[cache_key]
+        
+        # Получаем данные из БД
+        field = self._map_filter_name(filter_name)
+        query = self._build_query(applied_filters, form_id)
+        if pattern:
+            query = {**query, field: {"$regex": pattern, "$options": "i"}}
+        values = await self._repo.collection.distinct(field, filter=query)
+        try:
+            values = sorted(values)
+        except Exception:
+            pass
+        
+        # Сохраняем в кэш
+        if len(self._filter_cache) >= self._cache_max_size:
+            # Удаляем самый старый элемент (простая реализация)
+            oldest_key = next(iter(self._filter_cache))
+            del self._filter_cache[oldest_key]
+        
+        self._filter_cache[cache_key] = values
+        return values
 
     async def save_flat_data(self, records: List[FlatDataRecord]) -> int:
         """Сохраняет flat_data чанками. Возвращает количество вставленных документов."""
@@ -168,10 +223,8 @@ class FlatDataService:
         return getattr(res, "deleted_count", 0) or 0
 
     def _map_filter_name(self, name: str) -> str:
-        key = name.lower()
-        if key not in FILTER_MAP:
-            raise ValueError(f"Неизвестный фильтр: {name}")
-        return FILTER_MAP[key]
+        """Маппит имя фильтра API в имя поля БД. Валидация фильтра выполняется в API слое."""
+        return FILTER_MAP[name.lower()]
 
     def _build_query(self, filters: List[Dict[str, Any]], form_id: str | None) -> Dict[str, Any]:
         conditions: List[Dict[str, Any]] = []

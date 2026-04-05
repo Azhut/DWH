@@ -4,6 +4,7 @@ import logging
 
 from app.application.upload.pipeline.context import UploadPipelineContext
 from app.core.exceptions import CriticalUploadError, FileValidationError
+from app.core.profiling import profile_step
 from app.domain.file.service import FileService
 
 logger = logging.getLogger(__name__)
@@ -15,6 +16,7 @@ class ExtractMetadataStep:
     def __init__(self, file_service: FileService):
         self._file_service = file_service
 
+    @profile_step()
     async def execute(self, ctx: UploadPipelineContext) -> None:
         if not ctx.filename:
             raise CriticalUploadError(

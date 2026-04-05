@@ -16,6 +16,19 @@ FILTER_MAP: Dict[str, str] = {
     "колонка": "column",
 }
 
+# Маппинг полей БД -> русские названия для заголовков таблицы
+FIELD_HEADERS: Dict[str, str] = {
+    "year": "год",
+    "reporter": "субъект",
+    "section": "раздел",
+    "row": "строка",
+    "column": "колонка",
+    "value": "значение",
+}
+
+# Заголовки таблицы в правильном порядке
+TABLE_HEADERS: List[str] = [FIELD_HEADERS[field] for field in TABLE_FIELDS]
+
 
 class FlatDataRecord(BaseModel):
     """Одна запись flat_data (документ в коллекции FlatData)."""

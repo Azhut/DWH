@@ -1,10 +1,12 @@
 ﻿from app.application.upload.pipeline.context import UploadPipelineContext
 from app.core.exceptions import CriticalUploadError
+from app.core.profiling import profile_step
 
 
 class EnrichFlatDataStep:
     """Обогащает flat_data-записи метаданными файла."""
 
+    @profile_step()
     async def execute(self, ctx: UploadPipelineContext) -> None:
         if not ctx.file_model:
             raise CriticalUploadError(

@@ -3,6 +3,7 @@
 from app.application.upload.pipeline.context import UploadPipelineContext
 from app.application.upload.pipeline.readers import ExcelReader
 from app.core.exceptions import CriticalUploadError
+from app.core.profiling import profile_step
 
 
 class ReadWorkbookStep:
@@ -11,6 +12,7 @@ class ReadWorkbookStep:
     def __init__(self, excel_reader: ExcelReader | None = None) -> None:
         self._excel_reader = excel_reader or ExcelReader()
 
+    @profile_step()
     async def execute(self, ctx: UploadPipelineContext) -> None:
         if not ctx.file_content:
             raise CriticalUploadError(

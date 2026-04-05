@@ -10,13 +10,20 @@ from app.api.v2.schemas.filters import (
     FilteredDataResponse,
 )
 from app.core.exceptions import log_and_raise_http
-from app.core.dependencies import get_data_retrieval_service
+from app.core.dependencies import get_flat_data_service
 from app.domain.form.service import validate_form_id
+from app.domain.flat_data.models import FILTER_MAP, TABLE_HEADERS
 
 router = APIRouter()
 
 # пользовательский набор фильтров (контракт API)
-FILTERS = ["год", "субъект", "раздел", "строка", "колонка"]
+FILTERS = list(FILTER_MAP.keys())
+
+
+def _validate_filter_name(filter_name: str) -> None:
+    """Проверяет, что имя фильтра входит в допустимый набор."""
+    if filter_name not in FILTERS:
+        raise HTTPException(status_code=400, detail=f"Неизвестный фильтр: {filter_name}")
 
 
 @router.get("/filters-names", response_model=FiltersNamesResponse)
@@ -33,7 +40,7 @@ async def get_filters_names(form_id: Optional[str] = Query(None, description="ID
 async def get_filter_values(
     request: FilterValuesRequest,
     form_id: Optional[str] = Query(None, description="ID формы"),
-    svc=Depends(get_data_retrieval_service)
+    svc=Depends(get_flat_data_service)
 ):
     """
     Возвращает значения для указанного фильтра с учётом переданных бизнес-фильтров и pattern
@@ -43,8 +50,7 @@ async def get_filter_values(
         validate_form_id(form_id)
 
         # валидация имени фильтра
-        if request.filter_name not in FILTERS:
-            raise HTTPException(status_code=400, detail=f"Неизвестный фильтр: {request.filter_name}")
+        _validate_filter_name(request.filter_name)
 
         # подготовим фильтры в формате [{'filter-name':..., 'values':[...]}]
         filters_list = [item.model_dump(by_alias=True) for item in request.filters]
@@ -66,7 +72,7 @@ async def get_filter_values(
 async def get_filtered_data(
     payload: FilteredDataRequest,
     form_id: Optional[str] = Query(None, description="ID формы"),
-    svc=Depends(get_data_retrieval_service)
+    svc=Depends(get_flat_data_service)
 ):
     """
     Возвращает таблицу данных по бизнес-фильтрам с пагинацией.
@@ -77,8 +83,7 @@ async def get_filtered_data(
 
         # валидация имен фильтров внутри списка
         for f in payload.filters:
-            if f.filter_name not in FILTERS:
-                raise HTTPException(status_code=400, detail=f"Неизвестный фильтр: {f.filter_name}")
+            _validate_filter_name(f.filter_name)
 
         filters_list = [item.model_dump(by_alias=True) for item in payload.filters]
 
@@ -89,7 +94,7 @@ async def get_filtered_data(
             form_id
         )
         return FilteredDataResponse(
-            headers=["год", "субъект", "раздел", "строка", "колонка", "значение"],
+            headers=TABLE_HEADERS,
             data=data,
             size=len(data),
             max_size=total

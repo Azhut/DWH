@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Protocol, runtime_checkable
 
 from app.application.parsing.context import ParsingPipelineContext
-
+from app.core.profiling import profile_step
 
 @runtime_checkable
 class ParsingPipelineStep(Protocol):
@@ -38,6 +38,7 @@ class BaseParsingStep(ABC):
     Реализует протокол ParsingPipelineStep неявно через метод execute().
     """
 
+    @profile_step()
     @abstractmethod
     async def execute(self, ctx: ParsingPipelineContext) -> None:
         """

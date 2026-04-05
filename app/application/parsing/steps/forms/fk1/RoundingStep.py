@@ -4,6 +4,7 @@ import logging
 from app.application.parsing.context import ParsingPipelineContext
 from app.application.parsing.steps.common.RoundingStep import RoundingStep
 from app.core.exceptions import NonCriticalParsingError
+from app.core.profiling import profile_step
 from app.domain.sheet.rounding import RoundingService
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,7 @@ class FK1RoundingStep(RoundingStep):
     Неудача округления некритична — продолжаем с исходными данными.
     """
 
+    @profile_step()
     async def execute(self, ctx: ParsingPipelineContext) -> None:
         """
         Применяет округление к рабочему DataFrame (processed_dataframe).

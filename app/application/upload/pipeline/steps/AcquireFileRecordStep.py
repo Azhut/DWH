@@ -5,6 +5,7 @@ from datetime import datetime
 
 from app.application.upload.pipeline.context import UploadPipelineContext
 from app.core.exceptions import CriticalUploadError, DuplicateFileError
+from app.core.profiling import profile_step
 from app.domain.file.models import FileModel, FileStatus
 from app.domain.file.service import FileService
 
@@ -17,6 +18,7 @@ class AcquireFileRecordStep:
     def __init__(self, file_service: FileService):
         self._file_service = file_service
 
+    @profile_step()
     async def execute(self, ctx: UploadPipelineContext) -> None:
         if not ctx.filename:
             raise CriticalUploadError(

@@ -25,6 +25,12 @@ class MongoIndexManager:
         )
 
         await self.db.FlatData.create_index(
+            [("form", 1)],
+            name="form_idx",
+            background=True,
+        )
+
+        await self.db.FlatData.create_index(
             [("reporter", 1), ("year", 1)],
             name="reporter_year_idx",
             background=True,

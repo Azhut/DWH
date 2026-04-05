@@ -15,7 +15,6 @@ from app.domain.sheet import SheetService
 from app.application.upload import UploadManager
 from app.application.data import (
     DataDeleteService,
-    DataRetrievalService,
     DataSaveService,
 )
 from app.application.forms import FormMaintenanceService
@@ -90,11 +89,6 @@ def get_data_delete_service() -> DataDeleteService:
         flat_data_service=get_flat_data_service(),
         log_service=get_log_service(),
     )
-
-
-@lru_cache
-def get_data_retrieval_service() -> DataRetrievalService:
-    return DataRetrievalService(get_flat_data_service())
 
 
 @lru_cache

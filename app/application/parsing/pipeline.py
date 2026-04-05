@@ -9,6 +9,7 @@ from app.core.exceptions import (
     NonCriticalParsingError,
     log_app_error,
 )
+from app.core.profiling import PipelineProfiler
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ class ParsingPipelineRunner:
 
     def __init__(self, steps: List[ParsingPipelineStep]) -> None:
         self.steps = steps
+        self.profiler = PipelineProfiler("Parsing")
 
     async def run_for_sheet(self, ctx: ParsingPipelineContext) -> None:
         """
@@ -41,6 +43,8 @@ class ParsingPipelineRunner:
             CriticalParsingError: если любой шаг завершился критической ошибкой.
                                   Вызывающий код обязан обработать это исключение.
         """
+        self.profiler.start()
+        
         logger.debug(
             "Начало parsing pipeline: лист='%s', форма='%s', шагов=%d",
             ctx.sheet_name,
@@ -50,6 +54,7 @@ class ParsingPipelineRunner:
 
         for step in self.steps:
             step_name = step.__class__.__name__
+            self.profiler.increment_step()
 
             try:
                 await step.execute(ctx)
@@ -103,3 +108,5 @@ class ParsingPipelineRunner:
                 "Parsing pipeline успешно завершён для листа '%s'",
                 ctx.sheet_name,
             )
+        
+        self.profiler.finish()

@@ -5,6 +5,7 @@ from collections import Counter
 from app.application.parsing.context import ParsingPipelineContext
 from app.application.parsing.steps.base import BaseParsingStep
 from app.core.exceptions import CriticalParsingError
+from app.core.profiling import profile_step
 from app.domain.parsing import parse_headers
 from app.domain.parsing.header_parsing import (
     drop_leading_horizontal_path_segments,
@@ -88,6 +89,7 @@ class ParseHeadersStep(BaseParsingStep):
         # Флаг исторически назван «fk1_banner»; сейчас управляет только снятием сегмента с «ОКЕИ».
         self._horizontal_header_strip_okei_banner = horizontal_header_strip_fk1_banner
 
+    @profile_step()
     async def execute(self, ctx: ParsingPipelineContext) -> None:
         if ctx.table_structure is None:
             raise CriticalParsingError(

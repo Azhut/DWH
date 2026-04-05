@@ -18,6 +18,7 @@ import pandas as pd
 from app.application.parsing.context import ParsingPipelineContext
 from app.application.parsing.steps.base import BaseParsingStep
 from app.core.exceptions import CriticalParsingError
+from app.core.profiling import profile_step
 from app.domain.parsing.structure_detection import (
     AutoDetectedTableLayout,
     auto_detect_table_layout,
@@ -35,6 +36,7 @@ class NormalizeDataFrameStep(BaseParsingStep):
     Не читает и не меняет ctx.table_structure — это делает DetectTableStructureStep.
     """
 
+    @profile_step()
     async def execute(self, ctx: ParsingPipelineContext) -> None:
         df: pd.DataFrame = ctx.raw_dataframe
 

@@ -1,0 +1,1322 @@
+[
+  {
+    "timestamp": "2026-04-05T17:50:50.374800",
+    "pipeline": "Upload",
+    "step": "AcquireFileRecordStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:50.375476",
+    "pipeline": "Upload",
+    "step": "ReadFileContentStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 1,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:50.376476",
+    "pipeline": "Upload",
+    "step": "ExtractMetadataStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:50.613860",
+    "pipeline": "Upload",
+    "step": "ReadWorkbookStep",
+    "duration_seconds": 0.237,
+    "memory_delta_mb": 7,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:50.616836",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:50.617837",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:50.619864",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:50.619864",
+    "pipeline": "Parsing",
+    "step": "get_header_rows",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:50.621865",
+    "pipeline": "Parsing",
+    "step": "fill_empty_cells",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:50.622836",
+    "pipeline": "Parsing",
+    "step": "get_horizontal_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:50.623837",
+    "pipeline": "Parsing",
+    "step": "get_vertical_header_values",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:52.457474",
+    "pipeline": "Parsing",
+    "step": "estimate_depths_heuristic",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:52.458454",
+    "pipeline": "Parsing",
+    "step": "build_hierarchy_paths",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:52.459452",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:52.459452",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:52.460452",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 1.84,
+    "memory_delta_mb": 62,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:52.461453",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:52.462472",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:52.463453",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 1.847,
+    "step_count": 6,
+    "peak_memory_mb": 62,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:52.464453",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:52.466476",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:52.469486",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:52.470451",
+    "pipeline": "Parsing",
+    "step": "get_header_rows",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:52.477079",
+    "pipeline": "Parsing",
+    "step": "fill_empty_cells",
+    "duration_seconds": 0.006,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:52.479037",
+    "pipeline": "Parsing",
+    "step": "get_horizontal_headers",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:52.481036",
+    "pipeline": "Parsing",
+    "step": "get_vertical_header_values",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:54.062277",
+    "pipeline": "Parsing",
+    "step": "build_hierarchy_paths",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:54.063089",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:54.064146",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:54.065160",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 1.595,
+    "memory_delta_mb": 1,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:54.145284",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.08,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:54.163350",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.017,
+    "memory_delta_mb": 8,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:54.164361",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 1.7,
+    "step_count": 6,
+    "peak_memory_mb": 9,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:54.166290",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:54.168366",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:54.171258",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:54.172357",
+    "pipeline": "Parsing",
+    "step": "get_header_rows",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:54.182278",
+    "pipeline": "Parsing",
+    "step": "fill_empty_cells",
+    "duration_seconds": 0.009,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:54.185314",
+    "pipeline": "Parsing",
+    "step": "get_horizontal_headers",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:54.186277",
+    "pipeline": "Parsing",
+    "step": "get_vertical_header_values",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:55.790713",
+    "pipeline": "Parsing",
+    "step": "build_hierarchy_paths",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:55.791703",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:55.793655",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:55.794663",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 1.622,
+    "memory_delta_mb": -1,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:55.901014",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.106,
+    "memory_delta_mb": 1,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:55.929662",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.027,
+    "memory_delta_mb": 10,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:55.930644",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 1.765,
+    "step_count": 6,
+    "peak_memory_mb": 11,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:55.931645",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:55.935709",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.003,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:55.938724",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:55.939658",
+    "pipeline": "Parsing",
+    "step": "get_header_rows",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:55.948518",
+    "pipeline": "Parsing",
+    "step": "fill_empty_cells",
+    "duration_seconds": 0.008,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:55.951516",
+    "pipeline": "Parsing",
+    "step": "get_horizontal_headers",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:55.952464",
+    "pipeline": "Parsing",
+    "step": "get_vertical_header_values",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:57.599015",
+    "pipeline": "Parsing",
+    "step": "build_hierarchy_paths",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:57.600011",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:57.601965",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:57.601965",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 1.663,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:57.687028",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.084,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:57.709752",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.022,
+    "memory_delta_mb": 8,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:57.710733",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 1.779,
+    "step_count": 6,
+    "peak_memory_mb": 8,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:57.712713",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:57.715698",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:57.718870",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:57.720459",
+    "pipeline": "Parsing",
+    "step": "get_header_rows",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:57.724530",
+    "pipeline": "Parsing",
+    "step": "fill_empty_cells",
+    "duration_seconds": 0.004,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:57.726471",
+    "pipeline": "Parsing",
+    "step": "get_horizontal_headers",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:57.728471",
+    "pipeline": "Parsing",
+    "step": "get_vertical_header_values",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:59.270972",
+    "pipeline": "Parsing",
+    "step": "build_hierarchy_paths",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:59.272517",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:59.273582",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:59.274926",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 1.555,
+    "memory_delta_mb": 7,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:59.324622",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.048,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:59.337633",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.012,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:59.338563",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 1.627,
+    "step_count": 6,
+    "peak_memory_mb": 7,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:59.340555",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:59.343616",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.003,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:59.347517",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:59.349573",
+    "pipeline": "Parsing",
+    "step": "get_header_rows",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:59.362236",
+    "pipeline": "Parsing",
+    "step": "fill_empty_cells",
+    "duration_seconds": 0.011,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:59.365891",
+    "pipeline": "Parsing",
+    "step": "get_horizontal_headers",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:50:59.367818",
+    "pipeline": "Parsing",
+    "step": "get_vertical_header_values",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:00.928648",
+    "pipeline": "Parsing",
+    "step": "build_hierarchy_paths",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:00.931128",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:00.932870",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:00.933920",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 1.585,
+    "memory_delta_mb": 1,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:01.064461",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.129,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:01.227555",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.161,
+    "memory_delta_mb": -3,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:01.228933",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 1.889,
+    "step_count": 6,
+    "peak_memory_mb": -2,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:01.230570",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:01.234369",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.003,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:01.238415",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.003,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:01.240444",
+    "pipeline": "Parsing",
+    "step": "get_header_rows",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:01.259112",
+    "pipeline": "Parsing",
+    "step": "fill_empty_cells",
+    "duration_seconds": 0.017,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:01.263373",
+    "pipeline": "Parsing",
+    "step": "get_horizontal_headers",
+    "duration_seconds": 0.003,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:01.265420",
+    "pipeline": "Parsing",
+    "step": "get_vertical_header_values",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:02.784502",
+    "pipeline": "Parsing",
+    "step": "build_hierarchy_paths",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:02.785452",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:02.787411",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:02.788438",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 1.549,
+    "memory_delta_mb": 11,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:02.979248",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.19,
+    "memory_delta_mb": 2,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:03.028752",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.048,
+    "memory_delta_mb": 19,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:03.029654",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 1.8,
+    "step_count": 6,
+    "peak_memory_mb": 32,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:03.031705",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:03.035837",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:03.039747",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:03.041698",
+    "pipeline": "Parsing",
+    "step": "get_header_rows",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:03.056820",
+    "pipeline": "Parsing",
+    "step": "fill_empty_cells",
+    "duration_seconds": 0.013,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:03.061387",
+    "pipeline": "Parsing",
+    "step": "get_horizontal_headers",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:03.063268",
+    "pipeline": "Parsing",
+    "step": "get_vertical_header_values",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:04.721822",
+    "pipeline": "Parsing",
+    "step": "build_hierarchy_paths",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:04.723884",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:04.725819",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:04.726875",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 1.686,
+    "memory_delta_mb": 2,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:04.836106",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.108,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:04.863247",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.026,
+    "memory_delta_mb": 8,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:04.864268",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 1.833,
+    "step_count": 6,
+    "peak_memory_mb": 10,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:04.866223",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:04.868258",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:04.870190",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:04.871209",
+    "pipeline": "Parsing",
+    "step": "get_header_rows",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:04.877804",
+    "pipeline": "Parsing",
+    "step": "fill_empty_cells",
+    "duration_seconds": 0.005,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:04.879866",
+    "pipeline": "Parsing",
+    "step": "get_horizontal_headers",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:04.881800",
+    "pipeline": "Parsing",
+    "step": "get_vertical_header_values",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:06.490691",
+    "pipeline": "Parsing",
+    "step": "build_hierarchy_paths",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:06.492594",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:06.493595",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:06.495590",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 1.624,
+    "memory_delta_mb": 7,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:06.499260",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:06.500745",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:06.502578",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 1.637,
+    "step_count": 6,
+    "peak_memory_mb": 7,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:06.504222",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:06.507340",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:06.510333",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:06.511335",
+    "pipeline": "Parsing",
+    "step": "get_header_rows",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:06.517580",
+    "pipeline": "Parsing",
+    "step": "fill_empty_cells",
+    "duration_seconds": 0.004,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:06.520410",
+    "pipeline": "Parsing",
+    "step": "get_horizontal_headers",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:06.522413",
+    "pipeline": "Parsing",
+    "step": "get_vertical_header_values",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:08.156916",
+    "pipeline": "Parsing",
+    "step": "build_hierarchy_paths",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:08.158864",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:08.160861",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:08.161860",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 1.651,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:08.174025",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.01,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:08.178022",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:08.178967",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 1.676,
+    "step_count": 6,
+    "peak_memory_mb": 0,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:08.181025",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:08.184021",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:08.185972",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:08.187974",
+    "pipeline": "Parsing",
+    "step": "get_header_rows",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:08.191027",
+    "pipeline": "Parsing",
+    "step": "fill_empty_cells",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:08.191961",
+    "pipeline": "Parsing",
+    "step": "get_horizontal_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:08.194027",
+    "pipeline": "Parsing",
+    "step": "get_vertical_header_values",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:09.806861",
+    "pipeline": "Parsing",
+    "step": "build_hierarchy_paths",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:09.808864",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:09.809858",
+    "pipeline": "Parsing",
+    "step": "normalize_headers",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:09.811863",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 1.624,
+    "memory_delta_mb": -2,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:09.815838",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:09.817805",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:09.818799",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 1.638,
+    "step_count": 6,
+    "peak_memory_mb": -2,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:09.822856",
+    "pipeline": "Upload",
+    "step": "ProcessSheetsStep",
+    "duration_seconds": 19.208,
+    "memory_delta_mb": 143,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:09.825805",
+    "pipeline": "Upload",
+    "step": "FinalizeFileModelStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:10.244998",
+    "pipeline": "Upload",
+    "step": "EnrichFlatDataStep",
+    "duration_seconds": 0.418,
+    "memory_delta_mb": -2,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:15.644638",
+    "pipeline": "Upload",
+    "step": "PersistStep",
+    "duration_seconds": 5.398,
+    "memory_delta_mb": -3,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:15.646543",
+    "pipeline": "Upload",
+    "total_duration_seconds": 25.274,
+    "step_count": 8,
+    "peak_memory_mb": 146,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T17:51:17.720454",
+    "pipeline": "Upload",
+    "step": "AcquireFileRecordStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  }
+]

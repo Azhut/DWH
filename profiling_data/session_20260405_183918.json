@@ -1,0 +1,586 @@
+[
+  {
+    "timestamp": "2026-04-05T18:39:18.784587",
+    "pipeline": "Upload",
+    "step": "AcquireFileRecordStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.784587",
+    "pipeline": "Upload",
+    "step": "ReadFileContentStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.785615",
+    "pipeline": "Upload",
+    "step": "ExtractMetadataStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.807355",
+    "pipeline": "Upload",
+    "step": "ReadWorkbookStep",
+    "duration_seconds": 0.021,
+    "memory_delta_mb": 2,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.812353",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.814355",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.815354",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.817354",
+    "pipeline": "Parsing",
+    "step": "FK1RoundingStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.819354",
+    "pipeline": "Parsing",
+    "step": "ProcessNotesStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.827959",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 0.008,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.830956",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.831958",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.831958",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 0.02,
+    "step_count": 8,
+    "peak_memory_mb": 0,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.832957",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.834958",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.836066",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.838724",
+    "pipeline": "Parsing",
+    "step": "FK1RoundingStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.840637",
+    "pipeline": "Parsing",
+    "step": "ProcessNotesStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.853213",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 0.011,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.859035",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.005,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.860043",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.861042",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 0.028,
+    "step_count": 8,
+    "peak_memory_mb": 1,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.861042",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.863044",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.865043",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.867044",
+    "pipeline": "Parsing",
+    "step": "FK1RoundingStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.869044",
+    "pipeline": "Parsing",
+    "step": "ProcessNotesStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.877555",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 0.008,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.884554",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.006,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.885555",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 1,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.886555",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 0.025,
+    "step_count": 8,
+    "peak_memory_mb": 1,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.887555",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.888556",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.890556",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.892557",
+    "pipeline": "Parsing",
+    "step": "FK1RoundingStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.895557",
+    "pipeline": "Parsing",
+    "step": "ProcessNotesStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.903215",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 0.007,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.905093",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.905093",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.906095",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 0.019,
+    "step_count": 8,
+    "peak_memory_mb": 0,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.907126",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.909127",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.911114",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.914111",
+    "pipeline": "Parsing",
+    "step": "FK1RoundingStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.915683",
+    "pipeline": "Parsing",
+    "step": "ProcessNotesStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.928722",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 0.012,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.959921",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.03,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.966649",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.007,
+    "memory_delta_mb": 3,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.967650",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 0.061,
+    "step_count": 8,
+    "peak_memory_mb": 3,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.968650",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.969650",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.971651",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.973652",
+    "pipeline": "Parsing",
+    "step": "FK1RoundingStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.974321",
+    "pipeline": "Parsing",
+    "step": "ProcessNotesStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.981682",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 0.006,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.984682",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.002,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.985684",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.986684",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 0.018,
+    "step_count": 8,
+    "peak_memory_mb": 0,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.987684",
+    "pipeline": "Parsing",
+    "step": "NormalizeSheetNameStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.989685",
+    "pipeline": "Parsing",
+    "step": "NormalizeDataFrameStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.990684",
+    "pipeline": "Parsing",
+    "step": "DetectTableStructureStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.992687",
+    "pipeline": "Parsing",
+    "step": "FK1RoundingStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.994940",
+    "pipeline": "Parsing",
+    "step": "ProcessNotesStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.997058",
+    "pipeline": "Parsing",
+    "step": "ParseHeadersStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.998663",
+    "pipeline": "Parsing",
+    "step": "ExtractDataStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:18.999805",
+    "pipeline": "Parsing",
+    "step": "GenerateFlatDataStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:19.000849",
+    "pipeline": "Parsing",
+    "total_duration_seconds": 0.013,
+    "step_count": 8,
+    "peak_memory_mb": 0,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:19.001903",
+    "pipeline": "Upload",
+    "step": "ProcessSheetsStep",
+    "duration_seconds": 0.194,
+    "memory_delta_mb": 6,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:19.002947",
+    "pipeline": "Upload",
+    "step": "FinalizeFileModelStep",
+    "duration_seconds": 0.0,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:19.027622",
+    "pipeline": "Upload",
+    "step": "EnrichFlatDataStep",
+    "duration_seconds": 0.024,
+    "memory_delta_mb": 0,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:19.483247",
+    "pipeline": "Upload",
+    "step": "PersistStep",
+    "duration_seconds": 0.455,
+    "memory_delta_mb": 3,
+    "type": "step"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:19.484254",
+    "pipeline": "Upload",
+    "total_duration_seconds": 0.702,
+    "step_count": 8,
+    "peak_memory_mb": 11,
+    "type": "pipeline"
+  },
+  {
+    "timestamp": "2026-04-05T18:39:21.536741",
+    "pipeline": "Upload",
+    "step": "AcquireFileRecordStep",
+    "duration_seconds": 0.001,
+    "memory_delta_mb": 0,
+    "type": "step"
+  }
+]

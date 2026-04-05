@@ -5,6 +5,7 @@ import logging
 from app.application.parsing.context import ParsingPipelineContext
 from app.application.parsing.steps.base import BaseParsingStep
 from app.core.exceptions import CriticalParsingError
+from app.core.profiling import profile_step
 from app.domain.parsing import ParsedHeaders, extract_sheet_data
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ class ExtractDataStep(BaseParsingStep):
     def __init__(self, deduplicate_columns: bool = False) -> None:
         self._deduplicate_columns = deduplicate_columns
 
+    @profile_step()
     async def execute(self, ctx: ParsingPipelineContext) -> None:
         if ctx.table_structure is None:
             raise CriticalParsingError(

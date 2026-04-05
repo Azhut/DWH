@@ -1,4 +1,5 @@
 import logging
+import os
 
 from colorama import Fore, Style, init as colorama_init
 
@@ -85,7 +86,7 @@ level = logging.DEBUG if config.DEBUG else logging.INFO
 logger = logging.getLogger("sport_api")
 logger.setLevel(level)
 
-if not logger.handlers and config.DEBUG:
+if not logger.handlers and (config.DEBUG or os.environ.get('ENABLE_PROFILING', '').lower() in ('true', '1', 'yes')):
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.DEBUG)
 
@@ -103,4 +104,18 @@ logging.getLogger("pymongo").setLevel(logging.WARNING)
 logging.getLogger("pymongo.topology").setLevel(logging.WARNING)
 logging.getLogger("pymongo.serverSelection").setLevel(logging.WARNING)
 logging.getLogger("pymongo.connection").setLevel(logging.WARNING)
+
+# Настраиваем корневой логгер для профилирования
+if os.environ.get('ENABLE_PROFILING', '').lower() in ('true', '1', 'yes'):
+    root_logger = logging.getLogger()
+    if not root_logger.handlers:
+        root_handler = logging.StreamHandler()
+        root_handler.setLevel(logging.INFO)
+        root_formatter = ColorFormatter(
+            fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+        root_handler.setFormatter(root_formatter)
+        root_logger.addHandler(root_handler)
+        root_logger.setLevel(logging.INFO)
 

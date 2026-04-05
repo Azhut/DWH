@@ -13,6 +13,7 @@ from typing import Callable, Optional
 
 from app.application.parsing.context import ParsingPipelineContext
 from app.application.parsing.steps.base import BaseParsingStep
+from app.core.profiling import profile_step
 
 
 class NormalizeSheetNameStep(BaseParsingStep):
@@ -21,6 +22,7 @@ class NormalizeSheetNameStep(BaseParsingStep):
     def __init__(self, normalize_fn: Optional[Callable[[str], str]] = None) -> None:
         self._normalize_fn = normalize_fn
 
+    @profile_step()
     async def execute(self, ctx: ParsingPipelineContext) -> None:
         raw_name = ctx.sheet_model.sheet_fullname
         if self._normalize_fn is not None:

@@ -7,6 +7,7 @@ from app.application.parsing.context import ParsingPipelineContext
 from app.application.parsing.registry import ParsingStrategyRegistry
 from app.application.upload.pipeline.context import UploadPipelineContext
 from app.core.exceptions import CriticalParsingError, CriticalUploadError
+from app.core.profiling import profile_step
 from app.domain.parsing.workbook_source import ParsingWorkbookSource
 from app.domain.sheet.models import SheetModel
 
@@ -19,6 +20,7 @@ class ProcessSheetsStep:
     def __init__(self, parsing_registry: ParsingStrategyRegistry | None = None) -> None:
         self._parsing_registry = parsing_registry
 
+    @profile_step()
     async def execute(self, ctx: UploadPipelineContext) -> None:
         if not ctx.file_model:
             raise CriticalUploadError(

@@ -5,6 +5,16 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
+# Загружаем .env файл в окружение для профилирования
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Загружаем .env файл
+env_path = Path(__file__).resolve().parent / ".env"
+if env_path.exists():
+    load_dotenv(env_path)
+
 from app.api.v2.endpoints.files import router as files_router
 from app.api.v2.endpoints.logs import router as logs_router
 from app.api.v2.endpoints.filters import router as filters_router

@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     API_HOST: str
     API_PORT: int
     DEBUG: bool
+    ENABLE_PROFILING: bool = False  # Выключен по умолчанию для production
 
     MANUAL_MAP_PATH: Path = Path(__file__).resolve().parent.parent / "app" / "utils" / "manual_map.json"
 

@@ -2,11 +2,13 @@
 
 from app.application.upload.pipeline.context import UploadPipelineContext
 from app.core.exceptions import CriticalUploadError
+from app.core.profiling import profile_step
 
 
 class FinalizeFileModelStep:
     """Заполняет file_model метаданными распарсенных листов."""
 
+    @profile_step()
     async def execute(self, ctx: UploadPipelineContext) -> None:
         if not ctx.file_model:
             raise CriticalUploadError(

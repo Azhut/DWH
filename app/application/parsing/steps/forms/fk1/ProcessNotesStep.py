@@ -5,6 +5,7 @@ import logging
 from app.application.parsing.context import ParsingPipelineContext
 from app.application.parsing.steps.base import BaseParsingStep
 from app.core.exceptions import NonCriticalParsingError
+from app.core.profiling import profile_step
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ class ProcessNotesStep(BaseParsingStep):
     Неудача обработки некритична: продолжаем с исходным DataFrame.
     """
 
+    @profile_step()
     async def execute(self, ctx: ParsingPipelineContext) -> None:
         try:
             from app.domain.parsing import process_notes_1fk

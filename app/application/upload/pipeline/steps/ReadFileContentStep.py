@@ -2,6 +2,7 @@
 
 from app.application.upload.pipeline.context import UploadPipelineContext
 from app.core.exceptions import CriticalUploadError
+from app.core.profiling import profile_step
 
 logger = logging.getLogger(__name__)
 
@@ -9,6 +10,7 @@ logger = logging.getLogger(__name__)
 class ReadFileContentStep:
     """Один раз читает загруженный поток и кэширует байты в контексте."""
 
+    @profile_step()
     async def execute(self, ctx: UploadPipelineContext) -> None:
         try:
             await ctx.file.seek(0)

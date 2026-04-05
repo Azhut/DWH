@@ -6,6 +6,7 @@ from typing import Optional
 from app.application.parsing.context import ParsingPipelineContext
 from app.application.parsing.steps.base import BaseParsingStep
 from app.core.exceptions import CriticalParsingError
+from app.core.profiling import profile_step
 from app.domain.parsing import (
     AutoDetectStructureStrategy,
     StructureDetectionStrategy,
@@ -33,6 +34,7 @@ class DetectTableStructureStep(BaseParsingStep):
     def __init__(self, strategy: Optional[StructureDetectionStrategy] = None) -> None:
         self._strategy = strategy
 
+    @profile_step()
     async def execute(self, ctx: ParsingPipelineContext) -> None:
         if ctx.processed_dataframe is None:
             raise CriticalParsingError(

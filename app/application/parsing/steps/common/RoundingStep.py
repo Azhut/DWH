@@ -8,6 +8,7 @@
 from app.application.parsing.context import ParsingPipelineContext
 from app.application.parsing.steps.base import BaseParsingStep
 from app.core.exceptions import CriticalParsingError
+from app.core.profiling import profile_step
 
 
 class RoundingStep(BaseParsingStep):
@@ -18,6 +19,7 @@ class RoundingStep(BaseParsingStep):
     переопределений. Прямое использование вызовет CriticalParsingError.
     """
 
+    @profile_step()
     async def execute(self, ctx: ParsingPipelineContext) -> None:
         raise CriticalParsingError(
             "RoundingStep используется напрямую без реализации. "
