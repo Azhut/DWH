@@ -1,9 +1,11 @@
-"""File aggregate service."""
+"""Сервис агрегата Files: метаданные, сохранение и удаление записей файлов."""
+
+from __future__ import annotations
 
 import logging
 import re
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from app.core.exceptions import FileValidationError
 from app.domain.file.models import FileInfo, FileModel, FileStatus
@@ -16,13 +18,12 @@ YEAR_SEGMENT_PATTERN = re.compile(r"[0-9]{4}")
 
 
 def validate_and_extract_metadata_from_filename(filename: str) -> FileInfo:
-    """Validate filename and extract subject (reporter) / year / extension.
+    """
+    Проверяет имя файла и извлекает респондента, год и расширение.
 
-    Rules (same for all forms):
-    - Extension is the substring after the last ``.``; if there is no ``.``, invalid.
-    - Exactly one contiguous run of four ASCII digits in the stem (name without extension);
-      that run is the year. Zero or more than one such run is invalid.
-    - Everything else in the stem, with the year removed, is the subject (reporter).
+    Правила (для всех форм одинаковые): расширение — после последней точки;
+    в имени без расширения ровно одна последовательность из четырёх цифр (год);
+    остальное в имени без года — субъект (reporter).
     """
     logger.debug("Validating file name: %s", filename)
 
@@ -72,19 +73,23 @@ def validate_and_extract_metadata_from_filename(filename: str) -> FileInfo:
 
 
 class FileService:
-    """Business logic for Files aggregate."""
+    """Бизнес-логика коллекции Files."""
 
-    def __init__(self, repository: FileRepository):
+    def __init__(self, repository: FileRepository) -> None:
         self._repo = repository
 
     def validate_and_extract_metadata_from_filename(self, filename: str) -> FileInfo:
-        """Instance wrapper to keep metadata API on FileService."""
+        """Извлекает метаданные из имени файла по правилам проекта."""
         return validate_and_extract_metadata_from_filename(filename)
 
-    async def update_or_create(self, file_model: FileModel) -> None:
-        """Insert file record or update existing record by file_id."""
+    async def update_or_create(self, file_model: FileModel, *, session: Any = None) -> None:
+        """
+        Вставляет или обновляет документ по file_id.
+
+        Параметр session используется для участия в много-документной транзакции MongoDB.
+        """
         try:
-            existing = await self._repo.find_by_file_id(file_model.file_id)
+            existing = await self._repo.find_by_file_id(file_model.file_id, session=session)
             data = file_model.model_dump()
             if isinstance(data.get("status"), FileStatus):
                 data["status"] = data["status"].value
@@ -95,10 +100,11 @@ class FileService:
                     {"file_id": file_model.file_id},
                     {"$set": data},
                     upsert=False,
+                    session=session,
                 )
                 logger.debug("File %s updated", file_model.file_id)
             else:
-                await self._repo.insert_one(data)
+                await self._repo.insert_one(data, session=session)
                 logger.debug("File %s created", file_model.file_id)
         except Exception as exc:
             logger.error(
@@ -139,12 +145,12 @@ class FileService:
         doc = await self._repo.find_by_filename_and_status(filename, FileStatus.SUCCESS, form_id)
         return doc is None
 
-    async def delete_by_file_id(self, file_id: str) -> int:
-        result = await self._repo.delete_one({"file_id": file_id})
+    async def delete_by_file_id(self, file_id: str, *, session: Any = None) -> int:
+        result = await self._repo.delete_one({"file_id": file_id}, session=session)
         return getattr(result, "deleted_count", 0) or 0
 
-    async def delete_by_form_id(self, form_id: str) -> int:
-        result = await self._repo.delete_by_form_id(form_id)
+    async def delete_by_form_id(self, form_id: str, *, session: Any = None) -> int:
+        result = await self._repo.delete_by_form_id(form_id, session=session)
         return getattr(result, "deleted_count", 0) or 0
 
     async def get_by_filename(self, filename: str, form_id: Optional[str] = None) -> Optional[FileModel]:

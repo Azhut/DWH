@@ -16,13 +16,21 @@ services:
       API_PORT: 2700
       DEBUG: "False"
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
     restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2700/api/v2/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 
 
   mongo:
-    image: mongo:5.0
+    image: mongo:7.0
     container_name: mongodb
     ports:
       - "2701:27017"
@@ -30,10 +38,11 @@ services:
       - mongodb_data:/data/db
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
 
 volumes:
   mongodb_data:

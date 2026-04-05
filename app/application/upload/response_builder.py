@@ -1,5 +1,5 @@
 import logging
-from typing import List
+from typing import List, Optional
 from app.api.v2.schemas.upload import UploadResponse
 from app.api.v2.schemas.files import FileResponse
 from app.domain.file.models import FileStatus
@@ -14,12 +14,13 @@ class UploadResponseBuilder:
     """
 
     @staticmethod
-    def build_response(file_responses: List[FileResponse]) -> UploadResponse:
+    def build_response(file_responses: List[FileResponse], upload_id: Optional[str] = None) -> UploadResponse:
         """
         Формирует UploadResponse из списка результатов обработки файлов.
 
         Args:
             file_responses: Список результатов обработки каждого файла
+            upload_id: Optional ID для отслеживания прогресса
 
         Returns:
             UploadResponse с итоговой статистикой
@@ -40,4 +41,5 @@ class UploadResponseBuilder:
         return UploadResponse(
             message=message,
             details=file_responses,
+            upload_id=upload_id,  # Optional поле для обратной совместимости
         )

@@ -9,7 +9,11 @@ class Settings(BaseSettings):
     API_HOST: str
     API_PORT: int
     DEBUG: bool
-    ENABLE_PROFILING: bool = False  # Выключен по умолчанию для production
+    ENABLE_PROFILING: bool = False
+
+    MONGO_USE_TRANSACTIONS: bool = True
+    MONGO_TRANSACTION_MAX_FLAT_RECORDS: int = 30000
+    FLATDATA_BULK_CHUNK_SIZE: int = 3000
 
     MANUAL_MAP_PATH: Path = Path(__file__).resolve().parent.parent / "app" / "utils" / "manual_map.json"
 

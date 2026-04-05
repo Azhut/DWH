@@ -1,9 +1,16 @@
 import pytest
-from unittest.mock import AsyncMock, patch
-from pymongo.errors import BulkWriteError, DuplicateKeyError
-from app.domain.flat_data.service import FlatDataService
+from unittest.mock import AsyncMock
+
 from app.domain.flat_data.models import FlatDataRecord
-from app.domain.file.models import FileStatus
+from app.domain.flat_data.service import FlatDataService
+
+
+class _BulkWriteResult:
+    __slots__ = ("inserted_count", "bulk_api_result")
+
+    def __init__(self, inserted_count: int) -> None:
+        self.inserted_count = inserted_count
+        self.bulk_api_result: dict = {"writeErrors": []}
 
 
 class MockCollection:
@@ -12,21 +19,18 @@ class MockCollection:
         self.bulk_write_call_count = 0
         self.insert_one_call_count = 0
 
-    async def bulk_write(self, operations, ordered=False, bypass_document_validation=True):
+    async def bulk_write(self, operations, ordered=False, session=None, **kwargs):
         self.bulk_write_call_count += 1
-        # Симулируем ситуацию: bulk_write "успешен", но 32 дубля были пропущены драйвером/MongoDB
-        # или кидаем ошибку, чтобы проверить fallback.
-        # Для теста H2: просто вернемся, как будто всё ок, но физически вставим только часть.
         docs = [op._doc for op in operations]
-        self.storage.extend(docs)  # В реальности драйвер вставляет всё или кидает ошибку
-        return AsyncMock(inserted_count=len(docs))
+        self.storage.extend(docs)
+        return _BulkWriteResult(len(docs))
 
-    async def insert_one(self, doc):
+    async def insert_one(self, doc, session=None, **kwargs):
         self.insert_one_call_count += 1
         self.storage.append(doc)
         return AsyncMock(inserted_id="mock_id")
 
-    async def count_documents(self, query):
+    async def count_documents(self, query, session=None, **kwargs):
         return len([d for d in self.storage if d.get("file_id") == query.get("file_id")])
 
 
@@ -37,6 +41,8 @@ async def test_save_flat_data_returns_actual_inserted_count_on_bulk_partial_succ
     mock_repo = AsyncMock()
     mock_collection = MockCollection()
     mock_repo.collection = mock_collection
+    mock_repo.insert_one = mock_collection.insert_one
+    mock_repo.count_documents = mock_collection.count_documents
     service = FlatDataService(mock_repo)
 
     # Создаем 3842 записи, но 32 из них будут "дублями" (симулируем через mock)
@@ -48,12 +54,12 @@ async def test_save_flat_data_returns_actual_inserted_count_on_bulk_partial_succ
 
     async def failing_bulk(*args, **kwargs):
         ops = args[0]
-        # Вставляем только 99.1% документов, имитируя тихое отбрасывание дублей
         success_docs = [op._doc for i, op in enumerate(ops) if i % 120 != 0]
         mock_collection.storage.extend(success_docs)
-        return AsyncMock(inserted_count=len(success_docs))
+        return _BulkWriteResult(len(success_docs))
 
     mock_collection.bulk_write = failing_bulk
+    mock_repo.bulk_write_ops = failing_bulk
 
     inserted_total = await service.save_flat_data(records)
     actual_in_db = await mock_repo.count_documents({"file_id": "f1"})

@@ -1,0 +1,13 @@
+# Development dependencies
+-r requirements-prod.txt
+
+# Testing
+pytest==8.3.4
+httpx~=0.28.0
+
+# Visualization and profiling
+matplotlib~=3.10.0
+seaborn~=0.13.0
+
+# Progress bars for scripts
+tqdm~=4.67.1

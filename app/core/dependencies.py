@@ -2,6 +2,7 @@
 Единая точка для всех зависимостей FastAPI.
 Aggregate-Centric: репозитории и сервисы — из domain; сценарии — из application.
 """
+
 from functools import lru_cache
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -22,6 +23,7 @@ from app.application.parsing.registry import get_parsing_strategy_registry
 
 @lru_cache
 def get_database() -> AsyncIOMotorDatabase:
+    """Возвращает закэшированный объект базы MongoDB для репозиториев и сценариев."""
     return mongo_connection.get_database()
 
 
@@ -110,3 +112,25 @@ def get_upload_manager() -> UploadManager:
         data_save_service=get_data_save_service(),
         parsing_registry=get_parsing_strategy_registry(),
     )
+
+
+def clear_dependency_caches() -> None:
+    """
+    Сбрасывает кэш @lru_cache для фабрик зависимостей.
+
+    Используется в тестах или после переконфигурации; в продакшене обычно достаточно перезапуска процесса.
+    """
+    get_database.cache_clear()
+    get_file_repository.cache_clear()
+    get_flat_data_repository.cache_clear()
+    get_form_repository.cache_clear()
+    get_logs_repository.cache_clear()
+    get_file_service.cache_clear()
+    get_flat_data_service.cache_clear()
+    get_form_service.cache_clear()
+    get_log_service.cache_clear()
+    get_sheet_service.cache_clear()
+    get_data_save_service.cache_clear()
+    get_data_delete_service.cache_clear()
+    get_form_maintenance_service.cache_clear()
+    get_upload_manager.cache_clear()
