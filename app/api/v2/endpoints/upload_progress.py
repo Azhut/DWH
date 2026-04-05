@@ -1,105 +1,120 @@
+# app/api/v2/endpoints/upload_progress.py
 import asyncio
 import json
 
-
-from fastapi import APIRouter, Path, HTTPException,  Depends
+from fastapi import APIRouter, Depends, HTTPException, Path
 from fastapi.responses import StreamingResponse
 
 from app.application.upload import UploadManager
+from app.application.upload.response_builder import UploadResponseBuilder
 from app.core.dependencies import get_upload_manager
-from app.core.exceptions import log_and_raise_http, AppError
 
 router = APIRouter()
+
+_POLL_INTERVAL = 0.1  # секунд
 
 
 @router.get("/upload-progress/{upload_id}")
 async def upload_progress(
-        upload_id: str = Path(..., description="ID загрузки для отслеживания прогресса"),
+        upload_id: str = Path(..., description="ID загрузки, полученный из POST /upload"),
         upload_manager: UploadManager = Depends(get_upload_manager),
 ):
     """
-    Server-Sent Events endpoint для отслеживания прогресса загрузки файлов.
+    SSE-эндпоинт для отслеживания прогресса фоновой обработки файлов.
 
-    Отправляет обновления прогресса в реальном времени.
+    Клиент подключается сразу после получения upload_id из POST /upload
+    и держит соединение открытым до завершения задачи.
 
-    Формат сообщений:
-    {
-        "current": 2,
-        "total": 5,
-        "status": "processing",
-        "processed_files": ["file1.xlsx", "file2.xlsx"],
-        "progress_percentage": 40.0,
-        "errors": []
-    }
+    Формат промежуточных событий:
+        {
+            "upload_id":          "...",
+            "status":             "processing",
+            "current":            2,
+            "total":              5,
+            "progress_percentage": 40.0,
+            "processed_files":    ["file1.xlsx", "file2.xlsx"],
+            "errors":             []
+        }
+
+    Финальное событие (status = "completed" | "failed") дополнительно
+    содержит поле "result" с полным UploadResponse — тем самым клиенту
+    не нужен отдельный запрос за результатом:
+        {
+            ...промежуточные поля...,
+            "result": {
+                "message": "3 files processed successfully, 0 failed.",
+                "details": [...],
+                "upload_id": "..."
+            }
+        }
+
+    После отправки финального события соединение закрывается,
+    а память задачи освобождается.
     """
 
-    # Проверяем существование upload_id ДО создания StreamingResponse,
-    # пока заголовки ещё не отправлены и можно вернуть 404
-    progress = upload_manager.get_upload_progress(upload_id)
-    if not progress:
-        raise HTTPException(status_code=404, detail="Upload not found")
+    # Проверяем upload_id ДО открытия потока — пока заголовки не отправлены
+    # можно вернуть корректный 404.
+    if not upload_manager.get_upload_progress(upload_id):
+        raise HTTPException(status_code=404, detail=f"Upload '{upload_id}' not found")
 
-    async def event_generator():
-        """Генератор событий SSE с прогрессом загрузки"""
+    return StreamingResponse(
+        _event_generator(upload_id, upload_manager),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",       # отключаем буфер nginx
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "*",
+        },
+    )
 
-        current_progress = upload_manager.get_upload_progress(upload_id)
-        if not current_progress:
-            return
 
-        # Отправляем начальное состояние
-        last_sent_data = None
-        data = {
-            "current": current_progress.current_file,
-            "total": current_progress.total_files,
-            "status": current_progress.status,
-            "processed_files": current_progress.processed_files.copy(),
-            "progress_percentage": current_progress.progress_percentage,
-            "errors": current_progress.errors.copy(),
+# ---------------------------------------------------------------------------
+# Генератор событий (вынесен из эндпоинта для читаемости)
+# ---------------------------------------------------------------------------
+
+async def _event_generator(upload_id: str, upload_manager: UploadManager):
+    """
+    Отправляет SSE-события пока задача не перейдёт в терминальный статус.
+    Последним событием отдаёт полный результат обработки.
+    """
+    last_sent: dict | None = None
+
+    while True:
+        progress = upload_manager.get_upload_progress(upload_id)
+        if progress is None:
+            # Задача уже очищена (race condition при повторном подключении)
+            break
+
+        is_terminal = progress.status in ("completed", "failed")
+
+        data: dict = {
+            "upload_id": upload_id,
+            "status": progress.status,
+            "current": progress.current_file,
+            "total": progress.total_files,
+            "progress_percentage": progress.progress_percentage,
+            "processed_files": progress.processed_files.copy(),
+            "errors": progress.errors.copy(),
         }
-        yield f"data: {json.dumps(data)}\n\n"
-        last_sent_data = data
 
-        # Продолжаем отправлять обновления пока загрузка не завершится
-        while True:
-            await asyncio.sleep(0.1)  # Уменьшил для более быстрой реакции
+        if is_terminal:
+            # Финальное событие: добавляем полный UploadResponse.
+            # UploadResponseBuilder.build_response — единственная точка
+            # формирования итогового ответа, как и предполагалось изначально.
+            final_response = UploadResponseBuilder.build_response(
+                file_responses=progress.file_responses,
+                upload_id=upload_id,
+            )
+            data["result"] = final_response.model_dump()
 
-            current_progress = upload_manager.get_upload_progress(upload_id)
-            if not current_progress:
-                break
+        if data != last_sent:
+            yield f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+            last_sent = data
 
-            data = {
-                "current": current_progress.current_file,
-                "total": current_progress.total_files,
-                "status": current_progress.status,
-                "processed_files": current_progress.processed_files.copy(),
-                "progress_percentage": current_progress.progress_percentage,
-                "errors": current_progress.errors.copy(),
-            }
-            
-            # Отправляем только если данные изменились
-            if data != last_sent_data:
-                yield f"data: {json.dumps(data)}\n\n"
-                last_sent_data = data
+        if is_terminal:
+            upload_manager.cleanup_upload_progress(upload_id)
+            break
 
-            if current_progress.status in ["completed", "failed"]:
-                break
-
-        # Очищаем память после завершения
-        upload_manager.cleanup_upload_progress(upload_id)
-
-    try:
-        return StreamingResponse(
-            event_generator(),
-            media_type="text/event-stream",
-            headers={
-                "Cache-Control": "no-cache",
-                "Connection": "keep-alive",
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "*",
-            }
-        )
-    except Exception as e:
-        error_msg = f"Error creating SSE stream: {str(e)}"
-        log_and_raise_http(
-            AppError(error_msg),
-        )
+        await asyncio.sleep(_POLL_INTERVAL)
