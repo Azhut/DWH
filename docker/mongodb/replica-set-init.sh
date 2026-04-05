@@ -25,7 +25,7 @@ mongosh --eval "
 rs.initiate({
     _id: 'rs0',
     members: [
-        { _id: 0, host: 'localhost:27017' }
+        { _id: 0, host: 'mongodb:27017' }
     ]
 });
 "
@@ -33,7 +33,7 @@ rs.initiate({
 # Wait for replica set to become primary
 echo "Waiting for replica set to be ready..."
 for i in {1..30}; do
-    if mongosh --eval "rs.status().myState" --quiet | grep -q "1"; then
+    if mongosh --eval "rs.isMaster().ismaster" --quiet | grep -q "true"
         echo "Replica set is ready"
         exit 0
     fi

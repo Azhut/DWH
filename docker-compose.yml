@@ -40,7 +40,7 @@ services:
     restart: unless-stopped
     command: mongod --replSet rs0 --bind_ip_all
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "rs.status().ok && db.adminCommand('ping').ok"]
+      test: ["CMD", "mongosh", "--eval", "rs.status().myState == 1 && db.adminCommand('ping').ok"]
       interval: 10s
       timeout: 10s
       retries: 10
