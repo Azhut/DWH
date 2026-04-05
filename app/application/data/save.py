@@ -53,7 +53,30 @@ class DataSaveService:
                 )
 
             file_model.status = FileStatus.SUCCESS
-            file_model.flat_data_size = inserted_total if inserted_total else file_model.flat_data_size
+            file_model.flat_data_size = inserted_total
+
+            # Валидация расхождения между ожидаемым и фактическим количеством
+            expected_count = len(flat_data) if flat_data else 0
+            if expected_count > 0 and inserted_total < expected_count:
+                discrepancy = expected_count - inserted_total
+                await self._log_service.save_log(
+                    scenario="upload",
+                    message=f"Data discrepancy detected for {file_model.file_id}: expected {expected_count}, inserted {inserted_total}",
+                    level="warning",
+                    meta={
+                        "file_id": file_model.file_id,
+                        "expected_count": expected_count,
+                        "inserted_count": inserted_total,
+                        "discrepancy": discrepancy
+                    },
+                )
+                logger.warning(
+                    "DataSaveService discrepancy for %s: expected %s, inserted %s (missing %s)",
+                    file_model.file_id,
+                    expected_count,
+                    inserted_total,
+                    discrepancy,
+                )
 
             await self._file_service.update_or_create(file_model)
             await self._log_service.save_log(

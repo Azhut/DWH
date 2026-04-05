@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Set, Tuple, Union
 
 from pymongo import InsertOne
 
+from app.core.exceptions import CriticalUploadError
 from app.domain.flat_data.models import FILTER_MAP, FlatDataRecord, TABLE_FIELDS
 from app.domain.flat_data.repository import FlatDataRepository
 
@@ -70,21 +71,86 @@ class FlatDataService:
             chunk = normalized_records[i : i + CHUNK_SIZE]
             try:
                 operations = [InsertOne(doc) for doc in chunk]
-                await self._repo.collection.bulk_write(
+                result = await self._repo.collection.bulk_write(
                     operations,
                     ordered=False,
                     bypass_document_validation=True,
                 )
-                total_inserted += len(chunk)
+                
+                # Проверяем на ошибки вставки, включая дубликаты
+                if result.bulk_api_result.get('writeErrors'):
+                    for error in result.bulk_api_result['writeErrors']:
+                        if error.get('code') == 11000:  # MongoDB duplicate key error
+                            # Извлекаем информацию о дублирующемся документе
+                            error_doc = error.get('op', {})
+                            duplicate_info = {
+                                'file_id': error_doc.get('file_id'),
+                                'year': error_doc.get('year'),
+                                'reporter': error_doc.get('reporter'),
+                                'section': error_doc.get('section'),
+                                'row': error_doc.get('row'),
+                                'column': error_doc.get('column'),
+                                'value': error_doc.get('value')
+                            }
+                            
+                            raise CriticalUploadError(
+                                message=f"Duplicate data detected during bulk insert: {error.get('errmsg')}",
+                                domain="upload.duplicate_data",
+                                http_status=400,
+                                meta={
+                                    "error": error,
+                                    "duplicate_document": duplicate_info,
+                                    "chunk_range": f"{i}-{i + len(chunk) - 1}",
+                                    "file_id": list(file_ids)
+                                }
+                            )
+                        else:
+                            logger.error("Bulk write error: %s", error)
+                
+                chunk_inserted = result.inserted_count
+                total_inserted += chunk_inserted
+                logger.debug("FlatDataService: чанк %d..%d успешно вставлен: %d записей", 
+                           i, i + len(chunk) - 1, chunk_inserted)
+                
             except Exception as e:
-                #TODO временно заменил логи на DEBUG, должно быть exception
-                logger.debug("FlatDataService: ошибка bulk_write для чанка %d..%d: %s", i, i + len(chunk) - 1, e)
+                # Если это не наша критическая ошибка, логируем и пробуем поштучно
+                if not isinstance(e, CriticalUploadError):
+                    logger.error("FlatDataService: ошибка bulk_write для чанка %d..%d: %s", i, i + len(chunk) - 1, e)
+                else:
+                    # Пробрасываем критическую ошибку (дубликаты)
+                    raise
+                
+                # Поштучная вставка для резилвенции проблем
                 for j, doc in enumerate(chunk):
                     try:
                         await self._repo.insert_one(doc)
                         total_inserted += 1
+                        logger.debug("FlatDataService: документ %d успешно вставлен поштучно", i + j)
                     except Exception as e2:
-                        logger.debug("FlatDataService: не удалось вставить документ %d: %s", j, e2)
+                        if "duplicate key" in str(e2).lower() or e2.__class__.__name__ == 'DuplicateKeyError':
+                            # Собираем информацию о дублирующемся документе
+                            duplicate_info = {
+                                'file_id': doc.get('file_id'),
+                                'year': doc.get('year'),
+                                'reporter': doc.get('reporter'),
+                                'section': doc.get('section'),
+                                'row': doc.get('row'),
+                                'column': doc.get('column'),
+                                'value': doc.get('value')
+                            }
+                            
+                            raise CriticalUploadError(
+                                message=f"Duplicate data detected during individual insert: {e2}",
+                                domain="upload.duplicate_data",
+                                http_status=400,
+                                meta={
+                                    "error": str(e2),
+                                    "duplicate_document": duplicate_info,
+                                    "document_index": i + j,
+                                    "file_id": doc.get("file_id")
+                                }
+                            )
+                        logger.error("FlatDataService: не удалось вставить документ %d: %s", i + j, e2)
 
         if file_ids:
             for fid in file_ids:

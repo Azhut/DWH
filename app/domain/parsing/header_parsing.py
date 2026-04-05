@@ -231,19 +231,20 @@ def _estimate_depths_heuristic(
     """
     Многоуровневые глубины (0, 1, 2, …), в т.ч. рекурсивные «в том числе» подряд.
 
-    Логика:
-    - строка, начинающаяся с префикса из primary или compound, наращивает «виток»:
-      две такие подряд увеличивают глубину (рекурсия);
-    - строка с тире в начале — уровень под текущим витком;
-    - ведущие пробелы дают базовый уровень (как прокси indent в .xls);
-    - внутри подблока короткие строки без триггеров трактуются как продолжение;
-    - длинные / с маркерами («всего») — выход к новому корневому блоку.
+    Обновленная логика:
+    - строка с триггером (из них, в том числе) наращивает глубину от текущего контекста;
+    - строка с тире в начале — уровень под текущим контекстом;
+    - ведущие пробелы сохраняют уровень текущего контекста;
+    - строки без отступов и триггеров сбрасывают контекст к базовому уровню;
+    - внутри подблока короткие строки без триггеров сохраняют текущий контекст.
     """
     depths: List[int] = []
     phrase_run_depth = 0
     prev_line_was_phrase_opener = False
     in_subblock = False
     last_explicit_depth = 0
+    current_context_depth = 0  # Новая переменная - текущая глубина контекста
+    first_non_empty_processed = False  # Флаг первой непустой строки
 
     for raw in values:
         s = "" if raw is None else str(raw)
@@ -255,6 +256,7 @@ def _estimate_depths_heuristic(
             prev_line_was_phrase_opener = False
             in_subblock = False
             last_explicit_depth = 0
+            current_context_depth = 0  # Сбрасываем контекст
             continue
 
         sl = stripped.lower()
@@ -269,6 +271,14 @@ def _estimate_depths_heuristic(
             and not opens_phrase
             and not dash
         )
+        
+        # Обновляем текущий контекст для базового уровня (без отступов)
+        if leading_spaces == 0 and not opens_phrase and not dash and not space_only_child:
+            if not first_non_empty_processed:
+                current_context_depth = base_level  # Первая строка - корень (depth=0)
+                first_non_empty_processed = True
+            else:
+                current_context_depth = max(base_level, 1)  # Последующие строки - минимум depth=1
 
         # Выход к новому крупному заголовку (конец подблока)
         exit_block = _subblock_should_exit(stripped, sl, cfg) or (
@@ -284,14 +294,18 @@ def _estimate_depths_heuristic(
             prev_line_was_phrase_opener = False
             in_subblock = False
             last_explicit_depth = base_level
+            current_context_depth = base_level  # Сбрасываем контекст
             depths.append(base_level)
             continue
 
         if opens_phrase:
+            # Наращиваем глубину от текущего контекста, а не от base_level
             if prev_line_was_phrase_opener:
-                phrase_run_depth += 1
+                phrase_run_depth = current_context_depth + 1
             else:
-                phrase_run_depth = max(base_level + 1, 1)
+                phrase_run_depth = current_context_depth + 1
+            
+            current_context_depth = phrase_run_depth  # Обновляем контекст
             last_explicit_depth = phrase_run_depth
             depths.append(phrase_run_depth)
             in_subblock = True
@@ -301,27 +315,34 @@ def _estimate_depths_heuristic(
         prev_line_was_phrase_opener = False
 
         if dash:
-            d = max(phrase_run_depth, base_level) + 1
+            d = current_context_depth + 1  # Наращиваем от текущего контекста
+            current_context_depth = d  # Обновляем контекст
             last_explicit_depth = d
             depths.append(d)
             in_subblock = True
             continue
 
         if space_only_child:
-            d = max(phrase_run_depth, base_level) + 1
+            d = current_context_depth  # Сохраняем уровень контекста, не наращиваем
             last_explicit_depth = d
             depths.append(d)
             in_subblock = True
             continue
 
         if in_subblock and not _subblock_should_exit(stripped, sl, cfg):
-            depths.append(max(last_explicit_depth, phrase_run_depth, base_level))
+            depths.append(current_context_depth)  # Используем текущий контекст
             continue
 
-        phrase_run_depth = 0
-        in_subblock = False
-        last_explicit_depth = base_level
-        depths.append(base_level)
+        # Сбрасываем глубину только если нет триггера и нет отступов
+        if not opens_phrase and not dash and not space_only_child and leading_spaces == 0:
+            current_context_depth = base_level
+            phrase_run_depth = 0
+            in_subblock = False
+            last_explicit_depth = base_level
+            depths.append(base_level)
+        else:
+            # Иначе используем текущий контекст
+            depths.append(current_context_depth)
 
     if depths:
         baseline = depths[0]
