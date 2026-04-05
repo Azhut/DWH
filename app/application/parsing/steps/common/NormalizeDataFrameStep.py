@@ -40,7 +40,7 @@ class NormalizeDataFrameStep(BaseParsingStep):
     async def execute(self, ctx: ParsingPipelineContext) -> None:
         df: pd.DataFrame = ctx.raw_dataframe
 
-        if ctx.sheet_name=='Раздел 2':
+        if ctx.sheet_name=='Раздел5':
             print(1)
         layout: Optional[AutoDetectedTableLayout] = auto_detect_table_layout(
             df,

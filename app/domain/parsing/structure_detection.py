@@ -123,8 +123,8 @@ def _find_1_to_n_run(row: pd.Series, min_sequence_len: int) -> Optional[Tuple[in
             return None
 
         if finished:
-            if parsed is not None:
-                return None
+            # После окончания последовательности (NaN) игнорируем всё что дальше
+            break
 
     if start_col is None:
         return None
