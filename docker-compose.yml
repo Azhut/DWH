@@ -10,7 +10,7 @@ services:
       - "2700:2700"
     environment:
       APP_ENV: "production"
-      MONGO_URI: "mongodb://mongo:27017/?replicaSet=rs0"
+      MONGO_URI: "mongodb://mongo:27017/?directConnection=true&replicaSet=rs0"
       DATABASE_NAME: "sport_data"
       API_HOST: "0.0.0.0"
       API_PORT: 2700

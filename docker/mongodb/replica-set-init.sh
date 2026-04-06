@@ -21,19 +21,4 @@ rs.initiate({
 });
 "
 
-echo "Waiting for primary..."
-for i in {1..30}; do
-    if mongosh --quiet --eval "rs.isMaster().ismaster" 2>/dev/null | grep -q "true"; then
-        break
-    fi
-    sleep 2
-done
-
-echo "Reconfiguring hostname to mongo:27017..."
-mongosh --quiet --eval "
-var cfg = rs.conf();
-cfg.members[0].host = 'mongo:27017';
-rs.reconfig(cfg, {force: true});
-"
-
 echo "✓ Replica set ready"
