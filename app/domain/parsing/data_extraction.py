@@ -3,6 +3,8 @@
 Поддерживает простой режим (1ФК) и режим с дедупликацией колонок (5ФК).
 """
 import logging
+import re
+from collections import Counter
 from typing import List
 
 import pandas as pd
@@ -18,6 +20,61 @@ from app.domain.parsing.structure_detection import _is_empty_or_nan, _is_numeric
 from app.domain.parsing.header_fixer import fix_header
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_row_number(value: object) -> int | str | None:
+    """Нормализует номер строки: int, иначе очищенная строка, иначе None."""
+    if _is_empty_or_nan(value):
+        return None
+
+    if isinstance(value, bool):
+        return str(value)
+
+    if isinstance(value, int):
+        return value
+
+    if isinstance(value, float):
+        if value.is_integer():
+            return int(value)
+        return str(value)
+
+    text = str(value).strip()
+    if not text:
+        return None
+
+    normalized = text.replace(" ", "").replace(",", ".")
+    if re.fullmatch(r"[+-]?\d+(?:\.0+)?", normalized):
+        try:
+            return int(float(normalized))
+        except Exception:
+            return text
+
+    return text
+
+
+def _append_row_number_for_duplicates(
+    vertical_headers: List[str],
+    row_numbers: List[int | str | None],
+) -> List[str]:
+    """
+    Делает row-имена уникальными: добавляет "(N)" только для дублирующихся строк.
+    """
+    counts = Counter(vertical_headers)
+    out: List[str] = []
+    for header, row_number in zip(vertical_headers, row_numbers):
+        if counts.get(header, 0) <= 1:
+            out.append(header)
+            continue
+        if row_number is None:
+            out.append(header)
+            continue
+        suffix = f"({row_number})"
+        header_text = str(header).strip()
+        if header_text.endswith(suffix):
+            out.append(header)
+            continue
+        out.append(f"{header_text} {suffix}")
+    return out
 
 
 def extract_sheet_data(
@@ -51,16 +108,29 @@ def _extract_simple(
     """Простое извлечение по позициям (1ФК)."""
     columns: List[ExtractedColumn] = []
     start_row = structure.data_start_row
-    v_col = structure.vertical_header_column
+    row_numbers: List[int | str | None] = []
+    for row_idx in range(len(headers.vertical)):
+        try:
+            raw_row_number = sheet.iloc[start_row + row_idx, 1]
+        except IndexError:
+            raw_row_number = None
+        row_numbers.append(_parse_row_number(raw_row_number))
+    unique_vertical_headers = _append_row_number_for_duplicates(headers.vertical, row_numbers)
 
     for col_idx, col_header in enumerate(headers.horizontal, start=1):
         values: List[CellValue] = []
-        for row_idx, row_header in enumerate(headers.vertical):
+        for row_idx, row_header in enumerate(unique_vertical_headers):
             try:
                 cell_val = sheet.iloc[start_row + row_idx, col_idx]
             except IndexError:
                 cell_val = None
-            values.append(CellValue(row_header=row_header, value=cell_val))
+            values.append(
+                CellValue(
+                    row_header=row_header,
+                    row_number=row_numbers[row_idx],
+                    value=cell_val,
+                )
+            )
         columns.append(ExtractedColumn(column_header=col_header, values=values))
 
     return ExtractedSheetData(columns=columns)
@@ -80,6 +150,14 @@ def _extract_with_column_dedup(
     start_row = structure.data_start_row
     vertical_headers = list(headers.vertical)
     horizontal_headers = list(headers.horizontal)
+    row_numbers: List[int | str | None] = []
+    for row_idx in range(len(vertical_headers)):
+        try:
+            raw_row_number = sheet.iloc[start_row + row_idx, 1]
+        except IndexError:
+            raw_row_number = None
+        row_numbers.append(_parse_row_number(raw_row_number))
+    unique_vertical_headers = _append_row_number_for_duplicates(vertical_headers, row_numbers)
 
     # Маппинг: имя колонки -> позиция первого вхождения
     column_map: dict[str, int] = {}
@@ -107,7 +185,13 @@ def _extract_with_column_dedup(
             elif _is_empty_or_nan(cell_val):
                 cell_val = None
 
-            values.append(CellValue(row_header=vertical_headers[row_idx], value=cell_val))
+            values.append(
+                CellValue(
+                    row_header=unique_vertical_headers[row_idx],
+                    row_number=row_numbers[row_idx],
+                    value=cell_val,
+                )
+            )
         columns.append(ExtractedColumn(column_header=col_name.strip(), values=values))
 
     return ExtractedSheetData(columns=columns)

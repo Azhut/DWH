@@ -2,7 +2,7 @@
 Контракты агрегата Parsing: типизированные модели для парсинга листов Excel.
 """
 from dataclasses import dataclass
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 
 @dataclass(frozen=True)
@@ -32,6 +32,7 @@ class CellValue:
     """Значение ячейки с контекстом строки."""
 
     row_header: str
+    row_number: Optional[Union[int, str]]
     value: Union[str, int, float, None]
 
 
