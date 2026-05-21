@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any, Dict, List, Tuple
 
 from pymongo import InsertOne
@@ -34,16 +35,25 @@ class FlatDataRepository(BaseRepository):
         offset: int,
         session: Any = None,
     ) -> Tuple[List[Dict[str, Any]], int]:
+        """Возвращает страницу данных и общий счётчик параллельными запросами.
+
+        Прежде find() и count_documents() шли последовательно — каждый тяжёлый
+        запрос блокировал следующий. asyncio.gather() запускает оба одновременно:
+        итоговая latency равна max(find, count), а не их сумме.
+        """
         projection = {f: 1 for f in self.TABLE_FIELDS}
         projection["_id"] = 0
-        docs = await self.find(
+
+        docs_coro = self.find(
             query=query,
             projection=projection,
             limit=limit,
             skip=offset,
             session=session,
         )
-        total = await self.count_documents(query, session=session)
+        count_coro = self.count_documents(query, session=session)
+
+        docs, total = await asyncio.gather(docs_coro, count_coro)
         return docs, total
 
     async def delete_by_form(self, form_id: str, session: Any = None) -> Any:

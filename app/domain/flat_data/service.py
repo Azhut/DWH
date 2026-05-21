@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
 import math
 from typing import Any, Dict, List, Set, Tuple, Union
@@ -48,30 +46,32 @@ def _to_builtin(obj: Any) -> Any:
             return None
 
 
+def _make_cache_key(
+    filter_name: str,
+    applied_filters: List[Dict[str, Any]],
+    pattern: str,
+    form_id: str | None,
+) -> int:
+    """Строит ключ кэша как хэш неизменяемой структуры.
+
+    Заменяет JSON-сериализацию + MD5 на встроенный hash() от frozenset/tuple:
+    операция занимает микросекунды вместо миллисекунд при большом числе
+    вызовов в секунду и не требует импорта hashlib/json.
+    """
+    filters_key = frozenset(
+        (f.get("filter-name", ""), tuple(sorted(str(v) for v in f.get("values", []))))
+        for f in applied_filters
+    )
+    return hash((filter_name, filters_key, pattern, form_id))
+
+
 class FlatDataService:
     """Сохранение плоских строк, удаление по file_id/form, выдача данных для фильтров и таблицы."""
 
     def __init__(self, repository: FlatDataRepository) -> None:
         self._repo = repository
-        self._filter_cache: Dict[str, List[Union[str, int, float]]] = {}
+        self._filter_cache: Dict[int, List[Union[str, int, float]]] = {}
         self._cache_max_size = 128
-
-    def _generate_cache_key(
-        self,
-        filter_name: str,
-        applied_filters: List[Dict[str, Any]],
-        pattern: str,
-        form_id: str | None,
-    ) -> str:
-        """Строит ключ кэша для комбинации фильтров и шаблона поиска."""
-        cache_data = {
-            "filter_name": filter_name,
-            "applied_filters": sorted(applied_filters, key=lambda x: x.get("filter-name", "")),
-            "pattern": pattern,
-            "form_id": form_id,
-        }
-        cache_str = json.dumps(cache_data, sort_keys=True, default=str)
-        return hashlib.md5(cache_str.encode()).hexdigest()
 
     async def get_filter_values(
         self,
@@ -81,11 +81,12 @@ class FlatDataService:
         form_id: str | None = None,
     ) -> List[Union[str, int, float]]:
         """
-        Возвращает отсортированный список допустимых значений для имени фильтра с учётом уже выбранных условий.
+        Возвращает отсортированный список допустимых значений для имени фильтра
+        с учётом уже выбранных условий.
 
         Результаты кэшируются в памяти процесса с ограничением размера кэша.
         """
-        cache_key = self._generate_cache_key(filter_name, applied_filters, pattern, form_id)
+        cache_key = _make_cache_key(filter_name, applied_filters, pattern, form_id)
 
         if cache_key in self._filter_cache:
             return self._filter_cache[cache_key]
@@ -94,6 +95,7 @@ class FlatDataService:
         query = self._build_query(applied_filters, form_id)
         if pattern:
             query = {**query, field: {"$regex": pattern, "$options": "i"}}
+
         values = await self._repo.distinct(field, query)
         try:
             values = sorted(values)
@@ -111,8 +113,8 @@ class FlatDataService:
         """
         Пакетно сохраняет строки FlatData чанками фиксированного размера.
 
-        Возвращает число фактически вставленных документов. При ошибке дубликата по уникальному индексу
-        выбрасывает CriticalUploadError. Параметр session связывает операции с транзакцией MongoDB.
+        Возвращает число фактически вставленных документов. При ошибке дубликата
+        по уникальному индексу выбрасывает CriticalUploadError.
         """
         if not records:
             logger.info("FlatDataService.save_flat_data: пустой список")
@@ -265,28 +267,42 @@ class FlatDataService:
         form_id: str | None = None,
     ) -> Tuple[List[List[Union[str, int, float, None]]], int]:
         """
-        Возвращает таблицу строк (год, респондент, раздел, строка, колонка, значение) и общее число строк по фильтру.
+        Возвращает таблицу строк (год, респондент, раздел, строка, колонка, значение)
+        и общее число строк по фильтру.
         """
         query = self._build_query(filters, form_id)
         docs, total = await self._repo.get_filtered_data(query, limit, offset)
         table = self._process_docs_to_table(docs)
         return table, total
 
-    def _process_docs_to_table(self, docs: List[Dict[str, Any]]) -> List[List[Union[str, int, float, None]]]:
-        """Преобразует сырые документы в строки таблицы для API."""
+    def _process_docs_to_table(
+        self, docs: List[Dict[str, Any]]
+    ) -> List[List[Union[str, int, float, None]]]:
+        """Преобразует сырые документы в строки таблицы для API.
+
+        Прямой доступ к словарю вместо FlatDataRecord.from_mongo_doc() на каждой
+        строке устраняет оверхед создания объектов при возврате тысяч записей.
+        Логика нормализации value идентична оригиналу.
+        """
         rows: List[List[Union[str, int, float, None]]] = []
         for doc in docs:
-            record = FlatDataRecord.from_mongo_doc(doc)
-            if (
-                record.year is None
-                or record.reporter is None
-                or record.section is None
-                or record.row is None
-                or record.column is None
-            ):
+            year     = doc.get("year")
+            reporter = doc.get("reporter")
+            section  = doc.get("section")
+            row      = doc.get("row")
+            column   = doc.get("column")
+
+            if year is None or reporter is None or section is None or row is None or column is None:
                 raise ValueError("Документ не содержит обязательных полей")
-            value = record.value
+
+            value = doc.get("value")
             if isinstance(value, float):
-                value = None if math.isnan(value) else (int(value) if value == int(value) else round(value, 2))
-            rows.append([record.year, record.reporter, record.section, record.row, record.column, value])
+                if math.isnan(value):
+                    value = None
+                elif value == int(value):
+                    value = int(value)
+                else:
+                    value = round(value, 2)
+
+            rows.append([year, reporter, section, row, column, value])
         return rows
