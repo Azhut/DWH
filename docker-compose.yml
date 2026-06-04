@@ -23,13 +23,14 @@ services:
   mongo:
     image: mongo:5.0
     container_name: mongodb
+    command: ["--setParameter", "diagnosticDataCollectionEnabled=false"]
     ports:
       - "2701:27017"
     volumes:
       - mongodb_data:/data/db
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
