@@ -1,5 +1,7 @@
+import asyncio
 import uvicorn
 from contextlib import asynccontextmanager
+from contextlib import suppress
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -20,7 +22,7 @@ from app.api.v2.endpoints.forms import router as forms_router
 from app.api.v2.endpoints.upload import router as upload_router
 from app.api.v2.endpoints.upload_progress import router as upload_progress_router
 from app.api.v2.endpoints.health import router as health_router
-from app.application.data.indexes import create_indexes
+from app.application.data.indexes import schedule_index_creation
 from app.core.database import mongo_connection
 from app.core.dependencies import get_log_service
 from config.config import config
@@ -29,15 +31,21 @@ from launcher import get_launcher
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    await create_indexes()
+    index_creation_task = schedule_index_creation()
     from app.application.parsing.registry import get_parsing_strategy_registry
 
     get_parsing_strategy_registry()
     from app.core.dependencies import get_form_maintenance_service
 
     await get_form_maintenance_service().ensure_system_forms_exist()
-    yield
-    await mongo_connection.close()
+    try:
+        yield
+    finally:
+        if not index_creation_task.done():
+            index_creation_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await index_creation_task
+        await mongo_connection.close()
 
 
 def create_app() -> FastAPI:
