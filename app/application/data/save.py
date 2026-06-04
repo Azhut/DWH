@@ -33,6 +33,8 @@ class DataSaveService:
 
     def _should_use_transaction_for_flat_count(self, flat_count: int) -> bool:
         """Возвращает True, если объём FlatData укладывается в лимит одной много-документной транзакции."""
+        if config.FLATDATA_STORAGE == "duckdb":
+            return False
         if not config.MONGO_USE_TRANSACTIONS:
             return False
         return flat_count <= config.MONGO_TRANSACTION_MAX_FLAT_RECORDS

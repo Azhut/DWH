@@ -37,6 +37,11 @@ async def lifespan(_app: FastAPI):
     get_parsing_strategy_registry()
     from app.core.dependencies import get_form_maintenance_service
 
+    if (config.FLATDATA_STORAGE or "mongo").lower() == "duckdb":
+        from app.core.duckdb_database import duckdb_connection
+
+        await duckdb_connection.initialize_schema()
+
     await get_form_maintenance_service().ensure_system_forms_exist()
     try:
         yield
@@ -45,6 +50,10 @@ async def lifespan(_app: FastAPI):
             index_creation_task.cancel()
             with suppress(asyncio.CancelledError):
                 await index_creation_task
+        if (config.FLATDATA_STORAGE or "mongo").lower() == "duckdb":
+            from app.core.duckdb_database import duckdb_connection
+
+            await duckdb_connection.close()
         await mongo_connection.close()
 
 

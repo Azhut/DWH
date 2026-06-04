@@ -1,6 +1,9 @@
 # Ignore Python cache files
 **/__pycache__/
 # Ignore data files
+data/
+*.duckdb
+*.duckdb.wal
 app/parsers/tester.py
 profile_stats
 tests/client/

@@ -11,6 +11,15 @@ from config.config import config
 @pytest.fixture(autouse=True)
 def _disable_mongo_transactions_in_tests(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(config, "MONGO_USE_TRANSACTIONS", False)
+    monkeypatch.setattr(config, "FLATDATA_STORAGE", "mongo")
+
+
+@pytest.fixture(autouse=True)
+def _clear_dependency_caches_after_test() -> None:
+    yield
+    from app.core.dependencies import clear_dependency_caches
+
+    clear_dependency_caches()
 
 
 def pytest_configure(config) -> None:

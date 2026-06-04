@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     MONGO_TRANSACTION_MAX_FLAT_RECORDS: int = 30000
     FLATDATA_BULK_CHUNK_SIZE: int = 3000
 
+    # flat_data: duckdb (витрина) | mongo (legacy)
+    FLATDATA_STORAGE: str = "duckdb"
+    DUCKDB_PATH: Path = Path(__file__).resolve().parent.parent / "data" / "flat_data.duckdb"
+    DUCKDB_MIGRATION_BATCH_SIZE: int = 50_000
+
     MANUAL_MAP_PATH: Path = Path(__file__).resolve().parent.parent / "app" / "utils" / "manual_map.json"
 
     model_config = SettingsConfigDict(

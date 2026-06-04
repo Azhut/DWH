@@ -9,7 +9,8 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.core.database import mongo_connection
 from app.domain.file import FileRepository, FileService
-from app.domain.flat_data import FlatDataRepository, FlatDataService
+from app.domain.flat_data import FlatDataService
+from app.domain.flat_data.factory import create_flat_data_repository
 from app.domain.form import FormRepository, FormService
 from app.domain.log import LogRepository, LogService
 from app.domain.sheet import SheetService
@@ -34,8 +35,8 @@ def get_file_repository() -> FileRepository:
 
 
 @lru_cache
-def get_flat_data_repository() -> FlatDataRepository:
-    return FlatDataRepository(get_database().get_collection("FlatData"))
+def get_flat_data_repository():
+    return create_flat_data_repository(get_database())
 
 
 @lru_cache

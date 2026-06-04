@@ -10,6 +10,7 @@ from pymongo import InsertOne
 
 from app.core.exceptions import CriticalUploadError
 from app.domain.flat_data.models import FILTER_MAP, FlatDataRecord, TABLE_FIELDS
+from app.domain.flat_data.duckdb_repository import DuckDBFlatDataRepository
 from app.domain.flat_data.repository import FlatDataRepository
 from config.config import config
 
@@ -68,7 +69,7 @@ def _make_cache_key(
 class FlatDataService:
     """Сохранение плоских строк, удаление по file_id/form, выдача данных для фильтров и таблицы."""
 
-    def __init__(self, repository: FlatDataRepository) -> None:
+    def __init__(self, repository: FlatDataRepository | DuckDBFlatDataRepository) -> None:
         self._repo = repository
         self._filter_cache: Dict[int, List[Union[str, int, float]]] = {}
         self._cache_max_size = 128
@@ -115,10 +116,15 @@ class FlatDataService:
 
         Возвращает число фактически вставленных документов. При ошибке дубликата
         по уникальному индексу выбрасывает CriticalUploadError.
+
+        Для DuckDB используется staging → проверки → promote.
         """
         if not records:
             logger.info("FlatDataService.save_flat_data: пустой список")
             return 0
+
+        if isinstance(self._repo, DuckDBFlatDataRepository):
+            return await self._save_flat_data_staged(records)
 
         normalized_records: List[Dict[str, Any]] = []
         file_ids: Set[str] = set()
@@ -224,6 +230,97 @@ class FlatDataService:
                 if count == 0:
                     raise RuntimeError(f"Post-insert verification failed: file_id={fid} -> 0 documents in DB")
         return total_inserted
+
+    async def _save_flat_data_staged(self, records: List[FlatDataRecord]) -> int:
+        """DuckDB: staging, дедупликация, promote в flat_data."""
+        repo: DuckDBFlatDataRepository = self._repo  # type: ignore[assignment]
+
+        normalized_records: List[Dict[str, Any]] = []
+        file_ids: Set[str] = set()
+        for rec in records:
+            doc = rec.to_mongo_doc()
+            new_rec = {k: _to_builtin(v) for k, v in doc.items()}
+            if new_rec.get("file_id"):
+                file_ids.add(str(new_rec["file_id"]))
+            normalized_records.append(new_rec)
+
+        if not file_ids:
+            raise CriticalUploadError(
+                message="FlatData records must include file_id",
+                domain="upload.persist",
+                http_status=400,
+            )
+
+        upload_id = next(iter(file_ids))
+        if len(file_ids) > 1:
+            raise CriticalUploadError(
+                message="Single upload must not mix multiple file_id values",
+                domain="upload.persist",
+                http_status=400,
+                meta={"file_ids": list(file_ids)},
+            )
+
+        chunk_size = config.FLATDATA_BULK_CHUNK_SIZE
+        try:
+            for i in range(0, len(normalized_records), chunk_size):
+                chunk = normalized_records[i : i + chunk_size]
+                await repo.insert_staging_batch(upload_id, chunk)
+
+            dupes = await repo.find_staging_duplicate_keys(upload_id)
+            if dupes:
+                raise CriticalUploadError(
+                    message="Duplicate rows detected in staging",
+                    domain="upload.duplicate_data",
+                    http_status=400,
+                    meta={"duplicates": dupes, "file_id": upload_id},
+                )
+
+            conflicts = await repo.count_staging_main_conflicts(upload_id)
+            if conflicts > 0:
+                raise CriticalUploadError(
+                    message="Data conflicts with existing flat_data",
+                    domain="upload.duplicate_data",
+                    http_status=400,
+                    meta={"conflict_count": conflicts, "file_id": upload_id},
+                )
+
+            inserted_total = await repo.promote_staging(upload_id)
+        except CriticalUploadError:
+            await repo.delete_staging_by_upload_id(upload_id)
+            raise
+        except Exception as exc:
+            await repo.delete_staging_by_upload_id(upload_id)
+            try:
+                await repo.delete_by_file_id(upload_id)
+            except Exception as cleanup_exc:
+                logger.error(
+                    "Cleanup flat_data after staged save failure for %s: %s",
+                    upload_id,
+                    cleanup_exc,
+                )
+            raise CriticalUploadError(
+                message=f"Failed to save flat data via staging: {exc}",
+                domain="upload.persist",
+                http_status=500,
+                meta={"file_id": upload_id, "error": str(exc)},
+                show_traceback=True,
+            ) from exc
+
+        expected_count = len(normalized_records)
+        if expected_count > 0 and inserted_total < expected_count:
+            logger.warning(
+                "Staged promote count %s < expected %s for file_id=%s",
+                inserted_total,
+                expected_count,
+                upload_id,
+            )
+
+        count = await repo.count_documents({"file_id": upload_id})
+        if count == 0 and expected_count > 0:
+            raise RuntimeError(
+                f"Post-promote verification failed: file_id={upload_id} -> 0 rows in flat_data"
+            )
+        return inserted_total
 
     async def delete_by_file_id(self, file_id: str, *, session: Any = None) -> int:
         """Удаляет все документы FlatData с указанным file_id."""

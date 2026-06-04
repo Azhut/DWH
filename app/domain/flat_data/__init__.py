@@ -5,6 +5,8 @@ from app.domain.flat_data.models import (
     FlatDataRecord,
     FilterSpec,
 )
+from app.domain.flat_data.duckdb_repository import DuckDBFlatDataRepository
+from app.domain.flat_data.factory import create_flat_data_repository
 from app.domain.flat_data.repository import FlatDataRepository
 from app.domain.flat_data.service import FlatDataService
 
@@ -14,5 +16,7 @@ __all__ = [
     "FlatDataRecord",
     "FilterSpec",
     "FlatDataRepository",
+    "DuckDBFlatDataRepository",
     "FlatDataService",
+    "create_flat_data_repository",
 ]

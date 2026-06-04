@@ -10,6 +10,7 @@ from typing import Any
 from pymongo.errors import OperationFailure
 
 from app.core.database import mongo_connection
+from config.config import config
 
 logger = logging.getLogger(__name__)
 
@@ -140,7 +141,12 @@ class MongoIndexManager:
             ) from exc
 
     async def create_all_indexes(self) -> None:
-        await self.create_flat_data_index()
+        if (config.FLATDATA_STORAGE or "mongo").lower() != "duckdb":
+            await self.create_flat_data_index()
+        else:
+            logger.info(
+                "FLATDATA_STORAGE=duckdb: индексы коллекции FlatData в MongoDB не создаются"
+            )
         await self.create_file_indexes()
 
 

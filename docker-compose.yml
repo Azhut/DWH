@@ -15,6 +15,10 @@ services:
       API_PORT: 2700
       DEBUG: "False"
       ENABLE_PROFILING: "false"
+      FLATDATA_STORAGE: "duckdb"
+      DUCKDB_PATH: "/data/duckdb/flat_data.duckdb"
+    volumes:
+      - duckdb_data:/data/duckdb
     depends_on:
       mongo:
         condition: service_healthy
@@ -37,3 +41,4 @@ services:
 
 volumes:
   mongodb_data:
+  duckdb_data:
