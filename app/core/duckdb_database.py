@@ -20,10 +20,10 @@ CREATE TABLE IF NOT EXISTS flat_data (
     year INTEGER NOT NULL,
     reporter TEXT NOT NULL,
     section TEXT NOT NULL,
-    row TEXT NOT NULL,
-    column TEXT NOT NULL,
+    "row" TEXT NOT NULL,
+    "column" TEXT NOT NULL,
     value DOUBLE,
-    UNIQUE (file_id, year, reporter, section, row, column)
+    UNIQUE (file_id, year, reporter, section, "row", "column")
 );
 
 CREATE TABLE IF NOT EXISTS flat_data_staging (
@@ -33,8 +33,8 @@ CREATE TABLE IF NOT EXISTS flat_data_staging (
     year INTEGER NOT NULL,
     reporter TEXT NOT NULL,
     section TEXT NOT NULL,
-    row TEXT NOT NULL,
-    column TEXT NOT NULL,
+    "row" TEXT NOT NULL,
+    "column" TEXT NOT NULL,
     value DOUBLE
 );
 

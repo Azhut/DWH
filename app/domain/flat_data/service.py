@@ -12,6 +12,7 @@ from app.core.exceptions import CriticalUploadError
 from app.domain.flat_data.models import FILTER_MAP, FlatDataRecord, TABLE_FIELDS
 from app.domain.flat_data.duckdb_repository import DuckDBFlatDataRepository
 from app.domain.flat_data.repository import FlatDataRepository
+from app.domain.flat_data.value_utils import normalize_flat_value
 from config.config import config
 
 logger = logging.getLogger(__name__)
@@ -45,6 +46,14 @@ def _to_builtin(obj: Any) -> Any:
             return str(obj)
         except Exception:
             return None
+
+
+def _normalize_record_for_storage(doc: Dict[str, Any]) -> Dict[str, Any]:
+    """Приводит документ FlatData к BSON/DuckDB-совместимым типам."""
+    new_rec = {k: _to_builtin(v) for k, v in doc.items()}
+    if "value" in new_rec:
+        new_rec["value"] = normalize_flat_value(new_rec.get("value"))
+    return new_rec
 
 
 def _make_cache_key(
@@ -129,8 +138,7 @@ class FlatDataService:
         normalized_records: List[Dict[str, Any]] = []
         file_ids: Set[str] = set()
         for rec in records:
-            doc = rec.to_mongo_doc()
-            new_rec = {k: _to_builtin(v) for k, v in doc.items()}
+            new_rec = _normalize_record_for_storage(rec.to_mongo_doc())
             normalized_records.append(new_rec)
             fid = new_rec.get("file_id")
             if fid:
@@ -238,8 +246,7 @@ class FlatDataService:
         normalized_records: List[Dict[str, Any]] = []
         file_ids: Set[str] = set()
         for rec in records:
-            doc = rec.to_mongo_doc()
-            new_rec = {k: _to_builtin(v) for k, v in doc.items()}
+            new_rec = _normalize_record_for_storage(rec.to_mongo_doc())
             if new_rec.get("file_id"):
                 file_ids.add(str(new_rec["file_id"]))
             normalized_records.append(new_rec)

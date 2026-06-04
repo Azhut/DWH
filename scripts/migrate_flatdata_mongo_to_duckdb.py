@@ -37,6 +37,7 @@ from bson import ObjectId
 
 from app.core.database import mongo_connection
 from app.core.duckdb_database import duckdb_connection
+from app.domain.flat_data.value_utils import normalize_flat_value
 from config.config import config
 
 logging.basicConfig(
@@ -75,9 +76,7 @@ def _doc_to_row(doc: Dict[str, Any]) -> Optional[tuple]:
     if isinstance(year, float):
         year = int(year)
 
-    value = doc.get("value")
-    if value is not None and isinstance(value, float) and str(value) == "nan":
-        value = None
+    value = normalize_flat_value(doc.get("value"))
 
     return (
         str(form),
