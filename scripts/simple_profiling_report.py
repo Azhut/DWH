@@ -11,7 +11,11 @@ from typing import Dict, List, Any
 class SimpleProfilingAnalyzer:
     """Анализатор метрик профилирования с текстовой визуализацией."""
     
-    def __init__(self, data_dir: str = "../profiling_data"):
+    def __init__(self, data_dir: str | None = None):
+        if data_dir is None:
+            data_dir = str(
+                Path(__file__).resolve().parent.parent / "tests" / "fixtures" / "profiling_data"
+            )
         self.data_dir = Path(data_dir)
         
     def load_all_sessions(self) -> List[Dict]:
@@ -312,7 +316,7 @@ def main():
     analyzer.print_report(analysis)
     
     print(f"\nАнализ завершен!")
-    print(f"Данные сохранены в: profiling_data/")
+    print(f"Данные: {analyzer.data_dir}/")
 
 
 if __name__ == "__main__":

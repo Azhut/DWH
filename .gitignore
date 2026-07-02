@@ -2,6 +2,8 @@
 **/__pycache__/
 # Ignore data files
 data/
+/profiling_data/
+tests/scripts/golden_snapshot/*.xlsx
 *.duckdb
 *.duckdb.wal
 app/parsers/tester.py

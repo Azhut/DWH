@@ -1,4 +1,6 @@
-﻿# DWH Sport API
+﻿# DWH Sport API — обзор проекта
+
+> Полное оглавление документации: [INDEX.md](INDEX.md)
 
 ## 1. Что это за проект
 DWH Sport API — это backend-сервис для приема, валидации, парсинга и хранения табличной спортивной отчетности из Excel-файлов (`.xls`, `.xlsx`, `.xlsm`).
@@ -43,7 +45,8 @@ DWH/
 │   ├── scripts/          # Скрипты для golden snapshot
 │   └── unit/             # Unit-тесты
 ├── docker/               # Docker конфигурации
-├── documentation/        # Дополнительная документация
+├── documentation/        # Документация (api, architecture, deployment, testing, reports)
+├── scripts/              # Утилиты (миграция, профилирование)
 ├── main.py               # Точка входа приложения
 ├── Dockerfile            # Сборка Docker образа
 └── docker-compose.yml    # Оркестрация сервисов
