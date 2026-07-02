@@ -107,16 +107,26 @@ def _set_state(conn, key: str, value: str) -> None:
 
 def _insert_batch_sync(rows: List[tuple]) -> int:
     conn = duckdb_connection._ensure_connection()
+    conn.execute("BEGIN TRANSACTION")
     conn.executemany(_INSERT_SQL, rows)
+    conn.execute("COMMIT")
     return len(rows)
 
 
-async def migrate(*, reset: bool = False, batch_size: Optional[int] = None) -> None:
+async def migrate(
+    *,
+    reset: bool = False,
+    batch_size: Optional[int] = None,
+    dry_run: bool = False,
+    dry_run_limit: Optional[int] = None,
+) -> None:
     batch_size = batch_size or config.DUCKDB_MIGRATION_BATCH_SIZE
     duckdb_connection.initialize_schema_sync()
     conn = duckdb_connection._ensure_connection()
 
-    if reset:
+    if reset and dry_run:
+        logger.warning("Dry run + reset: данные не будут удалены, только проверка состояния")
+    elif reset:
         logger.warning("RESET: очищаем flat_data и состояние миграции")
         conn.execute("DELETE FROM flat_data")
         conn.execute("DELETE FROM migration_state")
@@ -135,13 +145,20 @@ async def migrate(*, reset: bool = False, batch_size: Optional[int] = None) -> N
     logger.info("Документов в MongoDB FlatData: %s", mongo_total)
 
     last_id_str = state.get(_STATE_LAST_ID)
-    inserted_so_far = int(state.get(_STATE_INSERTED, "0") or 0)
+    processed_so_far = int(state.get(_STATE_INSERTED, "0") or 0)
     query: Dict[str, Any] = {}
     if last_id_str:
         query["_id"] = {"$gt": ObjectId(last_id_str)}
-        logger.info("Продолжение с _id > %s (уже перенесено ~%s)", last_id_str, inserted_so_far)
+        logger.info(
+            "Продолжение с _id > %s (уже обработано ~%s)",
+            last_id_str,
+            processed_so_far,
+        )
 
-    _set_state(conn, _STATE_STATUS, _STATUS_RUNNING)
+    if not dry_run:
+        _set_state(conn, _STATE_STATUS, _STATUS_RUNNING)
+    else:
+        logger.info("Dry run: изменения в DuckDB выполняться не будут")
 
     skipped_invalid = 0
     batch_rows: List[tuple] = []
@@ -151,6 +168,7 @@ async def migrate(*, reset: bool = False, batch_size: Optional[int] = None) -> N
     cursor = collection.find(query, projection={"_id": 1, "form": 1, "file_id": 1, "year": 1,
         "reporter": 1, "section": 1, "row": 1, "column": 1, "value": 1}).sort("_id", 1)
 
+    progress_count = 0
     async for doc in cursor:
         last_id = doc["_id"]
         row = _doc_to_row(doc)
@@ -158,37 +176,55 @@ async def migrate(*, reset: bool = False, batch_size: Optional[int] = None) -> N
             skipped_invalid += 1
             continue
         batch_rows.append(row)
+        progress_count += 1
+
+        if dry_run and dry_run_limit is not None and progress_count >= dry_run_limit:
+            logger.info("Достигнут dry-run лимит %s документов", dry_run_limit)
+            break
 
         if len(batch_rows) >= batch_size:
-            n = await asyncio.to_thread(_insert_batch_sync, batch_rows)
-            inserted_so_far += n
+            if not dry_run:
+                n = await asyncio.to_thread(_insert_batch_sync, batch_rows)
+            else:
+                n = len(batch_rows)
+            processed_so_far += n
             batch_rows = []
-            _set_state(conn, _STATE_LAST_ID, str(last_id))
-            _set_state(conn, _STATE_INSERTED, str(inserted_so_far))
+            if not dry_run:
+                _set_state(conn, _STATE_LAST_ID, str(last_id))
+                _set_state(conn, _STATE_INSERTED, str(processed_so_far))
             elapsed = time.monotonic() - started
-            rate = inserted_so_far / elapsed if elapsed > 0 else 0
+            rate = processed_so_far / elapsed if elapsed > 0 else 0
             logger.info(
                 "Прогресс: %s / %s (%.1f%%), %.0f rows/s, last_id=%s",
-                inserted_so_far,
+                processed_so_far,
                 mongo_total,
-                100.0 * inserted_so_far / mongo_total if mongo_total else 0,
+                100.0 * processed_so_far / mongo_total if mongo_total else 0,
                 rate,
                 last_id,
             )
 
     if batch_rows:
-        n = await asyncio.to_thread(_insert_batch_sync, batch_rows)
-        inserted_so_far += n
-        if last_id is not None:
+        if not dry_run:
+            n = await asyncio.to_thread(_insert_batch_sync, batch_rows)
+        else:
+            n = len(batch_rows)
+        processed_so_far += n
+        if last_id is not None and not dry_run:
             _set_state(conn, _STATE_LAST_ID, str(last_id))
-        _set_state(conn, _STATE_INSERTED, str(inserted_so_far))
+        if not dry_run:
+            _set_state(conn, _STATE_INSERTED, str(processed_so_far))
 
     duckdb_total = conn.execute("SELECT COUNT(*) FROM flat_data").fetchone()[0]
-    _set_state(conn, _STATE_STATUS, _STATUS_COMPLETED)
+    if not dry_run:
+        _set_state(conn, _STATE_STATUS, _STATUS_COMPLETED)
 
     elapsed = time.monotonic() - started
-    logger.info("Миграция завершена за %.1f с", elapsed)
-    logger.info("Вставлено из Mongo (счётчик процесса): %s", inserted_so_far)
+    logger.info(
+        "%s за %.1f с",
+        "Dry run завершён" if dry_run else "Миграция завершена",
+        elapsed,
+    )
+    logger.info("Обработано документов Mongo: %s", processed_so_far)
     logger.info("Строк в DuckDB flat_data: %s", duckdb_total)
     logger.info("Пропущено битых документов: %s", skipped_invalid)
 
@@ -213,8 +249,28 @@ def main() -> None:
         default=None,
         help=f"Размер батча (по умолчанию {config.DUCKDB_MIGRATION_BATCH_SIZE})",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Прогон без записи в DuckDB: проверка чтения Mongo + нормализации",
+    )
+    parser.add_argument(
+        "--dry-run-limit",
+        type=int,
+        default=None,
+        help="Остановиться после указанного числа документов в dry-run режиме",
+    )
     args = parser.parse_args()
-    asyncio.run(migrate(reset=args.reset, batch_size=args.batch_size))
+    if args.dry_run_limit is not None and not args.dry_run:
+        parser.error("--dry-run-limit можно использовать только вместе с --dry-run")
+    asyncio.run(
+        migrate(
+            reset=args.reset,
+            batch_size=args.batch_size,
+            dry_run=args.dry_run,
+            dry_run_limit=args.dry_run_limit,
+        )
+    )
 
 
 if __name__ == "__main__":
